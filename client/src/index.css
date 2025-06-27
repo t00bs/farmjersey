@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(210, 11%, 15%);
+  --muted: hsl(216, 12%, 97%);
+  --muted-foreground: hsl(215, 16%, 47%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(210, 11%, 15%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(210, 11%, 15%);
+  --border: hsl(215, 14%, 88%);
+  --input: hsl(215, 14%, 88%);
+  --primary: hsl(120, 48%, 34%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(211, 63%, 40%);
+  --secondary-foreground: hsl(0, 0%, 100%);
+  --accent: hsl(50, 100%, 50%);
+  --accent-foreground: hsl(210, 11%, 15%);
+  --destructive: hsl(0, 62%, 30%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(210, 11%, 15%);
+  --radius: 0.5rem;
+  --success: hsl(120, 51%, 43%);
+  --success-foreground: hsl(0, 0%, 100%);
+  --text-primary: hsl(210, 11%, 15%);
+  --bg-light: hsl(216, 12%, 97%);
+}
+
+.dark {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(120, 48%, 34%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(211, 63%, 40%);
+  --secondary-foreground: hsl(0, 0%, 100%);
+  --accent: hsl(50, 100%, 50%);
+  --accent-foreground: hsl(210, 11%, 15%);
+  --destructive: hsl(0, 62%, 30%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+  --radius: 0.5rem;
+  --success: hsl(120, 51%, 43%);
+  --success-foreground: hsl(0, 0%, 100%);
+  --text-primary: hsl(0, 0%, 98%);
+  --bg-light: hsl(240, 3.7%, 15.9%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  }
+}
+
+@layer utilities {
+  .text-primary-custom {
+    color: hsl(120, 48%, 34%);
+  }
+  
+  .text-secondary-custom {
+    color: hsl(211, 63%, 40%);
+  }
+  
+  .text-success-custom {
+    color: hsl(120, 51%, 43%);
+  }
+  
+  .text-accent-custom {
+    color: hsl(50, 100%, 50%);
+  }
+  
+  .bg-primary-custom {
+    background-color: hsl(120, 48%, 34%);
+  }
+  
+  .bg-secondary-custom {
+    background-color: hsl(211, 63%, 40%);
+  }
+  
+  .bg-success-custom {
+    background-color: hsl(120, 51%, 43%);
+  }
+  
+  .bg-accent-custom {
+    background-color: hsl(50, 100%, 50%);
+  }
+  
+  .border-primary-custom {
+    border-color: hsl(120, 48%, 34%);
+  }
+  
+  .border-secondary-custom {
+    border-color: hsl(211, 63%, 40%);
+  }
+}

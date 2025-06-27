@@ -1,0 +1,129 @@
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { CheckCircle, Clock, Download, Signature, Upload } from "lucide-react";
+
+interface ApplicationSectionProps {
+  title: string;
+  description: string;
+  completed: boolean;
+  estimatedTime?: string;
+  iconType?: "clock" | "download" | "signature" | "upload";
+  requiresTemplate?: boolean;
+  requiresSignature?: boolean;
+  acceptedFormats?: string;
+  primaryAction: {
+    label: string;
+    onClick: () => void;
+    variant?: "default" | "outline" | "secondary";
+  };
+  secondaryAction?: {
+    label: string;
+    onClick: () => void;
+  };
+}
+
+export default function ApplicationSection({
+  title,
+  description,
+  completed,
+  estimatedTime,
+  iconType = "clock",
+  requiresTemplate = false,
+  requiresSignature = false,
+  acceptedFormats,
+  primaryAction,
+  secondaryAction,
+}: ApplicationSectionProps) {
+  const getIcon = () => {
+    switch (iconType) {
+      case "download":
+        return <Download className="w-4 h-4" />;
+      case "signature":
+        return <Signature className="w-4 h-4" />;
+      case "upload":
+        return <Upload className="w-4 h-4" />;
+      default:
+        return <Clock className="w-4 h-4" />;
+    }
+  };
+
+  const getStatusIcon = () => {
+    if (completed) {
+      return (
+        <div className="w-8 h-8 bg-success-custom/10 rounded-full flex items-center justify-center">
+          <CheckCircle className="text-success-custom text-sm" />
+        </div>
+      );
+    }
+    return (
+      <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+      </div>
+    );
+  };
+
+  const getInfoText = () => {
+    if (estimatedTime) return `Estimated time: ${estimatedTime}`;
+    if (requiresTemplate) return "Excel template required";
+    if (requiresSignature) return "Digital signature required";
+    if (acceptedFormats) return acceptedFormats;
+    return null;
+  };
+
+  const getPrimaryButtonClass = () => {
+    switch (primaryAction.variant) {
+      case "outline":
+        return "w-full bg-white border-2 border-primary-custom text-primary-custom font-medium py-3 px-4 rounded-md hover:bg-primary-custom hover:text-white transition-colors";
+      case "secondary":
+        return "w-full bg-white border-2 border-secondary-custom text-secondary-custom font-medium py-3 px-4 rounded-md hover:bg-secondary-custom hover:text-white transition-colors";
+      default:
+        return "bg-primary-custom text-white font-medium py-3 px-4 rounded-md hover:bg-primary-custom/90 transition-colors";
+    }
+  };
+
+  return (
+    <Card className="p-6">
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <h3 className="text-lg font-semibold text-text-primary mb-2">{title}</h3>
+          <p className="text-sm text-gray-600">{description}</p>
+        </div>
+        {getStatusIcon()}
+      </div>
+      
+      <div className="space-y-3">
+        {getInfoText() && (
+          <div className="flex items-center space-x-2 text-sm text-gray-600">
+            {getIcon()}
+            <span>{getInfoText()}</span>
+          </div>
+        )}
+        
+        {secondaryAction ? (
+          <div className="flex space-x-3">
+            <Button
+              onClick={primaryAction.onClick}
+              className={`flex-1 ${getPrimaryButtonClass()}`}
+            >
+              {primaryAction.label}
+            </Button>
+            <Button
+              onClick={secondaryAction.onClick}
+              variant="outline"
+              className="flex-1 font-medium py-3 px-4"
+            >
+              {secondaryAction.label}
+            </Button>
+          </div>
+        ) : (
+          <Button
+            onClick={primaryAction.onClick}
+            className={getPrimaryButtonClass()}
+          >
+            {primaryAction.label}
+          </Button>
+        )}
+      </div>
+    </Card>
+  );
+}

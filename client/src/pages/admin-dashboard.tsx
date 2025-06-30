@@ -328,26 +328,18 @@ function ApplicationReviewDialog({
                 <div><strong>Created:</strong> {agriculturalReturn.createdAt ? new Date(agriculturalReturn.createdAt).toLocaleDateString() : 'Not available'}</div>
                 <div><strong>Updated:</strong> {agriculturalReturn.updatedAt ? new Date(agriculturalReturn.updatedAt).toLocaleDateString() : 'Not available'}</div>
               </div>
-              {agriculturalReturn.cropData && (
-                <div>
-                  <strong>Crop Data:</strong>
-                  <pre className="mt-1 text-sm bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-auto">
-                    {String(typeof agriculturalReturn.cropData === 'string' 
-                      ? agriculturalReturn.cropData 
-                      : JSON.stringify(agriculturalReturn.cropData, null, 2))}
-                  </pre>
+              <div>
+                <strong>Crop Data:</strong>
+                <div className="mt-1 text-sm bg-gray-100 dark:bg-gray-800 p-2 rounded">
+                  Data available (JSON format)
                 </div>
-              )}
-              {agriculturalReturn.landUsage && (
-                <div>
-                  <strong>Land Usage:</strong>
-                  <pre className="mt-1 text-sm bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-auto">
-                    {String(typeof agriculturalReturn.landUsage === 'string' 
-                      ? agriculturalReturn.landUsage 
-                      : JSON.stringify(agriculturalReturn.landUsage, null, 2))}
-                  </pre>
+              </div>
+              <div>
+                <strong>Land Usage:</strong>
+                <div className="mt-1 text-sm bg-gray-100 dark:bg-gray-800 p-2 rounded">
+                  Data available (JSON format)
                 </div>
-              )}
+              </div>
             </div>
           ) : (
             <p className="text-gray-500">No agricultural return data available</p>

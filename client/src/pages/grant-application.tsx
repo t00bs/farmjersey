@@ -15,6 +15,7 @@ import AgriculturalReturnForm from "@/components/agricultural-return-form";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { InfoIcon, Save, Send } from "lucide-react";
 
 export default function GrantApplication() {
@@ -23,6 +24,7 @@ export default function GrantApplication() {
   const [, params] = useRoute("/application/:id");
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [signatureModalOpen, setSignatureModalOpen] = useState(false);
+  const [agriculturalFormOpen, setAgriculturalFormOpen] = useState(false);
   const [uploadType, setUploadType] = useState<"land_declaration" | "supporting_doc">("land_declaration");
 
   const applicationId = params?.id ? parseInt(params.id) : null;
@@ -148,14 +150,8 @@ export default function GrantApplication() {
               completed={Boolean(application?.agriculturalReturnCompleted)}
               estimatedTime="15 minutes"
               primaryAction={{
-                label: "Start Return",
-                onClick: () => {
-                  // TODO: Navigate to agricultural return form
-                  toast({
-                    title: "Coming Soon",
-                    description: "Agricultural return form will be available soon.",
-                  });
-                },
+                label: application?.agriculturalReturnCompleted ? "Edit Return" : "Start Return",
+                onClick: () => setAgriculturalFormOpen(true),
                 variant: "outline",
               }}
             />
@@ -289,6 +285,27 @@ export default function GrantApplication() {
         onOpenChange={setSignatureModalOpen}
         applicationId={applicationId!}
       />
+
+      <Dialog open={agriculturalFormOpen} onOpenChange={setAgriculturalFormOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Agricultural Return Form</DialogTitle>
+            <DialogDescription>
+              Complete your annual agricultural return with crop details and land usage information.
+            </DialogDescription>
+          </DialogHeader>
+          <AgriculturalReturnForm
+            applicationId={applicationId!}
+            onComplete={() => {
+              setAgriculturalFormOpen(false);
+              toast({
+                title: "Agricultural Return Completed",
+                description: "Your agricultural return form has been saved successfully.",
+              });
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

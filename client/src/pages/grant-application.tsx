@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { useRoute } from "wouter";
+import type { GrantApplication } from "@shared/schema";
 import Sidebar from "@/components/sidebar";
 import TopBar from "@/components/top-bar";
 import ApplicationSection from "@/components/application-section";
@@ -40,7 +41,7 @@ export default function GrantApplication() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: application, isLoading: applicationLoading } = useQuery({
+  const { data: application, isLoading: applicationLoading } = useQuery<GrantApplication>({
     queryKey: ["/api/grant-applications", applicationId],
     enabled: !!applicationId,
     retry: false,
@@ -120,19 +121,19 @@ export default function GrantApplication() {
               <div>
                 <h1 className="text-2xl font-bold text-text-primary mb-2">RSS Grant Application</h1>
                 <div className="flex items-center space-x-4">
-                  <span className="text-gray-600">{application.year}</span>
+                  <span className="text-gray-600">{application?.year || 2026}</span>
                   <span className="text-gray-400">•</span>
                   <div className="flex items-center space-x-2">
                     <div className="w-2 h-2 bg-accent-custom rounded-full"></div>
                     <span className="text-sm font-medium text-accent-custom capitalize">
-                      {application.status.replace('_', ' ')}
+                      {application?.status?.replace('_', ' ') || 'Draft'}
                     </span>
                   </div>
                 </div>
               </div>
               
               <ProgressIndicator 
-                percentage={application.progressPercentage} 
+                percentage={application?.progressPercentage || 0} 
                 className="text-right"
               />
             </div>

@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { Eye, FileText, Calendar, User, AlertTriangle, CheckCircle } from "lucide-react";
+import { Eye, FileText, Calendar, User, AlertTriangle, CheckCircle, FormInput } from "lucide-react";
 import type { GrantApplication, AgriculturalReturn, Document } from "@shared/schema";
 
 export default function AdminDashboard() {
@@ -111,6 +111,12 @@ export default function AdminDashboard() {
           <p className="text-gray-600 dark:text-gray-300 mt-2">
             Review and manage grant applications
           </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => window.location.href = '/admin/form-builder'}>
+            <FormInput className="h-4 w-4 mr-2" />
+            Form Builder
+          </Button>
         </div>
       </div>
 

@@ -9,6 +9,7 @@ import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
 import GrantApplication from "@/pages/grant-application";
 import AdminDashboard from "@/pages/admin-dashboard";
+import AgriculturalFormBuilder from "@/pages/agricultural-form-builder";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -22,6 +23,7 @@ function Router() {
           <Route path="/" component={Dashboard} />
           <Route path="/application/:id" component={GrantApplication} />
           <Route path="/admin" component={AdminDashboard} />
+          <Route path="/admin/form-builder" component={AgriculturalFormBuilder} />
         </>
       )}
       <Route component={NotFound} />

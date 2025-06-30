@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertGrantApplicationSchema, insertAgriculturalReturnSchema, insertDocumentSchema } from "@shared/schema";
+import { insertGrantApplicationSchema, insertAgriculturalReturnSchema, insertDocumentSchema, insertAgriculturalFormTemplateSchema, insertAgriculturalFormResponseSchema } from "@shared/schema";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -83,6 +83,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating application status:", error);
       res.status(500).json({ message: "Failed to update application status" });
+    }
+  });
+
+  // Agricultural Form Template routes
+  app.get("/api/admin/agricultural-forms", isAuthenticated, async (req: any, res) => {
+    try {
+      const templates = await storage.getAgriculturalFormTemplates();
+      res.json(templates);
+    } catch (error) {
+      console.error("Error fetching agricultural form templates:", error);
+      res.status(500).json({ message: "Failed to fetch agricultural form templates" });
+    }
+  });
+
+  app.post("/api/admin/agricultural-forms", isAuthenticated, async (req: any, res) => {
+    try {
+      const templateData = insertAgriculturalFormTemplateSchema.parse(req.body);
+      const newTemplate = await storage.createAgriculturalFormTemplate(templateData);
+      res.json(newTemplate);
+    } catch (error) {
+      console.error("Error creating agricultural form template:", error);
+      res.status(500).json({ message: "Failed to create agricultural form template" });
+    }
+  });
+
+  app.get("/api/admin/agricultural-forms/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const template = await storage.getAgriculturalFormTemplate(parseInt(id));
+      if (!template) {
+        return res.status(404).json({ message: "Agricultural form template not found" });
+      }
+      res.json(template);
+    } catch (error) {
+      console.error("Error fetching agricultural form template:", error);
+      res.status(500).json({ message: "Failed to fetch agricultural form template" });
+    }
+  });
+
+  app.put("/api/admin/agricultural-forms/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const updates = insertAgriculturalFormTemplateSchema.partial().parse(req.body);
+      const updatedTemplate = await storage.updateAgriculturalFormTemplate(parseInt(id), updates);
+      if (!updatedTemplate) {
+        return res.status(404).json({ message: "Agricultural form template not found" });
+      }
+      res.json(updatedTemplate);
+    } catch (error) {
+      console.error("Error updating agricultural form template:", error);
+      res.status(500).json({ message: "Failed to update agricultural form template" });
+    }
+  });
+
+  app.delete("/api/admin/agricultural-forms/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteAgriculturalFormTemplate(parseInt(id));
+      res.json({ message: "Agricultural form template deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting agricultural form template:", error);
+      res.status(500).json({ message: "Failed to delete agricultural form template" });
+    }
+  });
+
+  // Agricultural Form Response routes
+  app.get("/api/agricultural-forms/:templateId/response/:applicationId", isAuthenticated, async (req: any, res) => {
+    try {
+      const { templateId, applicationId } = req.params;
+      const response = await storage.getAgriculturalFormResponse(parseInt(templateId), parseInt(applicationId));
+      if (!response) {
+        return res.status(404).json({ message: "Agricultural form response not found" });
+      }
+      res.json(response);
+    } catch (error) {
+      console.error("Error fetching agricultural form response:", error);
+      res.status(500).json({ message: "Failed to fetch agricultural form response" });
+    }
+  });
+
+  app.post("/api/agricultural-forms/response", isAuthenticated, async (req: any, res) => {
+    try {
+      const responseData = insertAgriculturalFormResponseSchema.parse(req.body);
+      const newResponse = await storage.createAgriculturalFormResponse(responseData);
+      res.json(newResponse);
+    } catch (error) {
+      console.error("Error creating agricultural form response:", error);
+      res.status(500).json({ message: "Failed to create agricultural form response" });
+    }
+  });
+
+  app.put("/api/agricultural-forms/response/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const updates = insertAgriculturalFormResponseSchema.partial().parse(req.body);
+      const updatedResponse = await storage.updateAgriculturalFormResponse(parseInt(id), updates);
+      if (!updatedResponse) {
+        return res.status(404).json({ message: "Agricultural form response not found" });
+      }
+      res.json(updatedResponse);
+    } catch (error) {
+      console.error("Error updating agricultural form response:", error);
+      res.status(500).json({ message: "Failed to update agricultural form response" });
     }
   });
 

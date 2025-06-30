@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Eye, FileText, Calendar, User, AlertTriangle, CheckCircle } from "lucide-react";
-import type { GrantApplication } from "@shared/schema";
+import type { GrantApplication, AgriculturalReturn, Document } from "@shared/schema";
 
 export default function AdminDashboard() {
   const { toast } = useToast();
@@ -24,16 +24,15 @@ export default function AdminDashboard() {
       const url = statusFilter === "all" 
         ? "/api/admin/applications"
         : `/api/admin/applications?status=${statusFilter}`;
-      return await apiRequest(url);
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Failed to fetch applications");
+      return await response.json();
     },
   });
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
-      return await apiRequest(`/api/admin/applications/${id}/status`, {
-        method: "PATCH",
-        body: JSON.stringify({ status }),
-      });
+      return await apiRequest(`/api/admin/applications/${id}/status`, "PATCH", { status });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/applications"] });
@@ -56,13 +55,22 @@ export default function AdminDashboard() {
       draft: { variant: "secondary" as const, label: "Draft" },
       in_progress: { variant: "default" as const, label: "In Progress" },
       submitted: { variant: "outline" as const, label: "Submitted" },
-      approved: { variant: "default" as const, label: "Approved", className: "bg-green-500" },
+      approved: { variant: "default" as const, label: "Approved" },
       rejected: { variant: "destructive" as const, label: "Rejected" },
     };
     
     const config = variants[status as keyof typeof variants] || variants.draft;
+    
+    if (status === "approved") {
+      return (
+        <Badge variant={config.variant} className="bg-green-500 hover:bg-green-600">
+          {config.label}
+        </Badge>
+      );
+    }
+    
     return (
-      <Badge variant={config.variant} className={config.className}>
+      <Badge variant={config.variant}>
         {config.label}
       </Badge>
     );
@@ -256,11 +264,11 @@ function ApplicationReviewDialog({
 }) {
   const [newStatus, setNewStatus] = useState(application.status);
 
-  const { data: documents = [] } = useQuery({
+  const { data: documents = [] } = useQuery<Document[]>({
     queryKey: ["/api/applications", application.id, "documents"],
   });
 
-  const { data: agriculturalReturn } = useQuery({
+  const { data: agriculturalReturn } = useQuery<AgriculturalReturn | null>({
     queryKey: ["/api/applications", application.id, "agricultural-return"],
   });
 
@@ -315,19 +323,25 @@ function ApplicationReviewDialog({
             <div className="space-y-4">
               <h4 className="font-semibold">Agricultural Return Details</h4>
               <div className="grid grid-cols-2 gap-4 text-sm">
-                <div><strong>Farm Size:</strong> {agriculturalReturn.farmSize} hectares</div>
-                <div><strong>Crop Type:</strong> {agriculturalReturn.cropType}</div>
-                <div><strong>Previous Year Yield:</strong> {agriculturalReturn.previousYearYield} tons</div>
-                <div><strong>Livestock Count:</strong> {agriculturalReturn.livestockCount}</div>
-                <div><strong>Organic Certification:</strong> {agriculturalReturn.organicCertification ? 'Yes' : 'No'}</div>
-                <div><strong>Irrigation System:</strong> {agriculturalReturn.irrigationSystem}</div>
+                <div><strong>Total Acres:</strong> {agriculturalReturn.totalAcres || 'Not specified'}</div>
+                <div><strong>Application ID:</strong> {agriculturalReturn.applicationId}</div>
+                <div><strong>Created:</strong> {agriculturalReturn.createdAt ? new Date(agriculturalReturn.createdAt).toLocaleDateString() : 'Not available'}</div>
+                <div><strong>Updated:</strong> {agriculturalReturn.updatedAt ? new Date(agriculturalReturn.updatedAt).toLocaleDateString() : 'Not available'}</div>
               </div>
-              {agriculturalReturn.additionalInfo && (
+              {agriculturalReturn.cropData && (
                 <div>
-                  <strong>Additional Information:</strong>
-                  <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                    {agriculturalReturn.additionalInfo}
-                  </p>
+                  <strong>Crop Data:</strong>
+                  <pre className="mt-1 text-sm bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-auto">
+                    {JSON.stringify(agriculturalReturn.cropData, null, 2)}
+                  </pre>
+                </div>
+              )}
+              {agriculturalReturn.landUsage && (
+                <div>
+                  <strong>Land Usage:</strong>
+                  <pre className="mt-1 text-sm bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-auto">
+                    {JSON.stringify(agriculturalReturn.landUsage, null, 2)}
+                  </pre>
                 </div>
               )}
             </div>
@@ -338,9 +352,9 @@ function ApplicationReviewDialog({
 
         <TabsContent value="documents" className="space-y-4">
           <h4 className="font-semibold">Uploaded Documents</h4>
-          {documents.length > 0 ? (
+          {Array.isArray(documents) && documents.length > 0 ? (
             <div className="space-y-2">
-              {documents.map((doc: any) => (
+              {documents.map((doc: Document) => (
                 <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div>
                     <div className="font-medium">{doc.filename}</div>

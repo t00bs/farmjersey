@@ -89,7 +89,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Agricultural Form Template routes
   app.get("/api/admin/agricultural-forms", isAuthenticated, async (req: any, res) => {
     try {
-      const templates = await storage.getAgriculturalFormTemplates();
+      let templates = await storage.getAgriculturalFormTemplates();
+      
+      // Create default template if none exist
+      if (templates.length === 0) {
+        const defaultTemplate = {
+          title: "Agricultural Return 2025",
+          description: "Annual agricultural return form for crop and livestock reporting",
+          year: 2025,
+          isActive: true,
+          sections: [
+            {
+              id: "landowner-details",
+              title: "Landowner Details",
+              description: "Basic information about the landowner",
+              order: 1,
+              fields: [
+                {
+                  id: "full-name",
+                  type: "text",
+                  label: "Full Name",
+                  placeholder: "Enter your full name",
+                  required: true
+                },
+                {
+                  id: "address",
+                  type: "textarea",
+                  label: "Address",
+                  placeholder: "Enter your full address",
+                  required: true
+                },
+                {
+                  id: "phone",
+                  type: "text",
+                  label: "Phone Number",
+                  placeholder: "Enter your phone number",
+                  required: true
+                }
+              ]
+            },
+            {
+              id: "land-crops",
+              title: "Land & Crops",
+              description: "Information about your land usage and crops",
+              order: 2,
+              fields: [
+                {
+                  id: "total-acreage",
+                  type: "number",
+                  label: "Total Acreage",
+                  placeholder: "Enter total acreage",
+                  required: true
+                },
+                {
+                  id: "crop-type",
+                  type: "select",
+                  label: "Primary Crop Type",
+                  required: true,
+                  options: ["Wheat", "Corn", "Soybeans", "Rice", "Barley", "Other"]
+                },
+                {
+                  id: "organic-farming",
+                  type: "checkbox",
+                  label: "I practice organic farming",
+                  required: false
+                }
+              ]
+            }
+          ]
+        };
+        
+        const createdTemplate = await storage.createAgriculturalFormTemplate(defaultTemplate);
+        templates = [createdTemplate];
+      }
+      
       res.json(templates);
     } catch (error) {
       console.error("Error fetching agricultural form templates:", error);

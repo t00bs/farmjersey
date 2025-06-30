@@ -62,7 +62,7 @@ export default function AgriculturalReturnForm({ applicationId, onComplete }: Ag
     }
   }, [templates]);
 
-  const form = useForm({
+  const form = useForm<Record<string, any>>({
     defaultValues: {},
   });
 
@@ -122,8 +122,8 @@ export default function AgriculturalReturnForm({ applicationId, onComplete }: Ag
                 <FormControl>
                   <Input
                     placeholder={field.placeholder}
-                    value={formField.value as string || ""}
-                    onChange={(e) => formField.onChange(e.target.value)}
+                    {...formField}
+                    value={formField.value || ""}
                   />
                 </FormControl>
                 <FormMessage />
@@ -145,8 +145,8 @@ export default function AgriculturalReturnForm({ applicationId, onComplete }: Ag
                   <Input
                     type="number"
                     placeholder={field.placeholder}
-                    value={formField.value as string || ""}
-                    onChange={(e) => formField.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                    {...formField}
+                    value={formField.value || ""}
                   />
                 </FormControl>
                 <FormMessage />
@@ -167,8 +167,8 @@ export default function AgriculturalReturnForm({ applicationId, onComplete }: Ag
                 <FormControl>
                   <Textarea
                     placeholder={field.placeholder}
-                    value={formField.value as string || ""}
-                    onChange={(e) => formField.onChange(e.target.value)}
+                    {...formField}
+                    value={formField.value || ""}
                   />
                 </FormControl>
                 <FormMessage />
@@ -186,7 +186,7 @@ export default function AgriculturalReturnForm({ applicationId, onComplete }: Ag
             render={({ field: formField }) => (
               <FormItem>
                 <FormLabel>{field.label}</FormLabel>
-                <Select value={formField.value as string || ""} onValueChange={formField.onChange}>
+                <Select value={formField.value || ""} onValueChange={formField.onChange}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder={field.placeholder || "Select an option"} />
@@ -216,7 +216,7 @@ export default function AgriculturalReturnForm({ applicationId, onComplete }: Ag
               <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                 <FormControl>
                   <Checkbox
-                    checked={formField.value as boolean || false}
+                    checked={formField.value || false}
                     onCheckedChange={formField.onChange}
                   />
                 </FormControl>
@@ -240,7 +240,7 @@ export default function AgriculturalReturnForm({ applicationId, onComplete }: Ag
                 <FormLabel>{field.label}</FormLabel>
                 <FormControl>
                   <RadioGroup
-                    value={formField.value as string || ""}
+                    value={formField.value || ""}
                     onValueChange={formField.onChange}
                     className="flex flex-col space-y-1"
                   >
@@ -270,8 +270,8 @@ export default function AgriculturalReturnForm({ applicationId, onComplete }: Ag
                 <FormControl>
                   <Input
                     type="date"
-                    value={formField.value as string || ""}
-                    onChange={(e) => formField.onChange(e.target.value)}
+                    {...formField}
+                    value={formField.value || ""}
                   />
                 </FormControl>
                 <FormMessage />

@@ -3,6 +3,8 @@ import {
   grantApplications,
   agriculturalReturns,
   documents,
+  agriculturalFormTemplates,
+  agriculturalFormResponses,
   type User,
   type UpsertUser,
   type GrantApplication,
@@ -11,6 +13,10 @@ import {
   type InsertAgriculturalReturn,
   type Document,
   type InsertDocument,
+  type AgriculturalFormTemplate,
+  type InsertAgriculturalFormTemplate,
+  type AgriculturalFormResponse,
+  type InsertAgriculturalFormResponse,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
@@ -39,6 +45,18 @@ export interface IStorage {
   createDocument(document: InsertDocument): Promise<Document>;
   getDocumentsByApplicationId(applicationId: number): Promise<Document[]>;
   deleteDocument(id: number): Promise<void>;
+  
+  // Agricultural Form Template operations
+  createAgriculturalFormTemplate(template: InsertAgriculturalFormTemplate): Promise<AgriculturalFormTemplate>;
+  getAgriculturalFormTemplates(): Promise<AgriculturalFormTemplate[]>;
+  getAgriculturalFormTemplate(id: number): Promise<AgriculturalFormTemplate | undefined>;
+  updateAgriculturalFormTemplate(id: number, updates: Partial<InsertAgriculturalFormTemplate>): Promise<AgriculturalFormTemplate | undefined>;
+  deleteAgriculturalFormTemplate(id: number): Promise<void>;
+  
+  // Agricultural Form Response operations
+  createAgriculturalFormResponse(response: InsertAgriculturalFormResponse): Promise<AgriculturalFormResponse>;
+  getAgriculturalFormResponse(templateId: number, applicationId: number): Promise<AgriculturalFormResponse | undefined>;
+  updateAgriculturalFormResponse(id: number, updates: Partial<InsertAgriculturalFormResponse>): Promise<AgriculturalFormResponse | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -158,6 +176,80 @@ export class DatabaseStorage implements IStorage {
 
   async deleteDocument(id: number): Promise<void> {
     await db.delete(documents).where(eq(documents.id, id));
+  }
+
+  // Agricultural Form Template operations
+  async createAgriculturalFormTemplate(template: InsertAgriculturalFormTemplate): Promise<AgriculturalFormTemplate> {
+    const [newTemplate] = await db
+      .insert(agriculturalFormTemplates)
+      .values(template)
+      .returning();
+    return newTemplate;
+  }
+
+  async getAgriculturalFormTemplates(): Promise<AgriculturalFormTemplate[]> {
+    return await db
+      .select()
+      .from(agriculturalFormTemplates)
+      .orderBy(desc(agriculturalFormTemplates.createdAt));
+  }
+
+  async getAgriculturalFormTemplate(id: number): Promise<AgriculturalFormTemplate | undefined> {
+    const [template] = await db
+      .select()
+      .from(agriculturalFormTemplates)
+      .where(eq(agriculturalFormTemplates.id, id));
+    return template;
+  }
+
+  async updateAgriculturalFormTemplate(id: number, updates: Partial<InsertAgriculturalFormTemplate>): Promise<AgriculturalFormTemplate | undefined> {
+    const [updatedTemplate] = await db
+      .update(agriculturalFormTemplates)
+      .set({
+        ...updates,
+        updatedAt: new Date(),
+      })
+      .where(eq(agriculturalFormTemplates.id, id))
+      .returning();
+    return updatedTemplate;
+  }
+
+  async deleteAgriculturalFormTemplate(id: number): Promise<void> {
+    await db.delete(agriculturalFormTemplates).where(eq(agriculturalFormTemplates.id, id));
+  }
+
+  // Agricultural Form Response operations
+  async createAgriculturalFormResponse(response: InsertAgriculturalFormResponse): Promise<AgriculturalFormResponse> {
+    const [newResponse] = await db
+      .insert(agriculturalFormResponses)
+      .values(response)
+      .returning();
+    return newResponse;
+  }
+
+  async getAgriculturalFormResponse(templateId: number, applicationId: number): Promise<AgriculturalFormResponse | undefined> {
+    const [response] = await db
+      .select()
+      .from(agriculturalFormResponses)
+      .where(
+        and(
+          eq(agriculturalFormResponses.templateId, templateId),
+          eq(agriculturalFormResponses.applicationId, applicationId)
+        )
+      );
+    return response;
+  }
+
+  async updateAgriculturalFormResponse(id: number, updates: Partial<InsertAgriculturalFormResponse>): Promise<AgriculturalFormResponse | undefined> {
+    const [updatedResponse] = await db
+      .update(agriculturalFormResponses)
+      .set({
+        ...updates,
+        updatedAt: new Date(),
+      })
+      .where(eq(agriculturalFormResponses.id, id))
+      .returning();
+    return updatedResponse;
   }
 }
 

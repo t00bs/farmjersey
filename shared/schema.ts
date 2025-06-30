@@ -135,3 +135,59 @@ export type AgriculturalReturn = typeof agriculturalReturns.$inferSelect;
 export type InsertAgriculturalReturn = z.infer<typeof insertAgriculturalReturnSchema>;
 export type Document = typeof documents.$inferSelect;
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
+
+// Agricultural Form Templates
+export const agriculturalFormTemplates = pgTable("agricultural_form_templates", {
+  id: serial("id").primaryKey(),
+  title: varchar("title").notNull(),
+  description: text("description"),
+  year: integer("year").notNull(),
+  sections: jsonb("sections").notNull(), // Array of FormSection objects
+  isActive: boolean("is_active").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const agriculturalFormTemplateRelations = relations(agriculturalFormTemplates, ({ many }) => ({
+  responses: many(agriculturalFormResponses),
+}));
+
+// Agricultural Form Responses
+export const agriculturalFormResponses = pgTable("agricultural_form_responses", {
+  id: serial("id").primaryKey(),
+  templateId: integer("template_id").notNull().references(() => agriculturalFormTemplates.id),
+  applicationId: integer("application_id").notNull().references(() => grantApplications.id),
+  responses: jsonb("responses").notNull(), // Field responses as key-value pairs
+  isComplete: boolean("is_complete").default(false),
+  submittedAt: timestamp("submitted_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const agriculturalFormResponseRelations = relations(agriculturalFormResponses, ({ one }) => ({
+  template: one(agriculturalFormTemplates, {
+    fields: [agriculturalFormResponses.templateId],
+    references: [agriculturalFormTemplates.id],
+  }),
+  application: one(grantApplications, {
+    fields: [agriculturalFormResponses.applicationId],
+    references: [grantApplications.id],
+  }),
+}));
+
+export const insertAgriculturalFormTemplateSchema = createInsertSchema(agriculturalFormTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertAgriculturalFormResponseSchema = createInsertSchema(agriculturalFormResponses).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type AgriculturalFormTemplate = typeof agriculturalFormTemplates.$inferSelect;
+export type InsertAgriculturalFormTemplate = z.infer<typeof insertAgriculturalFormTemplateSchema>;
+export type AgriculturalFormResponse = typeof agriculturalFormResponses.$inferSelect;
+export type InsertAgriculturalFormResponse = z.infer<typeof insertAgriculturalFormResponseSchema>;

@@ -11,6 +11,7 @@ import ApplicationSection from "@/components/application-section";
 import FileUploadModal from "@/components/file-upload-modal";
 import SignatureCanvas from "@/components/signature-canvas";
 import ProgressIndicator from "@/components/progress-indicator";
+import AgriculturalReturnForm from "@/components/agricultural-return-form";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";

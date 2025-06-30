@@ -42,6 +42,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin routes
+  app.get("/api/admin/applications", isAuthenticated, async (req: any, res) => {
+    try {
+      const { status } = req.query;
+      let applications;
+      
+      if (status && status !== 'all') {
+        applications = await storage.getGrantApplicationsByStatus(status as string);
+      } else {
+        applications = await storage.getAllGrantApplications();
+      }
+      
+      res.json(applications);
+    } catch (error) {
+      console.error("Error fetching admin applications:", error);
+      res.status(500).json({ message: "Failed to fetch applications" });
+    }
+  });
+
+  app.patch("/api/admin/applications/:id/status", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      
+      if (!status || !['draft', 'in_progress', 'submitted', 'approved', 'rejected'].includes(status)) {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+      
+      const updatedApplication = await storage.updateGrantApplication(parseInt(id), { 
+        status,
+        ...(status === 'submitted' ? { submittedAt: new Date() } : {})
+      });
+      
+      if (!updatedApplication) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+      
+      res.json(updatedApplication);
+    } catch (error) {
+      console.error("Error updating application status:", error);
+      res.status(500).json({ message: "Failed to update application status" });
+    }
+  });
+
   // Grant Application routes
   app.get("/api/grant-applications", isAuthenticated, async (req: any, res) => {
     try {

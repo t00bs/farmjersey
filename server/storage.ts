@@ -26,6 +26,8 @@ export interface IStorage {
   createGrantApplication(application: InsertGrantApplication): Promise<GrantApplication>;
   getGrantApplication(id: number): Promise<GrantApplication | undefined>;
   getUserGrantApplications(userId: string): Promise<GrantApplication[]>;
+  getAllGrantApplications(): Promise<GrantApplication[]>;
+  getGrantApplicationsByStatus(status: string): Promise<GrantApplication[]>;
   updateGrantApplication(id: number, updates: Partial<InsertGrantApplication>): Promise<GrantApplication | undefined>;
   
   // Agricultural Return operations
@@ -85,6 +87,21 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(grantApplications)
       .where(eq(grantApplications.userId, userId))
+      .orderBy(desc(grantApplications.createdAt));
+  }
+
+  async getAllGrantApplications(): Promise<GrantApplication[]> {
+    return await db
+      .select()
+      .from(grantApplications)
+      .orderBy(desc(grantApplications.createdAt));
+  }
+
+  async getGrantApplicationsByStatus(status: string): Promise<GrantApplication[]> {
+    return await db
+      .select()
+      .from(grantApplications)
+      .where(eq(grantApplications.status, status))
       .orderBy(desc(grantApplications.createdAt));
   }
 

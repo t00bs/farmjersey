@@ -144,7 +144,7 @@ export default function GrantApplication() {
             <ApplicationSection
               title="Agricultural Return"
               description="Submit your annual agricultural return with crop details and land usage"
-              completed={application.agriculturalReturnCompleted}
+              completed={Boolean(application?.agriculturalReturnCompleted)}
               estimatedTime="15 minutes"
               primaryAction={{
                 label: "Start Return",
@@ -162,7 +162,7 @@ export default function GrantApplication() {
             <ApplicationSection
               title="Land Declaration"
               description="Download template and submit land ownership and usage declarations"
-              completed={application.landDeclarationCompleted}
+              completed={Boolean(application?.landDeclarationCompleted)}
               iconType="download"
               requiresTemplate
               primaryAction={{
@@ -179,7 +179,7 @@ export default function GrantApplication() {
             <ApplicationSection
               title="Declaration and Consent Form"
               description="Digital signature required for terms and conditions agreement"
-              completed={application.consentFormCompleted}
+              completed={Boolean(application?.consentFormCompleted)}
               iconType="signature"
               requiresSignature
               primaryAction={{
@@ -192,7 +192,7 @@ export default function GrantApplication() {
             <ApplicationSection
               title="Supporting Documentation"
               description="Upload additional documents like land certificates, bank statements"
-              completed={application.supportingDocsCompleted}
+              completed={Boolean(application?.supportingDocsCompleted)}
               iconType="upload"
               acceptedFormats="PDF, JPG, PNG accepted"
               primaryAction={{

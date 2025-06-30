@@ -332,7 +332,9 @@ function ApplicationReviewDialog({
                 <div>
                   <strong>Crop Data:</strong>
                   <pre className="mt-1 text-sm bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-auto">
-                    {JSON.stringify(agriculturalReturn.cropData, null, 2)}
+                    {String(typeof agriculturalReturn.cropData === 'string' 
+                      ? agriculturalReturn.cropData 
+                      : JSON.stringify(agriculturalReturn.cropData, null, 2))}
                   </pre>
                 </div>
               )}
@@ -340,7 +342,9 @@ function ApplicationReviewDialog({
                 <div>
                   <strong>Land Usage:</strong>
                   <pre className="mt-1 text-sm bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-auto">
-                    {JSON.stringify(agriculturalReturn.landUsage, null, 2)}
+                    {String(typeof agriculturalReturn.landUsage === 'string' 
+                      ? agriculturalReturn.landUsage 
+                      : JSON.stringify(agriculturalReturn.landUsage, null, 2))}
                   </pre>
                 </div>
               )}
@@ -357,7 +361,7 @@ function ApplicationReviewDialog({
               {documents.map((doc: Document) => (
                 <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div>
-                    <div className="font-medium">{doc.filename}</div>
+                    <div className="font-medium">{doc.fileName}</div>
                     <div className="text-sm text-gray-500">
                       {doc.documentType} • {Math.round(doc.fileSize / 1024)} KB
                     </div>

@@ -1,4 +1,4 @@
-import { Home, FileText, Folder, HelpCircle, Settings } from "lucide-react";
+import { Home, FileText, Folder, HelpCircle, Settings, Shield } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 
@@ -6,6 +6,7 @@ const navigation = [
   { name: "Home", href: "/", icon: Home },
   { name: "Grant Applications", href: "/", icon: FileText },
   { name: "Documents", href: "/documents", icon: Folder },
+  { name: "Admin Dashboard", href: "/admin", icon: Shield },
 ];
 
 const bottomNavigation = [

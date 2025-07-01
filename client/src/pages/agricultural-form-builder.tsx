@@ -350,7 +350,8 @@ export default function AgriculturalFormBuilder() {
   const saveFormMutation = useMutation({
     mutationFn: async (form: AgriculturalForm) => {
       console.log("Saving form with data:", form);
-      return await apiRequest("/api/admin/agricultural-forms", "POST", form);
+      const response = await apiRequest("POST", "/api/admin/agricultural-forms", form);
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/agricultural-forms"] });

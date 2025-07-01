@@ -1,0 +1,197 @@
+Agricultural Form Builder
+Create and edit agricultural return forms
+
+Preview
+Save Form
+Form Builder
+Existing Forms
+Form Settings
+Form Title
+Agricultural Return 2025
+Year
+2025
+Description
+Annual agricultural return form
+Form Sections
+Add Section
+Landowner / Occupier Details
+6 fields
+
+
+
+Please update below if details supplied are incorrect
+
+Full Name
+
+
+text
+Required
+Address Line 1
+
+
+text
+Required
+Address Line 2
+
+
+text
+Parish
+
+
+text
+Required
+Postcode
+
+
+text
+Required
+Email Address
+
+
+text
+Required
+Farm Workers, Accommodation and Facilities
+7 fields
+
+
+
+Please provide details of the maximum number in each category during the year
+
+How many units of staff accommodation do you own?
+
+
+number
+How many total bed spaces are provided within the owned units?
+
+
+number
+How many units of staff accommodation do you rent for your staff?
+
+
+number
+How many total bed spaces are provided within the rented units?
+
+
+number
+Pesticide and Chemical Store - Number of stores
+
+
+number
+Slurry Storage - Number of stores
+
+
+number
+Slurry Storage - Total Capacity (litres)
+
+
+number
+Land and Crops
+1 fields
+
+
+
+All land occupiers must supply a list of fields farmed and the crops and primary land use
+
+Land Declaration Notes
+
+
+textarea
+Farm Livestock
+9 fields
+
+
+
+Please advise the number of the following farm livestock that you own or keep
+
+Pigs (total 'finished' in 2024)
+
+
+number
+Sheep
+
+
+number
+Goats
+
+
+number
+Chickens
+
+
+number
+Other Fowl
+
+
+number
+Horses Owned
+
+
+number
+Horses Livery
+
+
+number
+Donkeys / Mules
+
+
+number
+Other (please specify)
+
+
+text
+Integrated Farm Management
+12 fields
+
+
+
+Please indicate where you have the following integrated farm management plans
+
+Soil Management Plan
+
+
+checkbox
+Water Management Plan
+
+
+checkbox
+Nutrient Management Plan
+
+
+checkbox
+Waste Management Plan
+
+
+checkbox
+Animal Health Plan
+
+
+checkbox
+Conservation and Landscape Plan
+
+
+checkbox
+Energy Audit and Plan
+
+
+checkbox
+Carbon Net Zero Plan
+
+
+checkbox
+Carbon Net Zero Data Collection
+
+
+checkbox
+Woodland Management Plan
+
+
+checkbox
+Animal Welfare Vet Scheme
+
+
+checkbox
+Health and Safety Plan
+
+
+checkbox
+[plugin:runtime-error-plugin] Failed to execute 'fetch' on 'Window': '/api/admin/agricultural-forms' is not a valid HTTP method.

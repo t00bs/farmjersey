@@ -39,7 +39,7 @@ interface FormSection {
 }
 
 interface AgriculturalForm {
-  id?: string;
+  id?: number;
   title: string;
   description: string;
   year: number;
@@ -349,6 +349,7 @@ export default function AgriculturalFormBuilder() {
 
   const saveFormMutation = useMutation({
     mutationFn: async (form: AgriculturalForm) => {
+      console.log("Saving form with data:", form);
       return await apiRequest("/api/admin/agricultural-forms", "POST", form);
     },
     onSuccess: () => {
@@ -358,10 +359,11 @@ export default function AgriculturalFormBuilder() {
         description: "Agricultural form has been saved successfully.",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Error saving form:", error);
       toast({
         title: "Error",
-        description: "Failed to save agricultural form.",
+        description: `Failed to save agricultural form: ${error.message}`,
         variant: "destructive",
       });
     },

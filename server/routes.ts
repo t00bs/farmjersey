@@ -172,12 +172,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/admin/agricultural-forms", isAuthenticated, async (req: any, res) => {
     try {
+      console.log("Received form data:", JSON.stringify(req.body, null, 2));
       const templateData = insertAgriculturalFormTemplateSchema.parse(req.body);
+      console.log("Parsed template data:", JSON.stringify(templateData, null, 2));
       const newTemplate = await storage.createAgriculturalFormTemplate(templateData);
       res.json(newTemplate);
     } catch (error) {
       console.error("Error creating agricultural form template:", error);
-      res.status(500).json({ message: "Failed to create agricultural form template" });
+      if (error instanceof Error) {
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+      }
+      res.status(500).json({ 
+        message: "Failed to create agricultural form template",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 

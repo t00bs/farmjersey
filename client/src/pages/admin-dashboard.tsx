@@ -388,7 +388,7 @@ function ApplicationReviewDialogContent({
               {documents.map((doc: Document) => (
                 <div key={doc.id} className="flex items-center justify-between p-2 border rounded">
                   <div>
-                    <div className="font-medium">{doc.filename}</div>
+                    <div className="font-medium">{doc.fileName}</div>
                     <div className="text-sm text-gray-500">
                       {doc.documentType} • {Math.round(doc.fileSize / 1024)} KB
                     </div>

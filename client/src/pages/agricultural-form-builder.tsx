@@ -13,8 +13,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Edit, Trash2, Save, Eye, GripVertical, FileText, Settings } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Plus, Edit, Trash2, Save, Eye, GripVertical, FileText, Settings, ArrowLeft } from "lucide-react";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import { useLocation } from "wouter";
 
 interface FormField {
   id: string;
@@ -323,6 +325,7 @@ const DEFAULT_FORM_SECTIONS: FormSection[] = [
 
 export default function AgriculturalFormBuilder() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [currentForm, setCurrentForm] = useState<AgriculturalForm>({
     title: "Agricultural Return 2025",
     description: "Annual agricultural return form",
@@ -569,13 +572,19 @@ export default function AgriculturalFormBuilder() {
   return (
     <div className="container mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Agricultural Form Builder
-          </h1>
-          <p className="text-gray-600 dark:text-gray-300 mt-2">
-            Create and edit agricultural return forms
-          </p>
+        <div className="flex items-center gap-4">
+          <Button variant="outline" onClick={() => setLocation("/admin")}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Admin
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              Agricultural Form Builder
+            </h1>
+            <p className="text-gray-600 dark:text-gray-300 mt-2">
+              Create and edit agricultural return forms
+            </p>
+          </div>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setIsPreviewMode(true)}>
@@ -601,7 +610,7 @@ export default function AgriculturalFormBuilder() {
             <CardHeader>
               <CardTitle>Form Settings</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
                 <Label htmlFor="form-title">Form Title</Label>
                 <Input
@@ -635,6 +644,22 @@ export default function AgriculturalFormBuilder() {
                     description: e.target.value
                   }))}
                 />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="form-active">Active Template</Label>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="form-active"
+                    checked={currentForm.isActive}
+                    onCheckedChange={(checked) => setCurrentForm(prev => ({
+                      ...prev,
+                      isActive: checked
+                    }))}
+                  />
+                  <Label htmlFor="form-active" className="text-sm text-gray-600">
+                    {currentForm.isActive ? "Active" : "Inactive"}
+                  </Label>
+                </div>
               </div>
             </CardContent>
           </Card>

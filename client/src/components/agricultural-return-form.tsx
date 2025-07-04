@@ -49,7 +49,7 @@ export default function AgriculturalReturnForm({ applicationId, onComplete }: Ag
     retry: false,
   });
 
-  // Get active template (most recent active one)
+  // Get template (most recent one, preferring active ones)
   useEffect(() => {
     if (templates && templates.length > 0) {
       const activeTemplate = templates
@@ -58,6 +58,11 @@ export default function AgriculturalReturnForm({ applicationId, onComplete }: Ag
       
       if (activeTemplate) {
         setSelectedTemplate(activeTemplate);
+      } else {
+        // If no active template, use the most recent one
+        const mostRecentTemplate = templates
+          .sort((a, b) => b.year - a.year)[0];
+        setSelectedTemplate(mostRecentTemplate);
       }
     }
   }, [templates]);

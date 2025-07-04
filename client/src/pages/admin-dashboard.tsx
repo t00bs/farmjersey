@@ -12,6 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Eye, FileText, Calendar, User, AlertTriangle, CheckCircle, FormInput } from "lucide-react";
 import type { GrantApplication, AgriculturalReturn, Document } from "@shared/schema";
+import Sidebar from "@/components/sidebar";
+import TopBar from "@/components/top-bar";
 
 export default function AdminDashboard() {
   const { toast } = useToast();
@@ -32,7 +34,7 @@ export default function AdminDashboard() {
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
-      return await apiRequest(`/api/admin/applications/${id}/status`, "PATCH", { status });
+      return await apiRequest("PATCH", `/api/admin/applications/${id}/status`, { status });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/applications"] });
@@ -51,20 +53,18 @@ export default function AdminDashboard() {
   });
 
   const getStatusBadge = (status: string) => {
-    const variants = {
-      draft: { variant: "secondary" as const, label: "Draft" },
-      in_progress: { variant: "default" as const, label: "In Progress" },
-      submitted: { variant: "outline" as const, label: "Submitted" },
-      approved: { variant: "default" as const, label: "Approved" },
-      rejected: { variant: "destructive" as const, label: "Rejected" },
-    };
-    
-    const config = variants[status as keyof typeof variants] || variants.draft;
-    
-    if (status === "approved") {
+    const config = {
+      draft: { label: "Draft", variant: "secondary" as const },
+      in_progress: { label: "In Progress", variant: "default" as const },
+      submitted: { label: "Submitted", variant: "outline" as const },
+      approved: { label: "Approved", variant: "default" as const },
+      rejected: { label: "Rejected", variant: "destructive" as const },
+    }[status];
+
+    if (!config) {
       return (
-        <Badge variant={config.variant} className="bg-green-500 hover:bg-green-600">
-          {config.label}
+        <Badge variant="secondary">
+          Unknown
         </Badge>
       );
     }
@@ -102,166 +102,201 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Admin Dashboard
-          </h1>
-          <p className="text-gray-600 dark:text-gray-300 mt-2">
-            Review and manage grant applications
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => window.location.href = '/admin/form-builder'}>
-            <FormInput className="h-4 w-4 mr-2" />
-            Form Builder
-          </Button>
-        </div>
-      </div>
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+      <Sidebar />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <TopBar />
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-900">
+          <div className="container mx-auto p-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  Admin Dashboard
+                </h1>
+                <p className="text-gray-600 dark:text-gray-300 mt-2">
+                  Review and manage grant applications
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => window.location.href = '/admin/form-builder'}>
+                  <FormInput className="h-4 w-4 mr-2" />
+                  Form Builder
+                </Button>
+              </div>
+            </div>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Applications</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-          </CardContent>
-        </Card>
+            {/* Statistics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Applications</CardTitle>
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.total}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.pending}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Approved</CardTitle>
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.approved}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Rejected</CardTitle>
+                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.rejected}</div>
+                </CardContent>
+              </Card>
+            </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.pending}</div>
-          </CardContent>
-        </Card>
+            {/* Filter Controls */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Filter Applications</CardTitle>
+                <CardDescription>Filter applications by status</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Applications</SelectItem>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="submitted">Submitted</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Approved</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.approved}</div>
-          </CardContent>
-        </Card>
+            {/* Applications Table */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Applications</CardTitle>
+                <CardDescription>
+                  {statusFilter === "all" ? "All applications" : `Applications with status: ${statusFilter}`}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>User ID</TableHead>
+                      <TableHead>Year</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Progress</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {applications.map((application: GrantApplication) => (
+                      <TableRow key={application.id}>
+                        <TableCell>#{application.id}</TableCell>
+                        <TableCell>{application.userId}</TableCell>
+                        <TableCell>{application.year}</TableCell>
+                        <TableCell>{getStatusBadge(application.status)}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Progress value={application.progressPercentage} className="w-16" />
+                            <span className="text-sm">{application.progressPercentage}%</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {application.createdAt ? new Date(application.createdAt).toLocaleDateString() : 'N/A'}
+                        </TableCell>
+                        <TableCell>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSelectedApplication(application)}
+                              >
+                                <Eye className="h-4 w-4 mr-2" />
+                                Review
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                              <DialogHeader>
+                                <DialogTitle>
+                                  Application #{selectedApplication?.id} Review
+                                </DialogTitle>
+                                <DialogDescription>
+                                  Review application details and update status
+                                </DialogDescription>
+                              </DialogHeader>
+                              {selectedApplication && (
+                                <ApplicationReviewDialogContent 
+                                  application={selectedApplication}
+                                  onStatusUpdate={(status) => {
+                                    updateStatusMutation.mutate({
+                                      id: selectedApplication.id,
+                                      status,
+                                    });
+                                  }}
+                                />
+                              )}
+                            </DialogContent>
+                          </Dialog>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Rejected</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.rejected}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Applications</CardTitle>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Applications</SelectItem>
-                <SelectItem value="submitted">Submitted</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Need Help Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5" />
+                  Need Help?
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 dark:text-gray-300 mb-4">
+                  If you need assistance with application reviews or have questions about the system, please contact our support team.
+                </p>
+                <div className="flex gap-4">
+                  <Button variant="outline" onClick={() => window.open('mailto:support@farmjersey.je')}>
+                    Email Support
+                  </Button>
+                  <Button variant="outline">
+                    View Documentation
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Application ID</TableHead>
-                <TableHead>User ID</TableHead>
-                <TableHead>Year</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Progress</TableHead>
-                <TableHead>Submitted</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {applications.map((application: GrantApplication) => (
-                <TableRow key={application.id}>
-                  <TableCell className="font-medium">#{application.id}</TableCell>
-                  <TableCell>{application.userId}</TableCell>
-                  <TableCell>{application.year}</TableCell>
-                  <TableCell>{getStatusBadge(application.status)}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      <Progress value={application.progressPercentage} className="w-16" />
-                      <span className="text-sm text-muted-foreground">
-                        {application.progressPercentage}%
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {application.submittedAt 
-                      ? new Date(application.submittedAt).toLocaleDateString()
-                      : "Not submitted"
-                    }
-                  </TableCell>
-                  <TableCell>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedApplication(application)}
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          Review
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                        <DialogHeader>
-                          <DialogTitle>
-                            Application #{selectedApplication?.id} Review
-                          </DialogTitle>
-                          <DialogDescription>
-                            Review application details and update status
-                          </DialogDescription>
-                        </DialogHeader>
-                        {selectedApplication && (
-                          <ApplicationReviewDialog
-                            application={selectedApplication}
-                            onStatusUpdate={(status) => {
-                              updateStatusMutation.mutate({
-                                id: selectedApplication.id,
-                                status,
-                              });
-                            }}
-                          />
-                        )}
-                      </DialogContent>
-                    </Dialog>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+        </main>
+      </div>
     </div>
   );
 }
 
-function ApplicationReviewDialog({ 
+function ApplicationReviewDialogContent({ 
   application, 
   onStatusUpdate 
 }: { 
@@ -340,12 +375,6 @@ function ApplicationReviewDialog({
                   Data available (JSON format)
                 </div>
               </div>
-              <div>
-                <strong>Land Usage:</strong>
-                <div className="mt-1 text-sm bg-gray-100 dark:bg-gray-800 p-2 rounded">
-                  Data available (JSON format)
-                </div>
-              </div>
             </div>
           ) : (
             <p className="text-gray-500">No agricultural return data available</p>
@@ -354,12 +383,12 @@ function ApplicationReviewDialog({
 
         <TabsContent value="documents" className="space-y-4">
           <h4 className="font-semibold">Uploaded Documents</h4>
-          {Array.isArray(documents) && documents.length > 0 ? (
+          {documents && documents.length > 0 ? (
             <div className="space-y-2">
               {documents.map((doc: Document) => (
-                <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg">
+                <div key={doc.id} className="flex items-center justify-between p-2 border rounded">
                   <div>
-                    <div className="font-medium">{doc.fileName}</div>
+                    <div className="font-medium">{doc.filename}</div>
                     <div className="text-sm text-gray-500">
                       {doc.documentType} • {Math.round(doc.fileSize / 1024)} KB
                     </div>

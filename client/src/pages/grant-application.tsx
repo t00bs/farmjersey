@@ -45,11 +45,16 @@ export default function GrantApplication() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: application, isLoading: applicationLoading } = useQuery<GrantApplication>({
+  const { data: applicationData, isLoading: applicationLoading } = useQuery<GrantApplication[] | GrantApplication>({
     queryKey: ["/api/grant-applications", applicationId],
     enabled: !!applicationId,
     retry: false,
   });
+  
+  // Handle both array and single object responses
+  const application = Array.isArray(applicationData) ? applicationData[0] : applicationData;
+  
+
 
   // Save progress mutation
   const saveProgressMutation = useMutation({
@@ -138,35 +143,39 @@ export default function GrantApplication() {
   };
 
   // Helper functions to determine section status
-  const getAgriculturalReturnStatus = () => {
+  const getAgriculturalReturnStatus = (): "not_started" | "in_progress" | "completed" => {
     if (!application) return "not_started";
+
     if (application.agriculturalReturnCompleted) return "completed";
-    // If we have progress > 0 but not completed, it means in progress
-    if (application.progressPercentage > 0) return "in_progress";
+    // Check if we have any agricultural progress - even if not fully completed
+    if (application.progressPercentage && application.progressPercentage >= 25) return "in_progress"; // Each section is 25%
     return "not_started";
   };
 
-  const getLandDeclarationStatus = () => {
+  const getLandDeclarationStatus = (): "not_started" | "in_progress" | "completed" => {
     if (!application) return "not_started";
+
     if (application.landDeclarationCompleted) return "completed";
-    // Check if there are any land declaration documents uploaded
-    if (application.progressPercentage > 0 && !application.landDeclarationCompleted) return "in_progress";
+    // Check if we have documents uploaded but not marked complete
+    if (application.progressPercentage >= 50 && !application.landDeclarationCompleted) return "in_progress";
     return "not_started";
   };
 
-  const getConsentFormStatus = () => {
+  const getConsentFormStatus = (): "not_started" | "in_progress" | "completed" => {
     if (!application) return "not_started";
+
     if (application.consentFormCompleted) return "completed";
     // Check if there's partial signature data
     if (application.digitalSignature && !application.consentFormCompleted) return "in_progress";
     return "not_started";
   };
 
-  const getSupportingDocsStatus = () => {
+  const getSupportingDocsStatus = (): "not_started" | "in_progress" | "completed" => {
     if (!application) return "not_started";
+
     if (application.supportingDocsCompleted) return "completed";
-    // Check if there are any supporting documents uploaded
-    if (application.progressPercentage > 0 && !application.supportingDocsCompleted) return "in_progress";
+    // Check if we have documents uploaded but not marked complete
+    if (application.progressPercentage >= 75 && !application.supportingDocsCompleted) return "in_progress";
     return "not_started";
   };
 

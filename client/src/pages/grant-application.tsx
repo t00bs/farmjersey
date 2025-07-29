@@ -137,6 +137,39 @@ export default function GrantApplication() {
     setUploadModalOpen(true);
   };
 
+  // Helper functions to determine section status
+  const getAgriculturalReturnStatus = () => {
+    if (!application) return "not_started";
+    if (application.agriculturalReturnCompleted) return "completed";
+    // If we have progress > 0 but not completed, it means in progress
+    if (application.progressPercentage > 0) return "in_progress";
+    return "not_started";
+  };
+
+  const getLandDeclarationStatus = () => {
+    if (!application) return "not_started";
+    if (application.landDeclarationCompleted) return "completed";
+    // Check if there are any land declaration documents uploaded
+    if (application.progressPercentage > 0 && !application.landDeclarationCompleted) return "in_progress";
+    return "not_started";
+  };
+
+  const getConsentFormStatus = () => {
+    if (!application) return "not_started";
+    if (application.consentFormCompleted) return "completed";
+    // Check if there's partial signature data
+    if (application.digitalSignature && !application.consentFormCompleted) return "in_progress";
+    return "not_started";
+  };
+
+  const getSupportingDocsStatus = () => {
+    if (!application) return "not_started";
+    if (application.supportingDocsCompleted) return "completed";
+    // Check if there are any supporting documents uploaded
+    if (application.progressPercentage > 0 && !application.supportingDocsCompleted) return "in_progress";
+    return "not_started";
+  };
+
   const handleSign = () => {
     setSignatureModalOpen(true);
   };
@@ -225,7 +258,7 @@ export default function GrantApplication() {
             <ApplicationSection
               title="Agricultural Return"
               description="Submit your annual agricultural return with crop details and land usage"
-              completed={Boolean(application?.agriculturalReturnCompleted)}
+              status={getAgriculturalReturnStatus()}
               estimatedTime="15 minutes"
               primaryAction={{
                 label: application?.agriculturalReturnCompleted ? "Edit Return" : "Start Return",
@@ -237,7 +270,7 @@ export default function GrantApplication() {
             <ApplicationSection
               title="Land Declaration"
               description="Download template and submit land ownership and usage declarations"
-              completed={Boolean(application?.landDeclarationCompleted)}
+              status={getLandDeclarationStatus()}
               iconType="download"
               requiresTemplate
               primaryAction={{
@@ -254,7 +287,7 @@ export default function GrantApplication() {
             <ApplicationSection
               title="Declaration and Consent Form"
               description="Digital signature required for terms and conditions agreement"
-              completed={Boolean(application?.consentFormCompleted)}
+              status={getConsentFormStatus()}
               iconType="signature"
               requiresSignature
               primaryAction={{
@@ -267,7 +300,7 @@ export default function GrantApplication() {
             <ApplicationSection
               title="Supporting Documentation"
               description="Upload additional documents like land certificates, bank statements"
-              completed={Boolean(application?.supportingDocsCompleted)}
+              status={getSupportingDocsStatus()}
               iconType="upload"
               acceptedFormats="PDF, JPG, PNG accepted"
               primaryAction={{

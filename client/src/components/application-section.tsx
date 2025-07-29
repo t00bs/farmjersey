@@ -1,11 +1,13 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Clock, Download, Signature, Upload } from "lucide-react";
+import { CheckCircle, Clock, Download, Signature, Upload, AlertCircle } from "lucide-react";
+
+type SectionStatus = "not_started" | "in_progress" | "completed";
 
 interface ApplicationSectionProps {
   title: string;
   description: string;
-  completed: boolean;
+  status: SectionStatus;
   estimatedTime?: string;
   iconType?: "clock" | "download" | "signature" | "upload";
   requiresTemplate?: boolean;
@@ -25,7 +27,7 @@ interface ApplicationSectionProps {
 export default function ApplicationSection({
   title,
   description,
-  completed,
+  status,
   estimatedTime,
   iconType = "clock",
   requiresTemplate = false,
@@ -48,18 +50,27 @@ export default function ApplicationSection({
   };
 
   const getStatusIcon = () => {
-    if (completed) {
-      return (
-        <div className="w-8 h-8 bg-success-custom/10 rounded-full flex items-center justify-center">
-          <CheckCircle className="text-success-custom text-sm" />
-        </div>
-      );
+    switch (status) {
+      case "completed":
+        return (
+          <div className="w-8 h-8 bg-success-custom/10 rounded-full flex items-center justify-center">
+            <CheckCircle className="text-success-custom w-5 h-5" />
+          </div>
+        );
+      case "in_progress":
+        return (
+          <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+            <AlertCircle className="text-orange-600 w-5 h-5" />
+          </div>
+        );
+      case "not_started":
+      default:
+        return (
+          <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+            <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+          </div>
+        );
     }
-    return (
-      <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-      </div>
-    );
   };
 
   const getInfoText = () => {

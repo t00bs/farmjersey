@@ -248,7 +248,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/agricultural-forms/response", isAuthenticated, async (req: any, res) => {
     try {
       const responseData = insertAgriculturalFormResponseSchema.parse(req.body);
+      
+      // Verify user owns the application
+      const application = await storage.getGrantApplication(responseData.applicationId);
+      if (!application || application.userId !== req.user.claims.sub) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
       const newResponse = await storage.createAgriculturalFormResponse(responseData);
+      
+      // Update application progress
+      await storage.updateGrantApplication(responseData.applicationId, {
+        agriculturalReturnCompleted: true,
+        progressPercentage: calculateProgress({
+          ...application,
+          agriculturalReturnCompleted: true,
+        }),
+      });
+      
       res.json(newResponse);
     } catch (error) {
       console.error("Error creating agricultural form response:", error);
@@ -260,10 +277,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const updates = insertAgriculturalFormResponseSchema.partial().parse(req.body);
+      
+      // Get existing response to verify ownership
+      const existingResponse = await storage.getAgriculturalFormResponseById(parseInt(id));
+      if (!existingResponse) {
+        return res.status(404).json({ message: "Agricultural form response not found" });
+      }
+      
+      // Verify user owns the application
+      const application = await storage.getGrantApplication(existingResponse.applicationId);
+      if (!application || application.userId !== req.user.claims.sub) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
       const updatedResponse = await storage.updateAgriculturalFormResponse(parseInt(id), updates);
       if (!updatedResponse) {
         return res.status(404).json({ message: "Agricultural form response not found" });
       }
+      
+      // Update application progress
+      await storage.updateGrantApplication(existingResponse.applicationId, {
+        agriculturalReturnCompleted: true,
+        progressPercentage: calculateProgress({
+          ...application,
+          agriculturalReturnCompleted: true,
+        }),
+      });
+      
       res.json(updatedResponse);
     } catch (error) {
       console.error("Error updating agricultural form response:", error);

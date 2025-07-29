@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useRoute } from "wouter";
 import type { GrantApplication } from "@shared/schema";
 import Sidebar from "@/components/sidebar";
@@ -48,6 +49,83 @@ export default function GrantApplication() {
     queryKey: ["/api/grant-applications", applicationId],
     enabled: !!applicationId,
     retry: false,
+  });
+
+  // Save progress mutation
+  const saveProgressMutation = useMutation({
+    mutationFn: async () => {
+      if (!applicationId) throw new Error("No application ID");
+      
+      // Just trigger a save to update any cached progress
+      return await apiRequest("PATCH", `/api/grant-applications/${applicationId}`, {
+        // Send current timestamp to trigger progress recalculation
+        lastSaved: new Date().toISOString()
+      });
+    },
+    onSuccess: () => {
+      // Invalidate and refetch the application data
+      queryClient.invalidateQueries({ queryKey: ["/api/grant-applications", applicationId] });
+      toast({
+        title: "Progress Saved",
+        description: "Your application progress has been saved successfully.",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Save Failed",
+        description: "Failed to save your progress. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Submit application mutation
+  const submitApplicationMutation = useMutation({
+    mutationFn: async () => {
+      if (!applicationId) throw new Error("No application ID");
+      
+      return await apiRequest("PATCH", `/api/grant-applications/${applicationId}`, {
+        status: "submitted",
+        submittedAt: new Date().toISOString()
+      });
+    },
+    onSuccess: () => {
+      // Invalidate and refetch the application data
+      queryClient.invalidateQueries({ queryKey: ["/api/grant-applications", applicationId] });
+      toast({
+        title: "Application Submitted",
+        description: "Your grant application has been submitted successfully.",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Submission Failed",
+        description: "Failed to submit your application. Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const handleDownloadTemplate = () => {
@@ -229,30 +307,23 @@ export default function GrantApplication() {
               <div className="flex space-x-3">
                 <Button 
                   variant="outline"
-                  onClick={() => {
-                    toast({
-                      title: "Progress Saved",
-                      description: "Your application progress has been saved.",
-                    });
-                  }}
+                  onClick={() => saveProgressMutation.mutate()}
+                  disabled={saveProgressMutation.isPending}
                 >
                   <Save className="w-4 h-4 mr-2" />
-                  Save Progress
+                  {saveProgressMutation.isPending ? "Saving..." : "Save Progress"}
                 </Button>
                 <Button 
-                  disabled={!isApplicationComplete}
+                  disabled={!isApplicationComplete || submitApplicationMutation.isPending}
                   className={isApplicationComplete ? "bg-success-custom hover:bg-success-custom/90 text-white" : ""}
                   onClick={() => {
                     if (isApplicationComplete) {
-                      toast({
-                        title: "Coming Soon",
-                        description: "Application submission will be available soon.",
-                      });
+                      submitApplicationMutation.mutate();
                     }
                   }}
                 >
                   <Send className="w-4 h-4 mr-2" />
-                  Submit Application
+                  {submitApplicationMutation.isPending ? "Submitting..." : "Submit Application"}
                 </Button>
               </div>
             </div>
@@ -263,8 +334,8 @@ export default function GrantApplication() {
             <InfoIcon className="h-4 w-4 text-secondary-custom" />
             <AlertDescription>
               <span className="font-medium">Need Help?</span> Contact our support team at{" "}
-              <a href="mailto:support@rss.gov" className="text-secondary-custom hover:underline">
-                support@rss.gov
+              <a href="mailto:support@farmjersey.je" className="text-secondary-custom hover:underline">
+                support@farmjersey.je
               </a>{" "}
               or call 1-800-RSS-HELP
             </AlertDescription>

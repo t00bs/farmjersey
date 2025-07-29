@@ -57,6 +57,20 @@ export default function AgriculturalReturnForm({ applicationId, onComplete }: Ag
   // Fetch existing response if template is selected
   const { data: responseData, isLoading: responseLoading } = useQuery({
     queryKey: ["/api/agricultural-forms", selectedTemplate?.id, "response", applicationId],
+    queryFn: async () => {
+      if (!selectedTemplate) return null;
+      try {
+        const response = await fetch(`/api/agricultural-forms/${selectedTemplate.id}/response/${applicationId}`);
+        if (response.status === 404) {
+          return null; // No existing response
+        }
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      } catch (error) {
+        console.log("No existing response found:", error);
+        return null;
+      }
+    },
     enabled: !!selectedTemplate,
     retry: false,
   });
@@ -82,13 +96,22 @@ export default function AgriculturalReturnForm({ applicationId, onComplete }: Ag
   // Set existing response and populate form
   useEffect(() => {
     if (responseData && typeof responseData === 'object' && 'responses' in responseData) {
+      console.log("Found existing response:", responseData);
       setExistingResponse(responseData);
       // Populate form with existing data
       if ((responseData as any).responses) {
         form.reset((responseData as any).responses);
       }
+    } else {
+      console.log("No existing response found, clearing state");
+      setExistingResponse(null);
     }
   }, [responseData, form]);
+
+  // Clear existing response when template changes
+  useEffect(() => {
+    setExistingResponse(null);
+  }, [selectedTemplate]);
 
   const saveMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -110,13 +133,29 @@ export default function AgriculturalReturnForm({ applicationId, onComplete }: Ag
         return await apiRequest("POST", "/api/agricultural-forms/response", payload);
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Save successful:", data);
+      // Update existing response state if this was a create operation
+      if (!existingResponse && data) {
+        setExistingResponse(data);
+      }
+      
+      // Invalidate and refetch the query to ensure fresh data
+      queryClient.invalidateQueries({
+        queryKey: ["/api/agricultural-forms", selectedTemplate?.id, "response", applicationId]
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/grant-applications"]
+      });
+      
       toast({
         title: "Agricultural Return Saved",
         description: "Your agricultural return form has been saved successfully.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/grant-applications", applicationId] });
-      onComplete();
+      
+      if (onComplete) {
+        onComplete();
+      }
     },
     onError: (error) => {
       if (isUnauthorizedError(error)) {

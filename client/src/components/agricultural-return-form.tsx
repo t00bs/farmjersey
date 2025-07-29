@@ -42,10 +42,22 @@ interface FormSection {
 export default function AgriculturalReturnForm({ applicationId, onComplete }: AgriculturalReturnFormProps) {
   const { toast } = useToast();
   const [selectedTemplate, setSelectedTemplate] = useState<AgriculturalFormTemplate | null>(null);
+  const [existingResponse, setExistingResponse] = useState<any>(null);
 
   // Fetch available form templates
   const { data: templates, isLoading: templatesLoading } = useQuery<AgriculturalFormTemplate[]>({
     queryKey: ["/api/admin/agricultural-forms"],
+    retry: false,
+  });
+
+  const form = useForm<Record<string, any>>({
+    defaultValues: {},
+  });
+
+  // Fetch existing response if template is selected
+  const { data: responseData, isLoading: responseLoading } = useQuery({
+    queryKey: ["/api/agricultural-forms", selectedTemplate?.id, "response", applicationId],
+    enabled: !!selectedTemplate,
     retry: false,
   });
 
@@ -67,19 +79,36 @@ export default function AgriculturalReturnForm({ applicationId, onComplete }: Ag
     }
   }, [templates]);
 
-  const form = useForm<Record<string, any>>({
-    defaultValues: {},
-  });
+  // Set existing response and populate form
+  useEffect(() => {
+    if (responseData && typeof responseData === 'object' && 'responses' in responseData) {
+      setExistingResponse(responseData);
+      // Populate form with existing data
+      if ((responseData as any).responses) {
+        form.reset((responseData as any).responses);
+      }
+    }
+  }, [responseData, form]);
 
   const saveMutation = useMutation({
     mutationFn: async (data: any) => {
-      const payload = {
-        templateId: selectedTemplate!.id,
-        applicationId,
-        responses: data,
-      };
-
-      return await apiRequest("POST", "/api/agricultural-forms/response", payload);
+      if (existingResponse) {
+        // Update existing response
+        const payload = {
+          responses: data,
+          isComplete: true,
+        };
+        return await apiRequest("PUT", `/api/agricultural-forms/response/${existingResponse.id}`, payload);
+      } else {
+        // Create new response
+        const payload = {
+          templateId: selectedTemplate!.id,
+          applicationId,
+          responses: data,
+          isComplete: true,
+        };
+        return await apiRequest("POST", "/api/agricultural-forms/response", payload);
+      }
     },
     onSuccess: () => {
       toast({
@@ -290,7 +319,7 @@ export default function AgriculturalReturnForm({ applicationId, onComplete }: Ag
     }
   };
 
-  if (templatesLoading) {
+  if (templatesLoading || responseLoading) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-8">

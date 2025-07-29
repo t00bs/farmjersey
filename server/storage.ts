@@ -49,6 +49,7 @@ export interface IStorage {
   // Agricultural Form Template operations
   createAgriculturalFormTemplate(template: InsertAgriculturalFormTemplate): Promise<AgriculturalFormTemplate>;
   getAgriculturalFormTemplates(): Promise<AgriculturalFormTemplate[]>;
+  getActiveAgriculturalFormTemplates(): Promise<AgriculturalFormTemplate[]>;
   getAgriculturalFormTemplate(id: number): Promise<AgriculturalFormTemplate | undefined>;
   updateAgriculturalFormTemplate(id: number, updates: Partial<InsertAgriculturalFormTemplate>): Promise<AgriculturalFormTemplate | undefined>;
   deleteAgriculturalFormTemplate(id: number): Promise<void>;
@@ -193,6 +194,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(agriculturalFormTemplates)
       .orderBy(desc(agriculturalFormTemplates.createdAt));
+  }
+
+  async getActiveAgriculturalFormTemplates(): Promise<AgriculturalFormTemplate[]> {
+    return await db
+      .select()
+      .from(agriculturalFormTemplates)
+      .where(eq(agriculturalFormTemplates.isActive, true))
+      .orderBy(desc(agriculturalFormTemplates.year));
   }
 
   async getAgriculturalFormTemplate(id: number): Promise<AgriculturalFormTemplate | undefined> {

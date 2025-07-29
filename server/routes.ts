@@ -234,6 +234,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/agricultural-forms/:templateId/response/:applicationId", isAuthenticated, async (req: any, res) => {
     try {
       const { templateId, applicationId } = req.params;
+      
+      // Verify user owns the application
+      const application = await storage.getGrantApplication(parseInt(applicationId));
+      if (!application || application.userId !== req.user.claims.sub) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
       const response = await storage.getAgriculturalFormResponse(parseInt(templateId), parseInt(applicationId));
       if (!response) {
         return res.status(404).json({ message: "Agricultural form response not found" });
@@ -258,12 +265,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newResponse = await storage.createAgriculturalFormResponse(responseData);
       
       // Update application progress
+      const progressPercentage = await calculateProgress({
+        ...application,
+        agriculturalReturnCompleted: true,
+      });
+      
       await storage.updateGrantApplication(responseData.applicationId, {
         agriculturalReturnCompleted: true,
-        progressPercentage: calculateProgress({
-          ...application,
-          agriculturalReturnCompleted: true,
-        }),
+        progressPercentage,
       });
       
       res.json(newResponse);
@@ -296,12 +305,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Update application progress
+      const progressPercentage = await calculateProgress({
+        ...application,
+        agriculturalReturnCompleted: true,
+      });
+      
       await storage.updateGrantApplication(existingResponse.applicationId, {
         agriculturalReturnCompleted: true,
-        progressPercentage: calculateProgress({
-          ...application,
-          agriculturalReturnCompleted: true,
-        }),
+        progressPercentage,
       });
       
       res.json(updatedResponse);
@@ -397,12 +408,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const agriculturalReturn = await storage.createAgriculturalReturn(returnData);
       
       // Update application progress
+      const progressPercentage = await calculateProgress({
+        ...application,
+        agriculturalReturnCompleted: true,
+      });
+      
       await storage.updateGrantApplication(returnData.applicationId, {
         agriculturalReturnCompleted: true,
-        progressPercentage: calculateProgress({
-          ...application,
-          agriculturalReturnCompleted: true,
-        }),
+        progressPercentage,
       });
       
       res.json(agriculturalReturn);
@@ -461,7 +474,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (documentType === "land_declaration") {
         await storage.updateGrantApplication(applicationId, {
           landDeclarationCompleted: true,
-          progressPercentage: calculateProgress({
+          progressPercentage: calculateProgressSync({
             ...application,
             landDeclarationCompleted: true,
           }),
@@ -469,7 +482,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else if (documentType === "supporting_doc") {
         await storage.updateGrantApplication(applicationId, {
           supportingDocsCompleted: true,
-          progressPercentage: calculateProgress({
+          progressPercentage: calculateProgressSync({
             ...application,
             supportingDocsCompleted: true,
           }),
@@ -534,7 +547,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedApplication = await storage.updateGrantApplication(applicationId, {
         digitalSignature: signature,
         consentFormCompleted: true,
-        progressPercentage: calculateProgress({
+        progressPercentage: calculateProgressSync({
           ...application,
           consentFormCompleted: true,
         }),
@@ -552,7 +565,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 }
 
 // Helper functions
-function calculateProgress(application: any): number {
+async function calculateProgress(application: any): Promise<number> {
+  let completed = 0;
+  const total = 4; // Total sections
+  
+  // Check if agricultural return is completed via form response
+  // Get the active template first
+  const activeTemplates = await storage.getActiveAgriculturalFormTemplates();
+  if (activeTemplates.length > 0) {
+    const mostRecentTemplate = activeTemplates.sort((a, b) => b.year - a.year)[0];
+    const agriculturalResponse = await storage.getAgriculturalFormResponse(mostRecentTemplate.id, application.id);
+    if (agriculturalResponse && agriculturalResponse.isComplete) completed++;
+  } else {
+    // Fallback to old system if no templates available
+    if (application.agriculturalReturnCompleted) completed++;
+  }
+  
+  if (application.landDeclarationCompleted) completed++;
+  if (application.consentFormCompleted) completed++;
+  if (application.supportingDocsCompleted) completed++;
+  
+  return Math.round((completed / total) * 100);
+}
+
+function calculateProgressSync(application: any): number {
   let completed = 0;
   const total = 4; // Total sections
   

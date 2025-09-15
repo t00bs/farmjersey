@@ -101,8 +101,7 @@ export default function GrantApplication() {
       if (!applicationId) throw new Error("No application ID");
       
       return await apiRequest("PATCH", `/api/grant-applications/${applicationId}`, {
-        status: "submitted",
-        submittedAt: new Date().toISOString()
+        status: "submitted"
       });
     },
     onSuccess: () => {

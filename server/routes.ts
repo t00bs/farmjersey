@@ -386,6 +386,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const updates = req.body;
+      
+      // Handle submission timestamp properly
+      if (updates.status === "submitted") {
+        updates.submittedAt = new Date();
+      }
+      
       const updatedApplication = await storage.updateGrantApplication(applicationId, updates);
       res.json(updatedApplication);
     } catch (error) {

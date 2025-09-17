@@ -62,6 +62,7 @@ export interface IStorage {
   // Agricultural Form Response operations
   createAgriculturalFormResponse(response: InsertAgriculturalFormResponse): Promise<AgriculturalFormResponse>;
   getAgriculturalFormResponse(templateId: number, applicationId: number): Promise<AgriculturalFormResponse | undefined>;
+  getAgriculturalFormResponseByApplication(applicationId: number): Promise<AgriculturalFormResponse | undefined>;
   getAgriculturalFormResponseById(id: number): Promise<AgriculturalFormResponse | undefined>;
   updateAgriculturalFormResponse(id: number, updates: Partial<InsertAgriculturalFormResponse>): Promise<AgriculturalFormResponse | undefined>;
 }
@@ -337,6 +338,16 @@ export class DatabaseStorage implements IStorage {
           eq(agriculturalFormResponses.applicationId, applicationId)
         )
       );
+    return response;
+  }
+
+  async getAgriculturalFormResponseByApplication(applicationId: number): Promise<AgriculturalFormResponse | undefined> {
+    const [response] = await db
+      .select()
+      .from(agriculturalFormResponses)
+      .where(eq(agriculturalFormResponses.applicationId, applicationId))
+      .orderBy(desc(agriculturalFormResponses.createdAt))
+      .limit(1);
     return response;
   }
 

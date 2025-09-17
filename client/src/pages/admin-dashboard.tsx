@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Eye, FileText, Calendar, User, AlertTriangle, CheckCircle, FormInput } from "lucide-react";
-import type { GrantApplication, AgriculturalReturn, Document, ApplicationWithUserData } from "@shared/schema";
+import type { GrantApplication, AgriculturalReturn, Document, ApplicationWithUserData, AgriculturalFormResponse } from "@shared/schema";
 import Sidebar from "@/components/sidebar";
 import TopBar from "@/components/top-bar";
 
@@ -314,8 +314,9 @@ function ApplicationReviewDialogContent({
     queryKey: ["/api/applications", application.id, "documents"],
   });
 
-  const { data: agriculturalReturn } = useQuery<AgriculturalReturn | null>({
-    queryKey: ["/api/applications", application.id, "agricultural-return"],
+  const { data: agriculturalReturn } = useQuery<AgriculturalFormResponse | null>({
+    queryKey: ["/api/admin/applications", application.id, "agricultural-response"],
+    retry: false,
   });
 
   return (
@@ -371,15 +372,26 @@ function ApplicationReviewDialogContent({
             <div className="space-y-4">
               <h4 className="font-semibold">Agricultural Return Details</h4>
               <div className="grid grid-cols-2 gap-4 text-sm">
-                <div><strong>Total Acres:</strong> {agriculturalReturn.totalAcres || 'Not specified'}</div>
                 <div><strong>Application ID:</strong> {agriculturalReturn.applicationId}</div>
+                <div><strong>Template ID:</strong> {agriculturalReturn.templateId}</div>
+                <div><strong>Status:</strong> {agriculturalReturn.isComplete ? 'Complete' : 'Incomplete'}</div>
+                <div><strong>Submitted:</strong> {agriculturalReturn.submittedAt ? new Date(agriculturalReturn.submittedAt).toLocaleDateString() : 'Draft'}</div>
                 <div><strong>Created:</strong> {agriculturalReturn.createdAt ? new Date(agriculturalReturn.createdAt).toLocaleDateString() : 'Not available'}</div>
                 <div><strong>Updated:</strong> {agriculturalReturn.updatedAt ? new Date(agriculturalReturn.updatedAt).toLocaleDateString() : 'Not available'}</div>
               </div>
               <div>
-                <strong>Crop Data:</strong>
-                <div className="mt-1 text-sm bg-gray-100 dark:bg-gray-800 p-2 rounded">
-                  Data available (JSON format)
+                <h5 className="font-medium">Form Responses:</h5>
+                <div className="mt-2 space-y-2">
+                  {agriculturalReturn.responses && typeof agriculturalReturn.responses === 'object' ? (
+                    Object.entries(agriculturalReturn.responses).map(([key, value]) => (
+                      <div key={key} className="flex justify-between py-1 border-b border-gray-200 dark:border-gray-700">
+                        <span className="font-medium capitalize">{key.replace(/-/g, ' ')}:</span>
+                        <span className="text-gray-700 dark:text-gray-300">{value as string}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-500">No response data available</p>
+                  )}
                 </div>
               </div>
             </div>

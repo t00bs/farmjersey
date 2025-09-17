@@ -222,6 +222,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoint to get agricultural form responses for an application
+  app.get("/api/admin/applications/:id/agricultural-response", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const applicationId = parseInt(id);
+      
+      // Get the latest agricultural form response for this application
+      const response = await storage.getAgriculturalFormResponseByApplication(applicationId);
+      
+      if (!response) {
+        return res.status(404).json({ message: "No agricultural form response found" });
+      }
+      
+      res.json(response);
+    } catch (error) {
+      console.error("Error fetching agricultural form response for admin:", error);
+      res.status(500).json({ message: "Failed to fetch agricultural form response" });
+    }
+  });
+
   // Agricultural Form Template routes (Admin only)
   app.get("/api/admin/agricultural-forms", isAuthenticated, isAdmin, async (req: any, res) => {
     try {

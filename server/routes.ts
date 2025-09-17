@@ -32,12 +32,6 @@ function isAdmin(req: any, res: any, next: any) {
     const userEmail = req.user?.claims?.email;
     const adminEmails = process.env.ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
     
-    // Debug logging to help troubleshoot admin access
-    console.log("Admin check - User email:", userEmail);
-    console.log("Admin check - ADMIN_EMAILS env var:", process.env.ADMIN_EMAILS);
-    console.log("Admin check - Parsed admin emails:", adminEmails);
-    console.log("Admin check - Email match:", adminEmails.includes(userEmail));
-    
     if (!userEmail || !adminEmails.includes(userEmail)) {
       return res.status(403).json({ 
         message: "Access denied. Admin privileges required." 

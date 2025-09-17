@@ -50,7 +50,7 @@ export default function TopBar() {
       <div className="flex items-center justify-between">
         {/* Breadcrumb Navigation */}
         <Breadcrumb>
-          <BreadcrumbList>
+          <BreadcrumbList className="gap-2">
             {breadcrumbs.map((breadcrumb, index) => (
               <div key={index} className="flex items-center">
                 {index > 0 && <BreadcrumbSeparator />}

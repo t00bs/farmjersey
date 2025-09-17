@@ -337,15 +337,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/grant-applications", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      const currentYear = new Date().getFullYear();
+      
       const applicationData = insertGrantApplicationSchema.parse({
         ...req.body,
         userId,
+        year: currentYear, // Server-derived year for security
       });
+      
+      // Check if user already has an application for this year
+      const existingApplication = await storage.getUserGrantApplicationForYear(userId, currentYear);
+      if (existingApplication) {
+        return res.status(409).json({ 
+          message: "You already have a grant application for this year. Only one application per year is allowed.",
+          existingApplicationId: existingApplication.id
+        });
+      }
       
       const application = await storage.createGrantApplication(applicationData);
       res.json(application);
     } catch (error) {
       console.error("Error creating grant application:", error);
+      // Handle unique constraint violation
+      if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
+        return res.status(409).json({ 
+          message: "You already have a grant application for this year. Only one application per year is allowed."
+        });
+      }
       res.status(500).json({ message: "Failed to create grant application" });
     }
   });

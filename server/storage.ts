@@ -32,6 +32,7 @@ export interface IStorage {
   createGrantApplication(application: InsertGrantApplication): Promise<GrantApplication>;
   getGrantApplication(id: number): Promise<GrantApplication | undefined>;
   getUserGrantApplications(userId: string): Promise<GrantApplication[]>;
+  getUserGrantApplicationForYear(userId: string, year: number): Promise<GrantApplication | undefined>;
   getAllGrantApplications(): Promise<GrantApplication[]>;
   getGrantApplicationsByStatus(status: string): Promise<GrantApplication[]>;
   updateGrantApplication(id: number, updates: Partial<InsertGrantApplication>): Promise<GrantApplication | undefined>;
@@ -108,6 +109,19 @@ export class DatabaseStorage implements IStorage {
       .from(grantApplications)
       .where(eq(grantApplications.userId, userId))
       .orderBy(desc(grantApplications.createdAt));
+  }
+
+  async getUserGrantApplicationForYear(userId: string, year: number): Promise<GrantApplication | undefined> {
+    const [application] = await db
+      .select()
+      .from(grantApplications)
+      .where(
+        and(
+          eq(grantApplications.userId, userId),
+          eq(grantApplications.year, year)
+        )
+      );
+    return application;
   }
 
   async getAllGrantApplications(): Promise<GrantApplication[]> {

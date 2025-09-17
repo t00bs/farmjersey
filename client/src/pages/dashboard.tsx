@@ -50,7 +50,7 @@ export default function Dashboard() {
         description: "New grant application created successfully!",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       if (isUnauthorizedError(error)) {
         toast({
           title: "Unauthorized",
@@ -62,6 +62,17 @@ export default function Dashboard() {
         }, 500);
         return;
       }
+      
+      // Handle the specific case of duplicate application for the year
+      if (error.status === 409) {
+        toast({
+          title: "Application Already Exists",
+          description: "You already have a grant application for this year. Only one application per year is allowed.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       toast({
         title: "Error",
         description: "Failed to create grant application. Please try again.",
@@ -109,6 +120,11 @@ export default function Dashboard() {
     }
   };
 
+  // Check if user already has an application for current year
+  const currentYear = new Date().getFullYear();
+  const hasCurrentYearApplication = applications && applications.some((app: any) => app.year === currentYear);
+  const canCreateNewApplication = !hasCurrentYearApplication;
+
   return (
     <div className="min-h-screen flex bg-bg-light">
       <Sidebar />
@@ -121,14 +137,33 @@ export default function Dashboard() {
               <h1 className="text-2xl font-bold text-text-primary mb-2">Grant Applications</h1>
               <p className="text-gray-600">Manage your rural support grant applications</p>
             </div>
-            <Button
-              onClick={() => createApplicationMutation.mutate()}
-              disabled={createApplicationMutation.isPending}
-              className="bg-primary-custom hover:bg-primary-custom/90 text-white"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              New Application
-            </Button>
+            {canCreateNewApplication ? (
+              <Button
+                onClick={() => createApplicationMutation.mutate()}
+                disabled={createApplicationMutation.isPending}
+                className="bg-primary-custom hover:bg-primary-custom/90 text-white"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                New Application
+              </Button>
+            ) : (
+              <div className="text-right">
+                <p className="text-sm text-gray-600 mb-2">
+                  You already have an application for {currentYear}
+                </p>
+                <Button
+                  disabled
+                  variant="outline"
+                  className="opacity-50 cursor-not-allowed"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  New Application
+                </Button>
+                <p className="text-xs text-gray-500 mt-1">
+                  New applications available January 1st, {currentYear + 1}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Applications Grid */}
@@ -229,7 +264,7 @@ export default function Dashboard() {
                 <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">No Applications Yet</h3>
                 <p className="text-gray-600 mb-6">
-                  Get started by creating your first grant application
+                  Get started by creating your first grant application for {currentYear}
                 </p>
                 <Button
                   onClick={() => createApplicationMutation.mutate()}
@@ -239,6 +274,9 @@ export default function Dashboard() {
                   <Plus className="w-4 h-4 mr-2" />
                   Create Application
                 </Button>
+                <p className="text-xs text-gray-500 mt-3">
+                  Only one application per year allowed
+                </p>
               </CardContent>
             </Card>
           )}

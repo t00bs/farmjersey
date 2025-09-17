@@ -437,6 +437,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/grant-applications/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const applicationId = parseInt(req.params.id);
+      const application = await storage.getGrantApplication(applicationId);
+      
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+      
+      // Check if user owns this application
+      if (application.userId !== req.user.claims.sub) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      const deleted = await storage.deleteGrantApplication(applicationId);
+      if (deleted) {
+        res.json({ message: "Application deleted successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to delete application" });
+      }
+    } catch (error) {
+      console.error("Error deleting grant application:", error);
+      res.status(500).json({ message: "Failed to delete grant application" });
+    }
+  });
+
   // Agricultural Return routes
   app.post("/api/agricultural-returns", isAuthenticated, async (req: any, res) => {
     try {

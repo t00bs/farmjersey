@@ -39,6 +39,7 @@ export interface IStorage {
   getAllGrantApplicationsWithUserData(): Promise<ApplicationWithUserData[]>;
   getGrantApplicationsByStatusWithUserData(status: string): Promise<ApplicationWithUserData[]>;
   updateGrantApplication(id: number, updates: Partial<InsertGrantApplication>): Promise<GrantApplication | undefined>;
+  deleteGrantApplication(id: number): Promise<boolean>;
   
   // Agricultural Return operations
   createAgriculturalReturn(agriculturalReturn: InsertAgriculturalReturn): Promise<AgriculturalReturn>;
@@ -201,6 +202,26 @@ export class DatabaseStorage implements IStorage {
       .where(eq(grantApplications.id, id))
       .returning();
     return updated;
+  }
+
+  async deleteGrantApplication(id: number): Promise<boolean> {
+    try {
+      // Delete related records first due to foreign key constraints
+      await db.delete(agriculturalFormResponses).where(eq(agriculturalFormResponses.applicationId, id));
+      await db.delete(documents).where(eq(documents.applicationId, id));
+      await db.delete(agriculturalReturns).where(eq(agriculturalReturns.applicationId, id));
+      
+      // Delete the application
+      const [deleted] = await db
+        .delete(grantApplications)
+        .where(eq(grantApplications.id, id))
+        .returning();
+      
+      return !!deleted;
+    } catch (error) {
+      console.error("Error deleting grant application:", error);
+      return false;
+    }
   }
 
   // Agricultural Return operations

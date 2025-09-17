@@ -17,7 +17,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { InfoIcon, Save, Send } from "lucide-react";
+import { InfoIcon, Save, Send, Trash2 } from "lucide-react";
 
 export default function GrantApplication() {
   const { toast } = useToast();
@@ -127,6 +127,41 @@ export default function GrantApplication() {
       toast({
         title: "Submission Failed",
         description: "Failed to submit your application. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete application mutation (temporary for testing)
+  const deleteApplicationMutation = useMutation({
+    mutationFn: async () => {
+      if (!applicationId) throw new Error("No application ID");
+      
+      return await apiRequest("DELETE", `/api/grant-applications/${applicationId}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Application Deleted",
+        description: "Your application has been deleted successfully.",
+      });
+      // Redirect to dashboard after deletion
+      window.location.href = "/dashboard";
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Delete Failed",
+        description: "Failed to delete your application. Please try again.",
         variant: "destructive",
       });
     },
@@ -350,9 +385,23 @@ export default function GrantApplication() {
                   variant="outline"
                   onClick={() => saveProgressMutation.mutate()}
                   disabled={saveProgressMutation.isPending}
+                  data-testid="button-save-progress"
                 >
                   <Save className="w-4 h-4 mr-2" />
                   {saveProgressMutation.isPending ? "Saving..." : "Save Progress"}
+                </Button>
+                <Button 
+                  variant="destructive"
+                  onClick={() => {
+                    if (confirm("Are you sure you want to delete this application? This action cannot be undone.")) {
+                      deleteApplicationMutation.mutate();
+                    }
+                  }}
+                  disabled={deleteApplicationMutation.isPending}
+                  data-testid="button-delete-application"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  {deleteApplicationMutation.isPending ? "Deleting..." : "Delete (Testing)"}
                 </Button>
                 <Button 
                   disabled={!isApplicationComplete || submitApplicationMutation.isPending}
@@ -362,6 +411,7 @@ export default function GrantApplication() {
                       submitApplicationMutation.mutate();
                     }
                   }}
+                  data-testid="button-submit-application"
                 >
                   <Send className="w-4 h-4 mr-2" />
                   {submitApplicationMutation.isPending ? "Submitting..." : "Submit Application"}

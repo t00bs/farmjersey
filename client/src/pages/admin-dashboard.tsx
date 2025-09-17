@@ -315,7 +315,7 @@ function ApplicationReviewDialogContent({
   });
 
   const { data: agriculturalReturn } = useQuery<AgriculturalFormResponse | null>({
-    queryKey: ["/api/admin/applications", application.id, "agricultural-response"],
+    queryKey: [`/api/admin/applications/${application.id}/agricultural-response`],
     retry: false,
   });
 

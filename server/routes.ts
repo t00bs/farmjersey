@@ -105,7 +105,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Agricultural Form Template routes
+  // Public endpoint for users to access active agricultural form templates
+  app.get("/api/agricultural-forms/templates", isAuthenticated, async (req: any, res) => {
+    try {
+      let templates = await storage.getAgriculturalFormTemplates();
+      
+      // Create default template if none exist
+      if (templates.length === 0) {
+        const defaultTemplate = {
+          title: "Agricultural Return 2025",
+          description: "Annual agricultural return form for crop and livestock reporting",
+          year: 2025,
+          isActive: true,
+          sections: [
+            {
+              id: "landowner-details",
+              title: "Landowner Details",
+              description: "Basic information about the landowner",
+              order: 1,
+              fields: [
+                {
+                  id: "full-name",
+                  type: "text",
+                  label: "Full Name",
+                  placeholder: "Enter your full name",
+                  required: true
+                },
+                {
+                  id: "address",
+                  type: "textarea",
+                  label: "Address",
+                  placeholder: "Enter your full address",
+                  required: true
+                },
+                {
+                  id: "phone",
+                  type: "text",
+                  label: "Phone Number",
+                  placeholder: "Enter your phone number",
+                  required: true
+                }
+              ]
+            },
+            {
+              id: "land-crops",
+              title: "Land & Crops",
+              description: "Information about your land usage and crops",
+              order: 2,
+              fields: [
+                {
+                  id: "total-area",
+                  type: "number",
+                  label: "Total Land Area (hectares)",
+                  placeholder: "Enter total area in hectares",
+                  required: true
+                },
+                {
+                  id: "crop-types",
+                  type: "textarea",
+                  label: "Crop Types",
+                  placeholder: "List the main crops you grow",
+                  required: true
+                },
+                {
+                  id: "farming-method",
+                  type: "select",
+                  label: "Farming Method",
+                  placeholder: "Select your primary farming method",
+                  required: true,
+                  options: ["Organic", "Conventional", "Mixed"]
+                }
+              ]
+            },
+            {
+              id: "livestock",
+              title: "Livestock",
+              description: "Information about livestock on your farm",
+              order: 3,
+              fields: [
+                {
+                  id: "cattle-count",
+                  type: "number",
+                  label: "Number of Cattle",
+                  placeholder: "Enter number of cattle",
+                  required: false
+                },
+                {
+                  id: "sheep-count",
+                  type: "number",
+                  label: "Number of Sheep",
+                  placeholder: "Enter number of sheep",
+                  required: false
+                },
+                {
+                  id: "other-livestock",
+                  type: "textarea",
+                  label: "Other Livestock",
+                  placeholder: "Describe any other livestock",
+                  required: false
+                }
+              ]
+            }
+          ]
+        };
+        
+        const newTemplate = await storage.createAgriculturalFormTemplate(defaultTemplate);
+        templates = [newTemplate];
+      }
+      
+      // Only return active templates for public endpoint
+      const activeTemplates = templates.filter(template => template.isActive);
+      res.json(activeTemplates);
+    } catch (error) {
+      console.error("Error fetching agricultural form templates:", error);
+      res.status(500).json({ message: "Failed to fetch agricultural form templates" });
+    }
+  });
+
+  // Agricultural Form Template routes (Admin only)
   app.get("/api/admin/agricultural-forms", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       let templates = await storage.getAgriculturalFormTemplates();

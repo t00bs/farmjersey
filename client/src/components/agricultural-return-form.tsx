@@ -46,7 +46,7 @@ export default function AgriculturalReturnForm({ applicationId, onComplete }: Ag
 
   // Fetch available form templates
   const { data: templates, isLoading: templatesLoading } = useQuery<AgriculturalFormTemplate[]>({
-    queryKey: ["/api/admin/agricultural-forms"],
+    queryKey: ["/api/agricultural-forms/templates"],
     retry: false,
   });
 

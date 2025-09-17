@@ -17,6 +17,7 @@ import {
   type InsertAgriculturalFormTemplate,
   type AgriculturalFormResponse,
   type InsertAgriculturalFormResponse,
+  type ApplicationWithUserData,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
@@ -35,6 +36,8 @@ export interface IStorage {
   getUserGrantApplicationForYear(userId: string, year: number): Promise<GrantApplication | undefined>;
   getAllGrantApplications(): Promise<GrantApplication[]>;
   getGrantApplicationsByStatus(status: string): Promise<GrantApplication[]>;
+  getAllGrantApplicationsWithUserData(): Promise<ApplicationWithUserData[]>;
+  getGrantApplicationsByStatusWithUserData(status: string): Promise<ApplicationWithUserData[]>;
   updateGrantApplication(id: number, updates: Partial<InsertGrantApplication>): Promise<GrantApplication | undefined>;
   
   // Agricultural Return operations
@@ -135,6 +138,58 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(grantApplications)
+      .where(eq(grantApplications.status, status))
+      .orderBy(desc(grantApplications.createdAt));
+  }
+
+  // Admin-specific methods that include user data
+  async getAllGrantApplicationsWithUserData(): Promise<ApplicationWithUserData[]> {
+    return await db
+      .select({
+        id: grantApplications.id,
+        userId: grantApplications.userId,
+        status: grantApplications.status,
+        year: grantApplications.year,
+        progressPercentage: grantApplications.progressPercentage,
+        agriculturalReturnCompleted: grantApplications.agriculturalReturnCompleted,
+        landDeclarationCompleted: grantApplications.landDeclarationCompleted,
+        consentFormCompleted: grantApplications.consentFormCompleted,
+        supportingDocsCompleted: grantApplications.supportingDocsCompleted,
+        digitalSignature: grantApplications.digitalSignature,
+        submittedAt: grantApplications.submittedAt,
+        createdAt: grantApplications.createdAt,
+        updatedAt: grantApplications.updatedAt,
+        userFirstName: users.firstName,
+        userLastName: users.lastName,
+        userEmail: users.email,
+      })
+      .from(grantApplications)
+      .leftJoin(users, eq(grantApplications.userId, users.id))
+      .orderBy(desc(grantApplications.createdAt));
+  }
+
+  async getGrantApplicationsByStatusWithUserData(status: string): Promise<ApplicationWithUserData[]> {
+    return await db
+      .select({
+        id: grantApplications.id,
+        userId: grantApplications.userId,
+        status: grantApplications.status,
+        year: grantApplications.year,
+        progressPercentage: grantApplications.progressPercentage,
+        agriculturalReturnCompleted: grantApplications.agriculturalReturnCompleted,
+        landDeclarationCompleted: grantApplications.landDeclarationCompleted,
+        consentFormCompleted: grantApplications.consentFormCompleted,
+        supportingDocsCompleted: grantApplications.supportingDocsCompleted,
+        digitalSignature: grantApplications.digitalSignature,
+        submittedAt: grantApplications.submittedAt,
+        createdAt: grantApplications.createdAt,
+        updatedAt: grantApplications.updatedAt,
+        userFirstName: users.firstName,
+        userLastName: users.lastName,
+        userEmail: users.email,
+      })
+      .from(grantApplications)
+      .leftJoin(users, eq(grantApplications.userId, users.id))
       .where(eq(grantApplications.status, status))
       .orderBy(desc(grantApplications.createdAt));
   }

@@ -11,14 +11,14 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Eye, FileText, Calendar, User, AlertTriangle, CheckCircle, FormInput } from "lucide-react";
-import type { GrantApplication, AgriculturalReturn, Document } from "@shared/schema";
+import type { GrantApplication, AgriculturalReturn, Document, ApplicationWithUserData } from "@shared/schema";
 import Sidebar from "@/components/sidebar";
 import TopBar from "@/components/top-bar";
 
 export default function AdminDashboard() {
   const { toast } = useToast();
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [selectedApplication, setSelectedApplication] = useState<GrantApplication | null>(null);
+  const [selectedApplication, setSelectedApplication] = useState<ApplicationWithUserData | null>(null);
 
   const { data: applications = [], isLoading } = useQuery({
     queryKey: ["/api/admin/applications", statusFilter],
@@ -77,7 +77,7 @@ export default function AdminDashboard() {
   };
 
   const getStatusStats = () => {
-    const stats = applications.reduce((acc: any, app: GrantApplication) => {
+    const stats = applications.reduce((acc: any, app: ApplicationWithUserData) => {
       acc[app.status] = (acc[app.status] || 0) + 1;
       return acc;
     }, {});
@@ -201,7 +201,7 @@ export default function AdminDashboard() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>ID</TableHead>
-                      <TableHead>User ID</TableHead>
+                      <TableHead>User Name</TableHead>
                       <TableHead>Year</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Progress</TableHead>
@@ -210,10 +210,15 @@ export default function AdminDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {applications.map((application: GrantApplication) => (
+                    {applications.map((application: ApplicationWithUserData) => (
                       <TableRow key={application.id}>
                         <TableCell>#{application.id}</TableCell>
-                        <TableCell>{application.userId}</TableCell>
+                        <TableCell>
+                          {application.userFirstName && application.userLastName
+                            ? `${application.userFirstName} ${application.userLastName}`
+                            : application.userEmail || application.userId
+                          }
+                        </TableCell>
                         <TableCell>{application.year}</TableCell>
                         <TableCell>{getStatusBadge(application.status)}</TableCell>
                         <TableCell>
@@ -300,7 +305,7 @@ function ApplicationReviewDialogContent({
   application, 
   onStatusUpdate 
 }: { 
-  application: GrantApplication; 
+  application: ApplicationWithUserData; 
   onStatusUpdate: (status: string) => void;
 }) {
   const [newStatus, setNewStatus] = useState(application.status);
@@ -329,6 +334,8 @@ function ApplicationReviewDialogContent({
               <h4 className="font-semibold mb-2">Application Details</h4>
               <div className="space-y-2 text-sm">
                 <div><strong>ID:</strong> #{application.id}</div>
+                <div><strong>User:</strong> {application.userFirstName && application.userLastName ? `${application.userFirstName} ${application.userLastName}` : application.userEmail || application.userId}</div>
+                <div><strong>Email:</strong> {application.userEmail || 'Not available'}</div>
                 <div><strong>User ID:</strong> {application.userId}</div>
                 <div><strong>Year:</strong> {application.year}</div>
                 <div><strong>Status:</strong> {application.status}</div>

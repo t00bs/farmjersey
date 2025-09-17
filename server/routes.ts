@@ -26,6 +26,25 @@ const upload = multer({
   },
 });
 
+// Admin authorization middleware
+function isAdmin(req: any, res: any, next: any) {
+  try {
+    const userEmail = req.user?.claims?.email;
+    const adminEmails = process.env.ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
+    
+    if (!userEmail || !adminEmails.includes(userEmail)) {
+      return res.status(403).json({ 
+        message: "Access denied. Admin privileges required." 
+      });
+    }
+    
+    next();
+  } catch (error) {
+    console.error("Error checking admin authorization:", error);
+    res.status(500).json({ message: "Authorization check failed" });
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
@@ -43,15 +62,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin routes
-  app.get("/api/admin/applications", isAuthenticated, async (req: any, res) => {
+  app.get("/api/admin/applications", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const { status } = req.query;
       let applications;
       
       if (status && status !== 'all') {
-        applications = await storage.getGrantApplicationsByStatus(status as string);
+        applications = await storage.getGrantApplicationsByStatusWithUserData(status as string);
       } else {
-        applications = await storage.getAllGrantApplications();
+        applications = await storage.getAllGrantApplicationsWithUserData();
       }
       
       res.json(applications);
@@ -61,7 +80,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/applications/:id/status", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/admin/applications/:id/status", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const { id } = req.params;
       const { status } = req.body;
@@ -87,7 +106,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Agricultural Form Template routes
-  app.get("/api/admin/agricultural-forms", isAuthenticated, async (req: any, res) => {
+  app.get("/api/admin/agricultural-forms", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       let templates = await storage.getAgriculturalFormTemplates();
       
@@ -170,7 +189,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/agricultural-forms", isAuthenticated, async (req: any, res) => {
+  app.post("/api/admin/agricultural-forms", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       console.log("Received form data:", JSON.stringify(req.body, null, 2));
       const templateData = insertAgriculturalFormTemplateSchema.parse(req.body);
@@ -190,7 +209,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/agricultural-forms/:id", isAuthenticated, async (req: any, res) => {
+  app.get("/api/admin/agricultural-forms/:id", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const { id } = req.params;
       const template = await storage.getAgriculturalFormTemplate(parseInt(id));
@@ -204,7 +223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/admin/agricultural-forms/:id", isAuthenticated, async (req: any, res) => {
+  app.put("/api/admin/agricultural-forms/:id", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const { id } = req.params;
       const updates = insertAgriculturalFormTemplateSchema.partial().parse(req.body);
@@ -219,7 +238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/agricultural-forms/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/admin/agricultural-forms/:id", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const { id } = req.params;
       await storage.deleteAgriculturalFormTemplate(parseInt(id));

@@ -191,3 +191,10 @@ export type AgriculturalFormTemplate = typeof agriculturalFormTemplates.$inferSe
 export type InsertAgriculturalFormTemplate = z.infer<typeof insertAgriculturalFormTemplateSchema>;
 export type AgriculturalFormResponse = typeof agriculturalFormResponses.$inferSelect;
 export type InsertAgriculturalFormResponse = z.infer<typeof insertAgriculturalFormResponseSchema>;
+
+// Admin-specific types that include user data
+export interface ApplicationWithUserData extends GrantApplication {
+  userFirstName?: string | null;
+  userLastName?: string | null;
+  userEmail?: string | null;
+}

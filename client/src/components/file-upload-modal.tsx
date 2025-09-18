@@ -50,7 +50,7 @@ export default function FileUploadModal({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/grant-applications", applicationId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/documents", applicationId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/documents/${applicationId}`] });
       toast({
         title: "Success",
         description: "Document uploaded successfully!",

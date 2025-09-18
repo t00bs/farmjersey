@@ -20,11 +20,12 @@ export default function DocumentDisplay({ applicationId, open, onOpenChange }: D
   const { toast } = useToast();
   const [downloadingDoc, setDownloadingDoc] = useState<number | null>(null);
 
-  const { data: documents, isLoading } = useQuery<Document[]>({
+  const { data: documents, isLoading, error } = useQuery<Document[]>({
     queryKey: [`/api/documents/${applicationId}`],
     enabled: !!applicationId && open,
     retry: false,
   });
+
 
   const getFileIcon = (fileType: string) => {
     if (fileType.startsWith("image/")) {

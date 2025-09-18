@@ -11,6 +11,7 @@ import TopBar from "@/components/top-bar";
 import ApplicationSection from "@/components/application-section";
 import FileUploadModal from "@/components/file-upload-modal";
 import SignatureCanvas from "@/components/signature-canvas";
+import DocumentDisplay from "@/components/document-display";
 import ProgressIndicator from "@/components/progress-indicator";
 import AgriculturalReturnForm from "@/components/agricultural-return-form";
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,6 +27,7 @@ export default function GrantApplication() {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [signatureModalOpen, setSignatureModalOpen] = useState(false);
   const [agriculturalFormOpen, setAgriculturalFormOpen] = useState(false);
+  const [documentModalOpen, setDocumentModalOpen] = useState(false);
   const [uploadType, setUploadType] = useState<"land_declaration" | "supporting_doc">("land_declaration");
 
   const applicationId = params?.id ? parseInt(params.id) : null;
@@ -352,14 +354,8 @@ export default function GrantApplication() {
                 variant: "default",
               }}
               secondaryAction={{
-                label: "View",
-                onClick: () => {
-                  // TODO: Navigate to documents view
-                  toast({
-                    title: "Coming Soon",
-                    description: "Document viewer will be available soon.",
-                  });
-                },
+                label: "View Documents",
+                onClick: () => setDocumentModalOpen(true),
               }}
             />
           </div>
@@ -445,6 +441,12 @@ export default function GrantApplication() {
       <SignatureCanvas
         open={signatureModalOpen}
         onOpenChange={setSignatureModalOpen}
+        applicationId={applicationId!}
+      />
+
+      <DocumentDisplay
+        open={documentModalOpen}
+        onOpenChange={setDocumentModalOpen}
         applicationId={applicationId!}
       />
 

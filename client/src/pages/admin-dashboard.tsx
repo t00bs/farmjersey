@@ -248,7 +248,7 @@ export default function AdminDashboard() {
                   
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Actions</label>
-                    <div className="flex space-x-2">
+                    <div className="flex flex-wrap space-x-2 gap-y-2">
                       <Button 
                         variant="outline"
                         onClick={() => {

@@ -7,6 +7,16 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 
+// Helper function to prevent CSV/XLSX formula injection
+const sanitizeForExport = (value: any): string => {
+  const str = String(value);
+  // If string starts with formula characters (with optional leading whitespace), prefix with single quote
+  if (str.match(/^[\t\r\n\s]*[=+\-@]/)) {
+    return `'${str}`;
+  }
+  return str;
+};
+
 // Configure multer for file uploads
 const upload = multer({
   dest: "uploads/",
@@ -68,7 +78,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Parse date parameters
       const parsedStartDate = startDate ? new Date(startDate as string) : undefined;
-      const parsedEndDate = endDate ? new Date(endDate as string) : undefined;
+      const parsedEndDate = endDate ? (() => {
+        const date = new Date(endDate as string);
+        // Set to end of day to include the full selected day
+        date.setHours(23, 59, 59, 999);
+        return date;
+      })() : undefined;
       
       // Validate date parameters
       if (parsedStartDate && isNaN(parsedStartDate.getTime())) {
@@ -166,16 +181,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'Submitted At'
       ];
       
-      // Helper function to prevent CSV formula injection
-      const sanitizeForExport = (value: any): string => {
-        const str = String(value);
-        // If string starts with formula characters, prefix with single quote
-        if (str.match(/^[=+\-@]/)) {
-          return `'${str}`;
-        }
-        return str;
-      };
-      
       // Convert applications to CSV format
       const csvData = applications.map(app => [
         app.id,
@@ -242,16 +247,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         parsedStartDate,
         parsedEndDate
       );
-      
-      // Helper function to prevent XLSX formula injection
-      const sanitizeForExport = (value: any): string => {
-        const str = String(value);
-        // If string starts with formula characters, prefix with single quote
-        if (str.match(/^[=+\-@]/)) {
-          return `'${str}`;
-        }
-        return str;
-      };
       
       // Import XLSX library with error handling
       let XLSX;

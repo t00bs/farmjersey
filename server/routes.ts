@@ -1031,43 +1031,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const documentId = parseInt(req.params.documentId);
       
-      // First get the document to check which application it belongs to
-      // Since we don't have a getDocumentById method, we'll need to add one or find another way
-      // For now, let's search through all user's documents efficiently
-      const userApplications = await storage.getUserGrantApplications(req.user.claims.sub);
-      let document = null;
-      
-      for (const app of userApplications) {
-        const appDocuments = await storage.getDocumentsByApplicationId(app.id);
-        const foundDoc = appDocuments.find(doc => doc.id === documentId);
-        if (foundDoc) {
-          document = foundDoc;
-          break;
-        }
+      if (isNaN(documentId)) {
+        return res.status(400).json({ message: "Invalid document ID" });
       }
       
+      // Get document directly by ID
+      const document = await storage.getDocumentById(documentId);
       if (!document) {
         return res.status(404).json({ message: "Document not found" });
       }
       
       // Verify user owns the application this document belongs to
       const application = await storage.getGrantApplication(document.applicationId);
-      if (!application || application.userId !== req.user.claims.sub) {
-        return res.status(403).json({ message: "Unauthorized" });
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
       }
       
-      // Check if file exists
+      if (application.userId !== req.user.claims.sub) {
+        return res.status(403).json({ message: "Unauthorized access to document" });
+      }
+      
+      // Check if file exists on the filesystem
       if (!fs.existsSync(document.filePath)) {
+        console.error(`Document file not found: ${document.filePath}`);
         return res.status(404).json({ message: "File not found on server" });
       }
       
       // Set proper content type and force download
       res.setHeader('Content-Type', document.fileType);
       res.setHeader('Content-Disposition', `attachment; filename="${document.fileName}"`);
-      res.download(document.filePath, document.fileName);
+      res.download(document.filePath, document.fileName, (error) => {
+        if (error) {
+          console.error("Error serving document download:", error);
+          if (!res.headersSent) {
+            res.status(500).json({ message: "Failed to download document" });
+          }
+        }
+      });
     } catch (error) {
       console.error("Error downloading document:", error);
-      res.status(500).json({ message: "Failed to download document" });
+      if (!res.headersSent) {
+        res.status(500).json({ message: "Internal server error" });
+      }
     }
   });
 

@@ -21,7 +21,7 @@ export default function DocumentDisplay({ applicationId, open, onOpenChange }: D
   const [downloadingDoc, setDownloadingDoc] = useState<number | null>(null);
 
   const { data: documents, isLoading } = useQuery<Document[]>({
-    queryKey: ["/api/documents", applicationId],
+    queryKey: [`/api/documents/${applicationId}`],
     enabled: !!applicationId && open,
     retry: false,
   });

@@ -720,6 +720,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Download document file route
+  app.get("/api/download-document/:documentId", isAuthenticated, async (req: any, res) => {
+    try {
+      const documentId = parseInt(req.params.documentId);
+      
+      // First get the document to check which application it belongs to
+      // Since we don't have a getDocumentById method, we'll need to add one or find another way
+      // For now, let's search through all user's documents efficiently
+      const userApplications = await storage.getUserGrantApplications(req.user.claims.sub);
+      let document = null;
+      
+      for (const app of userApplications) {
+        const appDocuments = await storage.getDocumentsByApplicationId(app.id);
+        const foundDoc = appDocuments.find(doc => doc.id === documentId);
+        if (foundDoc) {
+          document = foundDoc;
+          break;
+        }
+      }
+      
+      if (!document) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+      
+      // Verify user owns the application this document belongs to
+      const application = await storage.getGrantApplication(document.applicationId);
+      if (!application || application.userId !== req.user.claims.sub) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      // Check if file exists
+      if (!fs.existsSync(document.filePath)) {
+        return res.status(404).json({ message: "File not found on server" });
+      }
+      
+      // Set proper content type and force download
+      res.setHeader('Content-Type', document.fileType);
+      res.setHeader('Content-Disposition', `attachment; filename="${document.fileName}"`);
+      res.download(document.filePath, document.fileName);
+    } catch (error) {
+      console.error("Error downloading document:", error);
+      res.status(500).json({ message: "Failed to download document" });
+    }
+  });
+
   // Download template route
   app.get("/api/download-template/:type", isAuthenticated, (req, res) => {
     try {

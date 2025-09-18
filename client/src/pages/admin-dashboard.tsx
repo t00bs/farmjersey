@@ -10,7 +10,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { Eye, FileText, Calendar, User, AlertTriangle, CheckCircle, FormInput } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Input } from "@/components/ui/input";
+import { Eye, FileText, Calendar, User, AlertTriangle, CheckCircle, FormInput, Download, CalendarDays } from "lucide-react";
+import { format } from "date-fns";
+import { DateRange } from "react-day-picker";
 import type { GrantApplication, AgriculturalReturn, Document, ApplicationWithUserData, AgriculturalFormResponse } from "@shared/schema";
 import Sidebar from "@/components/sidebar";
 import TopBar from "@/components/top-bar";
@@ -18,14 +23,27 @@ import TopBar from "@/components/top-bar";
 export default function AdminDashboard() {
   const { toast } = useToast();
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [selectedApplication, setSelectedApplication] = useState<ApplicationWithUserData | null>(null);
 
   const { data: applications = [], isLoading } = useQuery({
-    queryKey: ["/api/admin/applications", statusFilter],
+    queryKey: ["/api/admin/applications", statusFilter, dateRange?.from, dateRange?.to],
     queryFn: async () => {
-      const url = statusFilter === "all" 
-        ? "/api/admin/applications"
-        : `/api/admin/applications?status=${statusFilter}`;
+      const params = new URLSearchParams();
+      if (statusFilter !== "all") {
+        params.append("status", statusFilter);
+      }
+      if (dateRange?.from) {
+        params.append("startDate", dateRange.from.toISOString());
+      }
+      if (dateRange?.to) {
+        params.append("endDate", dateRange.to.toISOString());
+      }
+      
+      const url = params.toString() 
+        ? `/api/admin/applications?${params.toString()}`
+        : "/api/admin/applications";
+      
       const response = await fetch(url);
       if (!response.ok) throw new Error("Failed to fetch applications");
       return await response.json();
@@ -169,22 +187,111 @@ export default function AdminDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>Filter Applications</CardTitle>
-                <CardDescription>Filter applications by status</CardDescription>
+                <CardDescription>Filter applications by status and date range</CardDescription>
               </CardHeader>
               <CardContent>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Applications</SelectItem>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="submitted">Submitted</SelectItem>
-                    <SelectItem value="approved">Approved</SelectItem>
-                    <SelectItem value="rejected">Rejected</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Status</label>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="w-[200px]">
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Applications</SelectItem>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="in_progress">In Progress</SelectItem>
+                        <SelectItem value="submitted">Submitted</SelectItem>
+                        <SelectItem value="approved">Approved</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Date Range</label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          id="date"
+                          variant="outline"
+                          className="w-[300px] justify-start text-left font-normal"
+                          data-testid="button-date-filter"
+                        >
+                          <CalendarDays className="mr-2 h-4 w-4" />
+                          {dateRange?.from ? (
+                            dateRange.to ? (
+                              <>
+                                {format(dateRange.from, "LLL dd, y")} -{" "}
+                                {format(dateRange.to, "LLL dd, y")}
+                              </>
+                            ) : (
+                              format(dateRange.from, "LLL dd, y")
+                            )
+                          ) : (
+                            <span>Pick a date range</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          initialFocus
+                          mode="range"
+                          defaultMonth={dateRange?.from}
+                          selected={dateRange}
+                          onSelect={setDateRange}
+                          numberOfMonths={2}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Actions</label>
+                    <div className="flex space-x-2">
+                      <Button 
+                        variant="outline"
+                        onClick={() => {
+                          setStatusFilter("all");
+                          setDateRange(undefined);
+                        }}
+                        data-testid="button-clear-filters"
+                      >
+                        Clear Filters
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={() => {
+                          const url = `/api/admin/applications/export/csv?${new URLSearchParams({
+                            ...(statusFilter !== "all" && { status: statusFilter }),
+                            ...(dateRange?.from && { startDate: dateRange.from.toISOString() }),
+                            ...(dateRange?.to && { endDate: dateRange.to.toISOString() })
+                          }).toString()}`;
+                          window.open(url, '_blank');
+                        }}
+                        data-testid="button-download-csv"
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        CSV
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={() => {
+                          const url = `/api/admin/applications/export/xlsx?${new URLSearchParams({
+                            ...(statusFilter !== "all" && { status: statusFilter }),
+                            ...(dateRange?.from && { startDate: dateRange.from.toISOString() }),
+                            ...(dateRange?.to && { endDate: dateRange.to.toISOString() })
+                          }).toString()}`;
+                          window.open(url, '_blank');
+                        }}
+                        data-testid="button-download-xlsx"
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        XLSX
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 

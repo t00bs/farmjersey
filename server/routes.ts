@@ -64,14 +64,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin routes
   app.get("/api/admin/applications", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
-      const { status } = req.query;
-      let applications;
+      const { status, startDate, endDate } = req.query;
       
-      if (status && status !== 'all') {
-        applications = await storage.getGrantApplicationsByStatusWithUserData(status as string);
-      } else {
-        applications = await storage.getAllGrantApplicationsWithUserData();
+      // Parse date parameters
+      const parsedStartDate = startDate ? new Date(startDate as string) : undefined;
+      const parsedEndDate = endDate ? new Date(endDate as string) : undefined;
+      
+      // Validate date parameters
+      if (parsedStartDate && isNaN(parsedStartDate.getTime())) {
+        return res.status(400).json({ message: "Invalid startDate format" });
       }
+      
+      if (parsedEndDate && isNaN(parsedEndDate.getTime())) {
+        return res.status(400).json({ message: "Invalid endDate format" });
+      }
+      
+      // Use the new filtered method that handles all scenarios
+      const applications = await storage.getGrantApplicationsWithUserDataFiltered(
+        status && status !== 'all' ? status as string : undefined,
+        parsedStartDate,
+        parsedEndDate
+      );
       
       res.json(applications);
     } catch (error) {
@@ -102,6 +115,192 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating application status:", error);
       res.status(500).json({ message: "Failed to update application status" });
+    }
+  });
+
+  // Export applications to CSV
+  app.get("/api/admin/applications/export/csv", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { status, startDate, endDate } = req.query;
+      
+      // Parse date parameters
+      const parsedStartDate = startDate ? new Date(startDate as string) : undefined;
+      const parsedEndDate = endDate ? (() => {
+        const date = new Date(endDate as string);
+        // Set to end of day to include the full selected day
+        date.setHours(23, 59, 59, 999);
+        return date;
+      })() : undefined;
+      
+      // Validate date parameters
+      if (parsedStartDate && isNaN(parsedStartDate.getTime())) {
+        return res.status(400).json({ message: "Invalid startDate format" });
+      }
+      
+      if (parsedEndDate && isNaN(parsedEndDate.getTime())) {
+        return res.status(400).json({ message: "Invalid endDate format" });
+      }
+      
+      // Fetch filtered applications
+      const applications = await storage.getGrantApplicationsWithUserDataFiltered(
+        status && status !== 'all' ? status as string : undefined,
+        parsedStartDate,
+        parsedEndDate
+      );
+      
+      // Generate CSV headers
+      const headers = [
+        'ID',
+        'User ID',
+        'First Name',
+        'Last Name',
+        'Email',
+        'Status',
+        'Year',
+        'Progress (%)',
+        'Agricultural Return',
+        'Land Declaration',
+        'Consent Form',
+        'Supporting Docs',
+        'Created At',
+        'Submitted At'
+      ];
+      
+      // Helper function to prevent CSV formula injection
+      const sanitizeForExport = (value: any): string => {
+        const str = String(value);
+        // If string starts with formula characters, prefix with single quote
+        if (str.match(/^[=+\-@]/)) {
+          return `'${str}`;
+        }
+        return str;
+      };
+      
+      // Convert applications to CSV format
+      const csvData = applications.map(app => [
+        app.id,
+        sanitizeForExport(app.userId),
+        sanitizeForExport(app.userFirstName || ''),
+        sanitizeForExport(app.userLastName || ''),
+        sanitizeForExport(app.userEmail || ''),
+        app.status,
+        app.year,
+        app.progressPercentage || 0,
+        app.agriculturalReturnCompleted ? 'Yes' : 'No',
+        app.landDeclarationCompleted ? 'Yes' : 'No',
+        app.consentFormCompleted ? 'Yes' : 'No',
+        app.supportingDocsCompleted ? 'Yes' : 'No',
+        app.createdAt ? new Date(app.createdAt).toISOString() : '',
+        app.submittedAt ? new Date(app.submittedAt).toISOString() : ''
+      ]);
+      
+      // Create CSV content
+      const csvContent = [headers, ...csvData]
+        .map(row => row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(','))
+        .join('\n');
+      
+      // Set response headers
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `applications-${timestamp}.csv`;
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(csvContent);
+      
+    } catch (error) {
+      console.error("Error exporting applications to CSV:", error);
+      res.status(500).json({ message: "Failed to export applications" });
+    }
+  });
+
+  // Export applications to XLSX
+  app.get("/api/admin/applications/export/xlsx", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { status, startDate, endDate } = req.query;
+      
+      // Parse date parameters
+      const parsedStartDate = startDate ? new Date(startDate as string) : undefined;
+      const parsedEndDate = endDate ? (() => {
+        const date = new Date(endDate as string);
+        // Set to end of day to include the full selected day
+        date.setHours(23, 59, 59, 999);
+        return date;
+      })() : undefined;
+      
+      // Validate date parameters
+      if (parsedStartDate && isNaN(parsedStartDate.getTime())) {
+        return res.status(400).json({ message: "Invalid startDate format" });
+      }
+      
+      if (parsedEndDate && isNaN(parsedEndDate.getTime())) {
+        return res.status(400).json({ message: "Invalid endDate format" });
+      }
+      
+      // Fetch filtered applications
+      const applications = await storage.getGrantApplicationsWithUserDataFiltered(
+        status && status !== 'all' ? status as string : undefined,
+        parsedStartDate,
+        parsedEndDate
+      );
+      
+      // Helper function to prevent XLSX formula injection
+      const sanitizeForExport = (value: any): string => {
+        const str = String(value);
+        // If string starts with formula characters, prefix with single quote
+        if (str.match(/^[=+\-@]/)) {
+          return `'${str}`;
+        }
+        return str;
+      };
+      
+      // Import XLSX library with error handling
+      let XLSX;
+      try {
+        XLSX = require('xlsx');
+      } catch (error) {
+        console.error("XLSX library not found:", error);
+        return res.status(500).json({ message: "Export functionality not available - missing dependencies" });
+      }
+      
+      // Prepare data for Excel
+      const worksheetData = applications.map(app => ({
+        'ID': app.id,
+        'User ID': sanitizeForExport(app.userId),
+        'First Name': sanitizeForExport(app.userFirstName || ''),
+        'Last Name': sanitizeForExport(app.userLastName || ''),
+        'Email': sanitizeForExport(app.userEmail || ''),
+        'Status': app.status,
+        'Year': app.year,
+        'Progress (%)': app.progressPercentage || 0,
+        'Agricultural Return': app.agriculturalReturnCompleted ? 'Yes' : 'No',
+        'Land Declaration': app.landDeclarationCompleted ? 'Yes' : 'No',
+        'Consent Form': app.consentFormCompleted ? 'Yes' : 'No',
+        'Supporting Docs': app.supportingDocsCompleted ? 'Yes' : 'No',
+        'Created At': app.createdAt ? new Date(app.createdAt).toISOString() : '',
+        'Submitted At': app.submittedAt ? new Date(app.submittedAt).toISOString() : ''
+      }));
+      
+      // Create workbook and worksheet
+      const workbook = XLSX.utils.book_new();
+      const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+      
+      // Add worksheet to workbook
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Applications');
+      
+      // Generate Excel buffer
+      const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+      
+      // Set response headers
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `applications-${timestamp}.xlsx`;
+      
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(buffer);
+      
+    } catch (error) {
+      console.error("Error exporting applications to XLSX:", error);
+      res.status(500).json({ message: "Failed to export applications" });
     }
   });
 

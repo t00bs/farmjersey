@@ -20,7 +20,7 @@ import {
   type ApplicationWithUserData,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, gte, lte } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -38,6 +38,7 @@ export interface IStorage {
   getGrantApplicationsByStatus(status: string): Promise<GrantApplication[]>;
   getAllGrantApplicationsWithUserData(): Promise<ApplicationWithUserData[]>;
   getGrantApplicationsByStatusWithUserData(status: string): Promise<ApplicationWithUserData[]>;
+  getGrantApplicationsWithUserDataFiltered(status?: string, startDate?: Date, endDate?: Date): Promise<ApplicationWithUserData[]>;
   updateGrantApplication(id: number, updates: Partial<InsertGrantApplication>): Promise<GrantApplication | undefined>;
   deleteGrantApplication(id: number): Promise<boolean>;
   
@@ -218,6 +219,47 @@ export class DatabaseStorage implements IStorage {
       .from(grantApplications)
       .leftJoin(users, eq(grantApplications.userId, users.id))
       .where(eq(grantApplications.status, status))
+      .orderBy(desc(grantApplications.createdAt));
+  }
+
+  async getGrantApplicationsWithUserDataFiltered(status?: string, startDate?: Date, endDate?: Date): Promise<ApplicationWithUserData[]> {
+    // Build the where conditions
+    const conditions = [];
+    
+    if (status) {
+      conditions.push(eq(grantApplications.status, status));
+    }
+    
+    if (startDate) {
+      conditions.push(gte(grantApplications.createdAt, startDate));
+    }
+    
+    if (endDate) {
+      conditions.push(lte(grantApplications.createdAt, endDate));
+    }
+
+    return await db
+      .select({
+        id: grantApplications.id,
+        userId: grantApplications.userId,
+        status: grantApplications.status,
+        year: grantApplications.year,
+        progressPercentage: grantApplications.progressPercentage,
+        agriculturalReturnCompleted: grantApplications.agriculturalReturnCompleted,
+        landDeclarationCompleted: grantApplications.landDeclarationCompleted,
+        consentFormCompleted: grantApplications.consentFormCompleted,
+        supportingDocsCompleted: grantApplications.supportingDocsCompleted,
+        digitalSignature: grantApplications.digitalSignature,
+        submittedAt: grantApplications.submittedAt,
+        createdAt: grantApplications.createdAt,
+        updatedAt: grantApplications.updatedAt,
+        userFirstName: users.firstName,
+        userLastName: users.lastName,
+        userEmail: users.email,
+      })
+      .from(grantApplications)
+      .leftJoin(users, eq(grantApplications.userId, users.id))
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(desc(grantApplications.createdAt));
   }
 

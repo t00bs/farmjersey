@@ -20,7 +20,7 @@ import {
   type ApplicationWithUserData,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, gte, lte } from "drizzle-orm";
+import { eq, and, desc, gte, lte, inArray } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -49,6 +49,7 @@ export interface IStorage {
   
   // Document operations
   createDocument(document: InsertDocument): Promise<Document>;
+  getDocumentById(id: number): Promise<Document | undefined>;
   getDocumentsByApplicationId(applicationId: number): Promise<Document[]>;
   deleteDocument(id: number): Promise<void>;
   
@@ -66,6 +67,10 @@ export interface IStorage {
   getAgriculturalFormResponseByApplication(applicationId: number): Promise<AgriculturalFormResponse | undefined>;
   getAgriculturalFormResponseById(id: number): Promise<AgriculturalFormResponse | undefined>;
   updateAgriculturalFormResponse(id: number, updates: Partial<InsertAgriculturalFormResponse>): Promise<AgriculturalFormResponse | undefined>;
+  
+  // Bulk operations for CSV export
+  getAgriculturalFormResponsesForApplications(applicationIds: number[]): Promise<AgriculturalFormResponse[]>;
+  getDocumentsForApplications(applicationIds: number[]): Promise<Document[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -85,13 +90,18 @@ export class DatabaseStorage implements IStorage {
         .onConflictDoUpdate({
           target: users.id,
           set: {
-            ...userData,
+            email: userData.email,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            profileImageUrl: userData.profileImageUrl,
             updatedAt: new Date(),
           },
         })
         .returning();
       return user;
     } catch (error: any) {
+      console.error("upsertUser error:", error.code, error.constraint, error.message);
+      
       // Handle email unique constraint violation
       if (error.code === '23505' && error.constraint === 'users_email_unique') {
         // Email already exists, find the existing user and update their data
@@ -101,11 +111,14 @@ export class DatabaseStorage implements IStorage {
           .where(eq(users.email, userData.email!));
         
         if (existingUser) {
-          // Update the existing user with new data
+          // Update the existing user with new data (excluding ID to avoid FK violations)
           const [updatedUser] = await db
             .update(users)
             .set({
-              ...userData,
+              email: userData.email,
+              firstName: userData.firstName,
+              lastName: userData.lastName,
+              profileImageUrl: userData.profileImageUrl,
               updatedAt: new Date(),
             })
             .where(eq(users.id, existingUser.id))
@@ -113,6 +126,31 @@ export class DatabaseStorage implements IStorage {
           return updatedUser;
         }
       }
+      
+      // Handle foreign key constraint violation - user already exists with related data
+      if (error.code === '23503') {
+        // Find existing user by ID and just update non-ID fields
+        const [existingUser] = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, userData.id));
+        
+        if (existingUser) {
+          const [updatedUser] = await db
+            .update(users)
+            .set({
+              email: userData.email,
+              firstName: userData.firstName,
+              lastName: userData.lastName,
+              profileImageUrl: userData.profileImageUrl,
+              updatedAt: new Date(),
+            })
+            .where(eq(users.id, userData.id))
+            .returning();
+          return updatedUser;
+        }
+      }
+      
       throw error;
     }
   }
@@ -327,6 +365,14 @@ export class DatabaseStorage implements IStorage {
     return newDocument;
   }
 
+  async getDocumentById(id: number): Promise<Document | undefined> {
+    const [document] = await db
+      .select()
+      .from(documents)
+      .where(eq(documents.id, id));
+    return document;
+  }
+
   async getDocumentsByApplicationId(applicationId: number): Promise<Document[]> {
     return await db
       .select()
@@ -436,6 +482,27 @@ export class DatabaseStorage implements IStorage {
       .where(eq(agriculturalFormResponses.id, id))
       .returning();
     return updatedResponse;
+  }
+
+  // Bulk operations for CSV export
+  async getAgriculturalFormResponsesForApplications(applicationIds: number[]): Promise<AgriculturalFormResponse[]> {
+    if (applicationIds.length === 0) return [];
+    
+    return await db
+      .select()
+      .from(agriculturalFormResponses)
+      .where(inArray(agriculturalFormResponses.applicationId, applicationIds))
+      .orderBy(desc(agriculturalFormResponses.createdAt));
+  }
+
+  async getDocumentsForApplications(applicationIds: number[]): Promise<Document[]> {
+    if (applicationIds.length === 0) return [];
+    
+    return await db
+      .select()
+      .from(documents)
+      .where(inArray(documents.applicationId, applicationIds))
+      .orderBy(documents.applicationId, documents.uploadedAt);
   }
 }
 

@@ -163,8 +163,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         parsedEndDate
       );
       
-      // Generate CSV headers
-      const headers = [
+      // Get application IDs for bulk fetching
+      const applicationIds = applications.map(app => app.id);
+      
+      // Fetch agricultural form responses and documents in bulk
+      const [formResponses, documents] = await Promise.all([
+        storage.getAgriculturalFormResponsesForApplications(applicationIds),
+        storage.getDocumentsForApplications(applicationIds)
+      ]);
+      
+      // Create lookup maps for efficient access
+      const responseMap = new Map();
+      formResponses.forEach(response => {
+        responseMap.set(response.applicationId, response);
+      });
+      
+      const documentsMap = new Map();
+      documents.forEach(doc => {
+        if (!documentsMap.has(doc.applicationId)) {
+          documentsMap.set(doc.applicationId, []);
+        }
+        documentsMap.get(doc.applicationId).push(doc);
+      });
+      
+      // Helper function to generate document URLs
+      const getDocumentUrl = (doc: any) => {
+        const baseUrl = req.protocol + '://' + req.get('host');
+        return `${baseUrl}/api/documents/download/${doc.id}`;
+      };
+      
+      // Extract all unique form fields from responses to create dynamic headers
+      const allFormFields = new Set();
+      formResponses.forEach(response => {
+        if (response.responses && typeof response.responses === 'object') {
+          Object.keys(response.responses).forEach(fieldId => {
+            allFormFields.add(fieldId);
+          });
+        }
+      });
+      
+      // Generate CSV headers with dynamic form fields
+      const baseHeaders = [
         'ID',
         'User ID',
         'First Name',
@@ -173,31 +212,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'Status',
         'Year',
         'Progress (%)',
-        'Agricultural Return',
-        'Land Declaration',
-        'Consent Form',
-        'Supporting Docs',
+        'Agricultural Return Completed',
+        'Land Declaration Completed',
+        'Consent Form Completed',
+        'Supporting Docs Completed',
         'Created At',
         'Submitted At'
       ];
       
+      // Add agricultural form fields as separate columns
+      const formFieldHeaders: string[] = Array.from(allFormFields).map(field => String(field)).sort();
+      const documentHeaders = [
+        'Land Declaration Documents',
+        'Supporting Documents',
+        'All Document URLs'
+      ];
+      
+      const headers = [...baseHeaders, ...formFieldHeaders.map(field => `Form Field: ${field}`), ...documentHeaders];
+      
       // Convert applications to CSV format
-      const csvData = applications.map(app => [
-        app.id,
-        sanitizeForExport(app.userId),
-        sanitizeForExport(app.userFirstName || ''),
-        sanitizeForExport(app.userLastName || ''),
-        sanitizeForExport(app.userEmail || ''),
-        app.status,
-        app.year,
-        app.progressPercentage || 0,
-        app.agriculturalReturnCompleted ? 'Yes' : 'No',
-        app.landDeclarationCompleted ? 'Yes' : 'No',
-        app.consentFormCompleted ? 'Yes' : 'No',
-        app.supportingDocsCompleted ? 'Yes' : 'No',
-        app.createdAt ? new Date(app.createdAt).toISOString() : '',
-        app.submittedAt ? new Date(app.submittedAt).toISOString() : ''
-      ]);
+      const csvData = applications.map(app => {
+        const response = responseMap.get(app.id);
+        const appDocuments = documentsMap.get(app.id) || [];
+        
+        // Extract form field values
+        const formFieldValues = formFieldHeaders.map((fieldId: string) => {
+          if (response && response.responses && typeof response.responses === 'object') {
+            const responses = response.responses as Record<string, any>;
+            const value = responses[fieldId];
+            if (value === null || value === undefined) return '';
+            if (typeof value === 'object') {
+              return sanitizeForExport(JSON.stringify(value));
+            }
+            return sanitizeForExport(String(value));
+          }
+          return '';
+        });
+        
+        // Separate documents by type
+        const landDeclarationDocs = appDocuments
+          .filter((doc: any) => doc.documentType === 'land_declaration')
+          .map((doc: any) => `${doc.fileName} (${getDocumentUrl(doc)})`)
+          .join('; ');
+          
+        const supportingDocs = appDocuments
+          .filter((doc: any) => doc.documentType === 'supporting_doc')
+          .map((doc: any) => `${doc.fileName} (${getDocumentUrl(doc)})`)
+          .join('; ');
+          
+        const allDocuments = appDocuments
+          .map((doc: any) => `${doc.fileName} (${getDocumentUrl(doc)})`)
+          .join('; ');
+        
+        return [
+          app.id,
+          sanitizeForExport(app.userId),
+          sanitizeForExport(app.userFirstName || ''),
+          sanitizeForExport(app.userLastName || ''),
+          sanitizeForExport(app.userEmail || ''),
+          app.status,
+          app.year,
+          app.progressPercentage || 0,
+          app.agriculturalReturnCompleted ? 'Yes' : 'No',
+          app.landDeclarationCompleted ? 'Yes' : 'No',
+          app.consentFormCompleted ? 'Yes' : 'No',
+          app.supportingDocsCompleted ? 'Yes' : 'No',
+          app.createdAt ? new Date(app.createdAt).toISOString() : '',
+          app.submittedAt ? new Date(app.submittedAt).toISOString() : '',
+          ...formFieldValues,
+          sanitizeForExport(landDeclarationDocs),
+          sanitizeForExport(supportingDocs),
+          sanitizeForExport(allDocuments)
+        ];
+      });
       
       // Create CSV content
       const csvContent = [headers, ...csvData]
@@ -206,7 +293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Set response headers
       const timestamp = new Date().toISOString().split('T')[0];
-      const filename = `applications-${timestamp}.csv`;
+      const filename = `applications-detailed-${timestamp}.csv`;
       
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -215,6 +302,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error exporting applications to CSV:", error);
       res.status(500).json({ message: "Failed to export applications" });
+    }
+  });
+
+  // Admin-only document download route for CSV links
+  app.get("/api/documents/download/:documentId", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const documentId = parseInt(req.params.documentId);
+      
+      const document = await storage.getDocumentById(documentId);
+      if (!document) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+      
+      // Check if file exists
+      if (!fs.existsSync(document.filePath)) {
+        return res.status(404).json({ message: "File not found on server" });
+      }
+      
+      // Set proper content type and force download
+      res.setHeader('Content-Type', document.fileType);
+      res.setHeader('Content-Disposition', `attachment; filename="${document.fileName}"`);
+      res.download(document.filePath, document.fileName);
+    } catch (error) {
+      console.error("Error downloading document:", error);
+      res.status(500).json({ message: "Failed to download document" });
     }
   });
 

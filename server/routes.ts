@@ -310,6 +310,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const documentId = parseInt(req.params.documentId);
       
+      if (!Number.isInteger(documentId) || documentId <= 0) {
+        return res.status(400).json({ message: "Invalid document ID" });
+      }
+      
       const document = await storage.getDocumentById(documentId);
       if (!document) {
         return res.status(404).json({ message: "Document not found" });
@@ -1031,7 +1035,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const documentId = parseInt(req.params.documentId);
       
-      if (isNaN(documentId)) {
+      if (!Number.isInteger(documentId) || documentId <= 0) {
         return res.status(400).json({ message: "Invalid document ID" });
       }
       
@@ -1082,15 +1086,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const templateType = req.params.type;
       
       if (templateType === "land-declaration") {
-        // Generate Excel template for land declaration
+        // Generate CSV template for land declaration
         const templatePath = generateLandDeclarationTemplate();
-        res.download(templatePath, "land-declaration-template.xlsx");
+        res.download(templatePath, "land-declaration-template.csv", (error) => {
+          if (error) {
+            console.error("Error serving template download:", error);
+            if (!res.headersSent) {
+              res.status(500).json({ message: "Failed to download template" });
+            }
+          }
+        });
       } else {
         res.status(404).json({ message: "Template not found" });
       }
     } catch (error) {
       console.error("Error downloading template:", error);
-      res.status(500).json({ message: "Failed to download template" });
+      if (!res.headersSent) {
+        res.status(500).json({ message: "Failed to download template" });
+      }
     }
   });
 
@@ -1163,13 +1176,25 @@ function calculateProgressSync(application: any): number {
 }
 
 function generateLandDeclarationTemplate(): string {
-  // Simple CSV template generation
-  const templateContent = `Field Name,Land Type,Acreage,Crop Type,Irrigation Type
+  try {
+    // Simple CSV template generation
+    const templateContent = `Field Name,Land Type,Acreage,Crop Type,Irrigation Type
 Example Field 1,Arable,10.5,Wheat,Sprinkler
 Example Field 2,Pasture,5.2,Grass,None
 `;
-  
-  const templatePath = path.join("uploads", "land-declaration-template.csv");
-  fs.writeFileSync(templatePath, templateContent);
-  return templatePath;
+    
+    const templatePath = path.join("uploads", "land-declaration-template.csv");
+    
+    // Ensure uploads directory exists
+    const uploadsDir = path.dirname(templatePath);
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+    
+    fs.writeFileSync(templatePath, templateContent);
+    return templatePath;
+  } catch (error) {
+    console.error("Error generating land declaration template:", error);
+    throw new Error("Failed to generate template file");
+  }
 }

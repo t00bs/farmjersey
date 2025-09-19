@@ -418,7 +418,7 @@ function ApplicationReviewDialogContent({
   const [newStatus, setNewStatus] = useState(application.status);
 
   const { data: documents = [] } = useQuery<Document[]>({
-    queryKey: ["/api/applications", application.id, "documents"],
+    queryKey: [`/api/admin/applications/${application.id}/documents`],
   });
 
   const { data: agriculturalReturn } = useQuery<AgriculturalFormResponse | null>({

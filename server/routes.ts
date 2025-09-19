@@ -305,6 +305,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin-only route to get documents for any application
+  app.get("/api/admin/applications/:applicationId/documents", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const applicationId = parseInt(req.params.applicationId);
+      
+      if (!Number.isInteger(applicationId) || applicationId <= 0) {
+        return res.status(400).json({ message: "Invalid application ID" });
+      }
+      
+      // Admin can access documents for any application
+      const documents = await storage.getDocumentsByApplicationId(applicationId);
+      res.json(documents);
+    } catch (error) {
+      console.error("Error fetching application documents for admin:", error);
+      res.status(500).json({ message: "Failed to fetch documents" });
+    }
+  });
+
   // Admin-only document download route for CSV links
   app.get("/api/documents/download/:documentId", isAuthenticated, isAdmin, async (req: any, res) => {
     try {

@@ -20,10 +20,10 @@ function Router() {
         <Route path="/" component={Landing} />
       ) : (
         <>
-          <Route path="/" component={Dashboard} />
-          <Route path="/application/:id" component={GrantApplication} />
-          <Route path="/admin" component={AdminDashboard} />
           <Route path="/admin/form-builder" component={AgriculturalFormBuilder} />
+          <Route path="/admin" component={AdminDashboard} />
+          <Route path="/application/:id" component={GrantApplication} />
+          <Route path="/" component={Dashboard} />
         </>
       )}
       <Route component={NotFound} />

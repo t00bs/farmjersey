@@ -1,6 +1,7 @@
 import { Home, FileText, HelpCircle, Settings, Shield } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import logoPath from "@assets/FJ Brand Logo_1759502325451.png";
 
 const navigation = [
   { name: "Home", href: "/", icon: Home },
@@ -20,21 +21,11 @@ export default function Sidebar() {
     <aside className="w-64 bg-white shadow-sm border-r border-gray-200 flex flex-col">
       {/* Logo Section */}
       <div className="p-6 border-b border-gray-200">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-primary-custom rounded-lg flex items-center justify-center">
-            <svg 
-              className="w-6 h-6 text-white" 
-              fill="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z"/>
-            </svg>
+        <Link href="/">
+          <div className="flex items-center space-x-3 cursor-pointer">
+            <img src={logoPath} alt="Farm Jersey" className="h-8" data-testid="logo-sidebar" />
           </div>
-          <div>
-            <h1 className="text-lg font-semibold text-text-primary">RSS Portal</h1>
-            <p className="text-xs text-gray-500">Rural Support Scheme</p>
-          </div>
-        </div>
+        </Link>
       </div>
 
       {/* Navigation Menu */}

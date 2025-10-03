@@ -4,29 +4,32 @@
 
 :root {
   --background: hsl(0, 0%, 100%);
-  --foreground: hsl(210, 11%, 15%);
+  --foreground: hsl(0, 2%, 14%);
   --muted: hsl(216, 12%, 97%);
   --muted-foreground: hsl(215, 16%, 47%);
   --popover: hsl(0, 0%, 100%);
-  --popover-foreground: hsl(210, 11%, 15%);
+  --popover-foreground: hsl(0, 2%, 14%);
   --card: hsl(0, 0%, 100%);
-  --card-foreground: hsl(210, 11%, 15%);
+  --card-foreground: hsl(0, 2%, 14%);
   --border: hsl(215, 14%, 88%);
   --input: hsl(215, 14%, 88%);
-  --primary: hsl(120, 48%, 34%);
-  --primary-foreground: hsl(0, 0%, 100%);
+  --primary: hsl(29, 32%, 61%);
+  --primary-foreground: hsl(0, 2%, 14%);
   --secondary: hsl(211, 63%, 40%);
   --secondary-foreground: hsl(0, 0%, 100%);
-  --accent: hsl(50, 100%, 50%);
-  --accent-foreground: hsl(210, 11%, 15%);
+  --accent: hsl(118, 90%, 80%);
+  --accent-foreground: hsl(0, 2%, 14%);
   --destructive: hsl(0, 62%, 30%);
   --destructive-foreground: hsl(0, 0%, 98%);
-  --ring: hsl(210, 11%, 15%);
-  --radius: 0.5rem;
+  --ring: hsl(0, 2%, 14%);
+  --radius: 0rem;
   --success: hsl(120, 51%, 43%);
   --success-foreground: hsl(0, 0%, 100%);
-  --text-primary: hsl(210, 11%, 15%);
+  --text-primary: hsl(0, 2%, 14%);
   --bg-light: hsl(216, 12%, 97%);
+  --farm-jersey-tan: hsl(29, 32%, 61%);
+  --farm-jersey-black: hsl(0, 2%, 14%);
+  --farm-jersey-green: hsl(118, 90%, 80%);
 }
 
 .dark {
@@ -69,7 +72,7 @@
 
 @layer utilities {
   .text-primary-custom {
-    color: hsl(120, 48%, 34%);
+    color: #C69A71;
   }
   
   .text-secondary-custom {
@@ -81,11 +84,15 @@
   }
   
   .text-accent-custom {
-    color: hsl(50, 100%, 50%);
+    color: #AAF7A6;
+  }
+  
+  .text-farm-jersey-black {
+    color: #231F20;
   }
   
   .bg-primary-custom {
-    background-color: hsl(120, 48%, 34%);
+    background-color: #C69A71;
   }
   
   .bg-secondary-custom {
@@ -97,14 +104,26 @@
   }
   
   .bg-accent-custom {
-    background-color: hsl(50, 100%, 50%);
+    background-color: #AAF7A6;
+  }
+  
+  .bg-farm-jersey-tan {
+    background-color: #C69A71;
+  }
+  
+  .bg-farm-jersey-black {
+    background-color: #231F20;
   }
   
   .border-primary-custom {
-    border-color: hsl(120, 48%, 34%);
+    border-color: #C69A71;
   }
   
   .border-secondary-custom {
     border-color: hsl(211, 63%, 40%);
+  }
+  
+  .border-farm-jersey-black {
+    border-color: #231F20;
   }
 }

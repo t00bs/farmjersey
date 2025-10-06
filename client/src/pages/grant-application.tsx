@@ -284,7 +284,7 @@ export default function GrantApplication() {
                   <span className="text-gray-400">•</span>
                   <div className="flex items-center space-x-2">
                     <div className="w-2 h-2 rounded-full bg-[#237804]"></div>
-                    <span className="text-sm font-medium text-accent-custom capitalize">
+                    <span className="text-sm font-medium capitalize text-[#237804]">
                       {application?.status?.replace('_', ' ') || 'Draft'}
                     </span>
                   </div>

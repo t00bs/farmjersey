@@ -8,7 +8,7 @@ export default function Landing() {
       {/* Header */}
       <header className="absolute top-0 left-0 right-0 z-20 bg-transparent" data-testid="header">
         <div className="container mx-auto px-4 sm:px-8 lg:px-[120px] py-6 flex items-center justify-between">
-          <img src={logoPath} alt="Farm Jersey" className="h-10" data-testid="logo-header" />
+          <img src={logoPath} alt="Farm Jersey" className="h-10 invert" data-testid="logo-header" />
           <Button 
             onClick={() => window.location.href = '/api/login'}
             className="bg-white hover:bg-gray-100 text-[#231f20] px-6 py-2 h-auto font-medium text-base"

@@ -74,7 +74,7 @@ export default function TopBar() {
         <div className="flex items-center space-x-4">
           <Button variant="ghost" size="icon" className="relative">
             <Bell className="h-5 w-5 text-gray-400" />
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-accent-custom rounded-full"></span>
+            <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#237804]"></span>
           </Button>
           
           <DropdownMenu>

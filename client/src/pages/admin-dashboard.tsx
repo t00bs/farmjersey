@@ -519,7 +519,12 @@ function ApplicationReviewDialogContent({
                       {doc.documentType} • {Math.round(doc.fileSize / 1024)} KB
                     </div>
                   </div>
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => window.open(`/api/documents/view/${doc.id}`, '_blank')}
+                    data-testid={`button-view-document-${doc.id}`}
+                  >
                     <Eye className="h-4 w-4 mr-2" />
                     View
                   </Button>

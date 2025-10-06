@@ -352,6 +352,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin-only document view route - serves file inline for viewing in browser
+  app.get("/api/documents/view/:documentId", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const documentId = parseInt(req.params.documentId);
+      
+      if (!Number.isInteger(documentId) || documentId <= 0) {
+        return res.status(400).json({ message: "Invalid document ID" });
+      }
+      
+      const document = await storage.getDocumentById(documentId);
+      if (!document) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+      
+      // Check if file exists
+      if (!fs.existsSync(document.filePath)) {
+        return res.status(404).json({ message: "File not found on server" });
+      }
+      
+      // Set proper content type and serve inline
+      res.setHeader('Content-Type', document.fileType);
+      res.setHeader('Content-Disposition', `inline; filename="${document.fileName}"`);
+      res.sendFile(path.resolve(document.filePath));
+    } catch (error) {
+      console.error("Error viewing document:", error);
+      res.status(500).json({ message: "Failed to view document" });
+    }
+  });
+
   // Export applications to XLSX
   app.get("/api/admin/applications/export/xlsx", isAuthenticated, isAdmin, async (req: any, res) => {
     try {

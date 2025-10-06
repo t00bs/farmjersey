@@ -283,7 +283,7 @@ export default function GrantApplication() {
                   <span className="text-gray-600">{application?.year || 2026}</span>
                   <span className="text-gray-400">•</span>
                   <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-accent-custom rounded-full"></div>
+                    <div className="w-2 h-2 rounded-full bg-[#237804]"></div>
                     <span className="text-sm font-medium text-accent-custom capitalize">
                       {application?.status?.replace('_', ' ') || 'Draft'}
                     </span>
@@ -429,7 +429,6 @@ export default function GrantApplication() {
           </Alert>
         </main>
       </div>
-
       {/* Modals */}
       <FileUploadModal
         open={uploadModalOpen}
@@ -437,19 +436,16 @@ export default function GrantApplication() {
         applicationId={applicationId!}
         documentType={uploadType}
       />
-
       <SignatureCanvas
         open={signatureModalOpen}
         onOpenChange={setSignatureModalOpen}
         applicationId={applicationId!}
       />
-
       <DocumentDisplay
         open={documentModalOpen}
         onOpenChange={setDocumentModalOpen}
         applicationId={applicationId!}
       />
-
       <Dialog open={agriculturalFormOpen} onOpenChange={setAgriculturalFormOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>

@@ -12,10 +12,16 @@ import AdminDashboard from "@/pages/admin-dashboard";
 import AgriculturalFormBuilder from "@/pages/agricultural-form-builder";
 
 function LoginRedirect() {
-  useEffect(() => {
-    window.location.href = '/api/login';
-  }, []);
+  const { isAuthenticated, isLoading } = useAuth();
 
+  useEffect(() => {
+    // Only redirect to login if we've finished loading and user is not authenticated
+    if (!isLoading && !isAuthenticated) {
+      window.location.href = '/api/login';
+    }
+  }, [isLoading, isAuthenticated]);
+
+  // Show loading spinner while checking authentication
   return (
     <div className="flex items-center justify-center min-h-screen">
       <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
@@ -28,7 +34,7 @@ function Router() {
 
   return (
     <Switch>
-      {isLoading || !isAuthenticated ? (
+      {!isAuthenticated ? (
         <Route path="/" component={LoginRedirect} />
       ) : (
         <>

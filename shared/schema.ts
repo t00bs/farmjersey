@@ -192,6 +192,26 @@ export type InsertAgriculturalFormTemplate = z.infer<typeof insertAgriculturalFo
 export type AgriculturalFormResponse = typeof agriculturalFormResponses.$inferSelect;
 export type InsertAgriculturalFormResponse = z.infer<typeof insertAgriculturalFormResponseSchema>;
 
+// Invitations
+export const invitations = pgTable("invitations", {
+  id: serial("id").primaryKey(),
+  email: varchar("email").notNull(),
+  token: varchar("token").notNull().unique(),
+  used: boolean("used").default(false),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertInvitationSchema = createInsertSchema(invitations).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type Invitation = typeof invitations.$inferSelect;
+export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
+
 // Admin-specific types that include user data
 export interface ApplicationWithUserData extends GrantApplication {
   userFirstName?: string | null;

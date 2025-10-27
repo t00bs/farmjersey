@@ -2,7 +2,9 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertGrantApplicationSchema, insertAgriculturalReturnSchema, insertDocumentSchema, insertAgriculturalFormTemplateSchema, insertAgriculturalFormResponseSchema } from "@shared/schema";
+import { insertGrantApplicationSchema, insertAgriculturalReturnSchema, insertDocumentSchema, insertAgriculturalFormTemplateSchema, insertAgriculturalFormResponseSchema, insertInvitationSchema } from "@shared/schema";
+import { sendInvitationEmail } from "./resend";
+import { randomBytes } from "crypto";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -378,6 +380,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error viewing document:", error);
       res.status(500).json({ message: "Failed to view document" });
+    }
+  });
+
+  // Invitation routes
+  // Create invitation (admin only)
+  app.post("/api/admin/invitations", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email || !email.includes('@')) {
+        return res.status(400).json({ message: "Valid email is required" });
+      }
+
+      // Generate secure random token
+      const token = randomBytes(32).toString('hex');
+      
+      // Set expiry to 7 days from now
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+
+      const invitationData = insertInvitationSchema.parse({
+        email,
+        token,
+        used: false,
+        expiresAt,
+        createdBy: req.user.claims.sub,
+      });
+
+      const invitation = await storage.createInvitation(invitationData);
+
+      // Generate invitation URL
+      const baseUrl = req.protocol + '://' + req.get('host');
+      const invitationUrl = `${baseUrl}/api/accept-invitation?token=${token}`;
+
+      // Send invitation email
+      try {
+        await sendInvitationEmail(email, invitationUrl);
+      } catch (emailError) {
+        console.error("Error sending invitation email:", emailError);
+        // Delete the invitation if email fails
+        await storage.deleteInvitation(invitation.id);
+        return res.status(500).json({ message: "Failed to send invitation email" });
+      }
+
+      res.json({ 
+        message: "Invitation sent successfully",
+        invitation: {
+          id: invitation.id,
+          email: invitation.email,
+          expiresAt: invitation.expiresAt,
+          createdAt: invitation.createdAt,
+        }
+      });
+    } catch (error) {
+      console.error("Error creating invitation:", error);
+      res.status(500).json({ message: "Failed to create invitation" });
+    }
+  });
+
+  // Get all invitations (admin only)
+  app.get("/api/admin/invitations", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const invitations = await storage.getInvitations();
+      res.json(invitations);
+    } catch (error) {
+      console.error("Error fetching invitations:", error);
+      res.status(500).json({ message: "Failed to fetch invitations" });
+    }
+  });
+
+  // Delete invitation (admin only)
+  app.delete("/api/admin/invitations/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({ message: "Invalid invitation ID" });
+      }
+
+      await storage.deleteInvitation(id);
+      res.json({ message: "Invitation deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting invitation:", error);
+      res.status(500).json({ message: "Failed to delete invitation" });
+    }
+  });
+
+  // Accept invitation (public route - redirects to login with token)
+  app.get("/api/accept-invitation", async (req: any, res) => {
+    try {
+      const { token } = req.query;
+      
+      if (!token) {
+        return res.status(400).send("Invalid invitation link");
+      }
+
+      const invitation = await storage.getInvitationByToken(token as string);
+      
+      if (!invitation) {
+        return res.status(404).send("Invitation not found or has been used");
+      }
+
+      if (invitation.used) {
+        return res.status(400).send("This invitation has already been used");
+      }
+
+      if (new Date() > new Date(invitation.expiresAt)) {
+        return res.status(400).send("This invitation has expired");
+      }
+
+      // Store token in session for validation after login
+      req.session.invitationToken = token;
+      
+      // Redirect to login
+      res.redirect('/api/login');
+    } catch (error) {
+      console.error("Error accepting invitation:", error);
+      res.status(500).send("Failed to process invitation");
     }
   });
 

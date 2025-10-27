@@ -123,10 +123,88 @@ export async function setupAuth(app: Express) {
     })(req, res, next);
   });
 
-  app.get("/api/callback", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
-      successReturnToOrRedirect: "/",
-      failureRedirect: "/api/login",
+  app.get("/api/callback", async (req: any, res, next) => {
+    passport.authenticate(`replitauth:${req.hostname}`, async (err: any, user: any, info: any) => {
+      if (err) {
+        return next(err);
+      }
+      if (!user) {
+        return res.redirect("/api/login");
+      }
+
+      // Check if there's an invitation token in the session
+      const invitationToken = req.session.invitationToken;
+      
+      if (invitationToken) {
+        try {
+          const { storage } = await import("./storage");
+          const invitation = await storage.getInvitationByToken(invitationToken);
+          
+          if (!invitation || invitation.used || new Date() > new Date(invitation.expiresAt)) {
+            // Invalid or expired invitation
+            return res.send("This invitation is invalid or has expired. Please contact an administrator.");
+          }
+
+          // Check if the logged in email matches the invitation email
+          const userEmail = user.claims?.email;
+          if (userEmail !== invitation.email) {
+            return res.send(`This invitation was sent to ${invitation.email}. Please log in with that account.`);
+          }
+
+          // Mark invitation as used
+          await storage.markInvitationAsUsed(invitation.id);
+          
+          // Clear the token from session
+          delete req.session.invitationToken;
+          
+          // Log the user in
+          req.logIn(user, (loginErr) => {
+            if (loginErr) {
+              return next(loginErr);
+            }
+            return res.redirect("/");
+          });
+        } catch (error) {
+          console.error("Error processing invitation:", error);
+          return res.status(500).send("Error processing invitation");
+        }
+      } else {
+        // No invitation token - check if user is admin or has existing invitation
+        const userEmail = user.claims?.email;
+        const adminEmails = process.env.ADMIN_EMAILS?.split(',').map((email: string) => email.trim()) || [];
+        
+        // Allow admins without invitation
+        if (adminEmails.includes(userEmail)) {
+          req.logIn(user, (loginErr) => {
+            if (loginErr) {
+              return next(loginErr);
+            }
+            return res.redirect("/");
+          });
+        } else {
+          // Non-admin user without invitation token - check if they have a used invitation
+          try {
+            const { storage } = await import("./storage");
+            const invitation = await storage.getInvitationByEmail(userEmail);
+            
+            if (invitation && invitation.used) {
+              // User has previously used an invitation, allow login
+              req.logIn(user, (loginErr) => {
+                if (loginErr) {
+                  return next(loginErr);
+                }
+                return res.redirect("/");
+              });
+            } else {
+              // User needs an invitation
+              return res.send("You need an invitation to access this system. Please contact an administrator.");
+            }
+          } catch (error) {
+            console.error("Error checking user invitation:", error);
+            return res.status(500).send("Error checking access");
+          }
+        }
+      }
     })(req, res, next);
   });
 

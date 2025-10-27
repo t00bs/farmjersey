@@ -32,6 +32,15 @@ function LoginRedirect() {
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
 
+  // Show loading spinner while checking authentication
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
     <Switch>
       {!isAuthenticated ? (
@@ -39,6 +48,7 @@ function Router() {
       ) : (
         <>
           <Route path="/admin/form-builder" component={AgriculturalFormBuilder} />
+          <Route path="/admin-dashboard" component={AdminDashboard} />
           <Route path="/admin" component={AdminDashboard} />
           <Route path="/application/:id" component={GrantApplication} />
           <Route path="/" component={Dashboard} />

@@ -173,8 +173,11 @@ export async function setupAuth(app: Express) {
         const userEmail = user.claims?.email;
         const adminEmails = process.env.ADMIN_EMAILS?.split(',').map((email: string) => email.trim()) || [];
         
+        console.log(`[AUTH] Checking admin access for ${userEmail}. Admin emails:`, adminEmails);
+        
         // Allow admins without invitation
         if (adminEmails.includes(userEmail)) {
+          console.log(`[AUTH] Admin access granted for ${userEmail}`);
           req.logIn(user, (loginErr) => {
             if (loginErr) {
               return next(loginErr);
@@ -182,6 +185,7 @@ export async function setupAuth(app: Express) {
             return res.redirect("/");
           });
         } else {
+          console.log(`[AUTH] ${userEmail} is not an admin. Checking for invitation...`);
           // Non-admin user without invitation token - check if they have a used invitation
           try {
             const { storage } = await import("./storage");

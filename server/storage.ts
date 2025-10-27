@@ -94,6 +94,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
+    // First, check if a user with this email already exists
+    const [existingUserByEmail] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, userData.email!));
+    
+    if (existingUserByEmail) {
+      // User with this email exists - update their data
+      // This handles the case where the same user logs in but OIDC might provide a different sub
+      const [updatedUser] = await db
+        .update(users)
+        .set({
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          profileImageUrl: userData.profileImageUrl,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, existingUserByEmail.id))
+        .returning();
+      return updatedUser;
+    }
+    
+    // No existing user with this email - try to insert or update by ID
     try {
       const [user] = await db
         .insert(users)
@@ -112,56 +135,6 @@ export class DatabaseStorage implements IStorage {
       return user;
     } catch (error: any) {
       console.error("upsertUser error:", error.code, error.constraint, error.message);
-      
-      // Handle email unique constraint violation
-      if (error.code === '23505' && error.constraint === 'users_email_unique') {
-        // Email already exists, find the existing user and update their data
-        const [existingUser] = await db
-          .select()
-          .from(users)
-          .where(eq(users.email, userData.email!));
-        
-        if (existingUser) {
-          // Update the existing user with new data (excluding ID to avoid FK violations)
-          const [updatedUser] = await db
-            .update(users)
-            .set({
-              email: userData.email,
-              firstName: userData.firstName,
-              lastName: userData.lastName,
-              profileImageUrl: userData.profileImageUrl,
-              updatedAt: new Date(),
-            })
-            .where(eq(users.id, existingUser.id))
-            .returning();
-          return updatedUser;
-        }
-      }
-      
-      // Handle foreign key constraint violation - user already exists with related data
-      if (error.code === '23503') {
-        // Find existing user by ID and just update non-ID fields
-        const [existingUser] = await db
-          .select()
-          .from(users)
-          .where(eq(users.id, userData.id));
-        
-        if (existingUser) {
-          const [updatedUser] = await db
-            .update(users)
-            .set({
-              email: userData.email,
-              firstName: userData.firstName,
-              lastName: userData.lastName,
-              profileImageUrl: userData.profileImageUrl,
-              updatedAt: new Date(),
-            })
-            .where(eq(users.id, userData.id))
-            .returning();
-          return updatedUser;
-        }
-      }
-      
       throw error;
     }
   }

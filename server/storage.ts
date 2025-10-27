@@ -5,6 +5,7 @@ import {
   documents,
   agriculturalFormTemplates,
   agriculturalFormResponses,
+  invitations,
   type User,
   type UpsertUser,
   type GrantApplication,
@@ -17,6 +18,8 @@ import {
   type InsertAgriculturalFormTemplate,
   type AgriculturalFormResponse,
   type InsertAgriculturalFormResponse,
+  type Invitation,
+  type InsertInvitation,
   type ApplicationWithUserData,
 } from "@shared/schema";
 import { db } from "./db";
@@ -71,6 +74,14 @@ export interface IStorage {
   // Bulk operations for CSV export
   getAgriculturalFormResponsesForApplications(applicationIds: number[]): Promise<AgriculturalFormResponse[]>;
   getDocumentsForApplications(applicationIds: number[]): Promise<Document[]>;
+  
+  // Invitation operations
+  createInvitation(invitation: InsertInvitation): Promise<Invitation>;
+  getInvitations(): Promise<Invitation[]>;
+  getInvitationByToken(token: string): Promise<Invitation | undefined>;
+  getInvitationByEmail(email: string): Promise<Invitation | undefined>;
+  markInvitationAsUsed(id: number): Promise<Invitation | undefined>;
+  deleteInvitation(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -503,6 +514,58 @@ export class DatabaseStorage implements IStorage {
       .from(documents)
       .where(inArray(documents.applicationId, applicationIds))
       .orderBy(documents.applicationId, documents.uploadedAt);
+  }
+
+  // Invitation operations
+  async createInvitation(invitationData: InsertInvitation): Promise<Invitation> {
+    const [invitation] = await db
+      .insert(invitations)
+      .values(invitationData)
+      .returning();
+    return invitation;
+  }
+
+  async getInvitations(): Promise<Invitation[]> {
+    return await db
+      .select()
+      .from(invitations)
+      .orderBy(desc(invitations.createdAt));
+  }
+
+  async getInvitationByToken(token: string): Promise<Invitation | undefined> {
+    const [invitation] = await db
+      .select()
+      .from(invitations)
+      .where(eq(invitations.token, token));
+    return invitation;
+  }
+
+  async getInvitationByEmail(email: string): Promise<Invitation | undefined> {
+    const [invitation] = await db
+      .select()
+      .from(invitations)
+      .where(eq(invitations.email, email))
+      .orderBy(desc(invitations.createdAt))
+      .limit(1);
+    return invitation;
+  }
+
+  async markInvitationAsUsed(id: number): Promise<Invitation | undefined> {
+    const [updatedInvitation] = await db
+      .update(invitations)
+      .set({
+        used: true,
+        usedAt: new Date(),
+      })
+      .where(eq(invitations.id, id))
+      .returning();
+    return updatedInvitation;
+  }
+
+  async deleteInvitation(id: number): Promise<void> {
+    await db
+      .delete(invitations)
+      .where(eq(invitations.id, id));
   }
 }
 

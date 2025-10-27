@@ -13,10 +13,14 @@ import { Progress } from "@/components/ui/progress";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
-import { Eye, FileText, Calendar, User, AlertTriangle, CheckCircle, FormInput, Download, CalendarDays } from "lucide-react";
+import { Eye, FileText, Calendar, User, AlertTriangle, CheckCircle, FormInput, Download, CalendarDays, Mail, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { DateRange } from "react-day-picker";
-import type { GrantApplication, AgriculturalReturn, Document, ApplicationWithUserData, AgriculturalFormResponse } from "@shared/schema";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import type { GrantApplication, AgriculturalReturn, Document, ApplicationWithUserData, AgriculturalFormResponse, Invitation } from "@shared/schema";
 import Sidebar from "@/components/sidebar";
 import TopBar from "@/components/top-bar";
 
@@ -142,6 +146,14 @@ export default function AdminDashboard() {
                 </Button>
               </div>
             </div>
+
+            <Tabs defaultValue="applications" className="w-full">
+              <TabsList>
+                <TabsTrigger value="applications">Applications</TabsTrigger>
+                <TabsTrigger value="invitations">Invitations</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="applications" className="space-y-6 mt-6">
 
             {/* Statistics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -401,9 +413,210 @@ export default function AdminDashboard() {
                 </div>
               </CardContent>
             </Card>
+              </TabsContent>
+
+              <TabsContent value="invitations" className="space-y-6 mt-6">
+                <InvitationsTab />
+              </TabsContent>
+            </Tabs>
           </div>
         </main>
       </div>
+    </div>
+  );
+}
+
+function InvitationsTab() {
+  const { toast } = useToast();
+  const [showInviteForm, setShowInviteForm] = useState(false);
+
+  const invitationFormSchema = z.object({
+    email: z.string().email("Please enter a valid email address"),
+  });
+
+  const form = useForm<z.infer<typeof invitationFormSchema>>({
+    resolver: zodResolver(invitationFormSchema),
+    defaultValues: {
+      email: "",
+    },
+  });
+
+  const { data: invitations = [], isLoading } = useQuery<Invitation[]>({
+    queryKey: ["/api/admin/invitations"],
+  });
+
+  const createInvitationMutation = useMutation({
+    mutationFn: async (data: z.infer<typeof invitationFormSchema>) => {
+      return await apiRequest("POST", "/api/admin/invitations", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/invitations"] });
+      toast({
+        title: "Invitation Sent",
+        description: "The invitation has been sent successfully.",
+      });
+      form.reset();
+      setShowInviteForm(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send invitation",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteInvitationMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest("DELETE", `/api/admin/invitations/${id}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/invitations"] });
+      toast({
+        title: "Invitation Deleted",
+        description: "The invitation has been deleted successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete invitation",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: z.infer<typeof invitationFormSchema>) => {
+    createInvitationMutation.mutate(data);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>User Invitations</CardTitle>
+              <CardDescription>
+                Invite users to access the farm grant application system
+              </CardDescription>
+            </div>
+            <Button onClick={() => setShowInviteForm(!showInviteForm)} data-testid="button-new-invitation">
+              <Mail className="h-4 w-4 mr-2" />
+              New Invitation
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {showInviteForm && (
+            <div className="mb-6 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
+              <h3 className="text-lg font-semibold mb-4">Send New Invitation</h3>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email Address</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="user@example.com" 
+                            {...field}
+                            data-testid="input-invitation-email"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex gap-2">
+                    <Button 
+                      type="submit" 
+                      disabled={createInvitationMutation.isPending}
+                      data-testid="button-send-invitation"
+                    >
+                      {createInvitationMutation.isPending ? "Sending..." : "Send Invitation"}
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => setShowInviteForm(false)}
+                      data-testid="button-cancel-invitation"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </div>
+          )}
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Email</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead>Expires</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {invitations.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-gray-500 dark:text-gray-400">
+                    No invitations found. Create one to get started.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                invitations.map((invitation) => (
+                  <TableRow key={invitation.id} data-testid={`row-invitation-${invitation.id}`}>
+                    <TableCell className="font-medium" data-testid={`text-email-${invitation.id}`}>
+                      {invitation.email}
+                    </TableCell>
+                    <TableCell>
+                      {invitation.used ? (
+                        <Badge variant="default" data-testid={`badge-used-${invitation.id}`}>Used</Badge>
+                      ) : invitation.expiresAt && new Date() > new Date(invitation.expiresAt) ? (
+                        <Badge variant="destructive" data-testid={`badge-expired-${invitation.id}`}>Expired</Badge>
+                      ) : (
+                        <Badge variant="outline" data-testid={`badge-pending-${invitation.id}`}>Pending</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell data-testid={`text-created-${invitation.id}`}>
+                      {invitation.createdAt ? new Date(invitation.createdAt).toLocaleDateString() : 'N/A'}
+                    </TableCell>
+                    <TableCell data-testid={`text-expires-${invitation.id}`}>
+                      {invitation.expiresAt ? new Date(invitation.expiresAt).toLocaleDateString() : 'N/A'}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteInvitationMutation.mutate(invitation.id)}
+                        disabled={deleteInvitationMutation.isPending}
+                        data-testid={`button-delete-${invitation.id}`}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-600" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }

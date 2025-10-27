@@ -44,8 +44,11 @@ export async function getUncachableResendClient() {
 export async function sendInvitationEmail(toEmail: string, invitationUrl: string) {
   const { client, fromEmail } = await getUncachableResendClient();
   
+  // Use Resend's onboarding email for development since custom domains need verification
+  const senderEmail = fromEmail?.includes('resend.dev') ? fromEmail : 'onboarding@resend.dev';
+  
   const { data, error } = await client.emails.send({
-    from: fromEmail,
+    from: senderEmail,
     to: [toEmail],
     subject: 'You\'re invited to Farm Jersey',
     html: `

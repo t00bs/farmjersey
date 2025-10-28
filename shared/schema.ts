@@ -8,32 +8,33 @@ import {
   serial,
   boolean,
   integer,
+  uuid,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
 
-// Session storage table.
-// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
-export const sessions = pgTable(
-  "sessions",
-  {
-    sid: varchar("sid").primaryKey(),
-    sess: jsonb("sess").notNull(),
-    expire: timestamp("expire").notNull(),
-  },
-  (table) => [index("IDX_session_expire").on(table.expire)],
-);
+// Session storage table - NO LONGER USED with Supabase Auth
+// Keeping for reference but will be removed
+// export const sessions = pgTable(
+//   "sessions",
+//   {
+//     sid: varchar("sid").primaryKey(),
+//     sess: jsonb("sess").notNull(),
+//     expire: timestamp("expire").notNull(),
+//   },
+//   (table) => [index("IDX_session_expire").on(table.expire)],
+// );
 
 // User storage table.
-// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
+// Now references Supabase auth.users (UUID-based)
 export const users = pgTable("users", {
-  id: varchar("id").primaryKey().notNull(),
+  id: uuid("id").primaryKey().notNull(),
   email: varchar("email").unique(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  role: varchar("role"),
+  role: varchar("role").default("user"), // 'admin' or 'user'
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -41,7 +42,7 @@ export const users = pgTable("users", {
 // Grant Applications
 export const grantApplications = pgTable("grant_applications", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id),
+  userId: uuid("user_id").notNull().references(() => users.id),
   status: varchar("status").notNull().default("draft"), // draft, in_progress, submitted, approved, rejected
   year: integer("year").notNull(),
   progressPercentage: integer("progress_percentage").notNull().default(0),
@@ -200,7 +201,7 @@ export const invitations = pgTable("invitations", {
   token: varchar("token").notNull().unique(),
   used: boolean("used").default(false),
   expiresAt: timestamp("expires_at").notNull(),
-  createdBy: varchar("created_by").notNull().references(() => users.id),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
   usedAt: timestamp("used_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });

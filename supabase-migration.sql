@@ -395,7 +395,77 @@ CREATE TRIGGER on_auth_user_created
   EXECUTE FUNCTION public.handle_new_user();
 
 -- ============================================
--- 9. INDEXES for performance
+-- 9. PRE-SIGNUP HOOK: Enforce invitation requirement
+-- ============================================
+-- This function validates that a user has a valid invitation before allowing signup
+CREATE OR REPLACE FUNCTION public.validate_invitation_on_signup()
+RETURNS TRIGGER AS $$
+DECLARE
+  invitation_token TEXT;
+  invitation_record RECORD;
+BEGIN
+  -- Extract invitation_token from user metadata
+  invitation_token := NEW.raw_user_meta_data->>'invitation_token';
+  
+  -- If no invitation token provided, check if user should be an admin
+  -- (admins can be created manually in Supabase dashboard without invitations)
+  IF invitation_token IS NULL THEN
+    -- Only allow signup without invitation if explicitly marked as admin in metadata
+    -- This allows manual admin creation through Supabase dashboard
+    IF (NEW.raw_user_meta_data->>'role' = 'admin') THEN
+      RETURN NEW;
+    END IF;
+    
+    RAISE EXCEPTION 'Invitation required to sign up. Please contact an administrator.'
+      USING HINT = 'invitation_required';
+  END IF;
+  
+  -- Look up the invitation
+  SELECT * INTO invitation_record
+  FROM public.invitations
+  WHERE token = invitation_token;
+  
+  -- Check if invitation exists
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Invalid invitation token'
+      USING HINT = 'invalid_invitation';
+  END IF;
+  
+  -- Check if invitation is already used
+  IF invitation_record.used = TRUE THEN
+    RAISE EXCEPTION 'This invitation has already been used'
+      USING HINT = 'invitation_already_used';
+  END IF;
+  
+  -- Check if invitation is expired
+  IF invitation_record.expires_at < NOW() THEN
+    RAISE EXCEPTION 'This invitation has expired'
+      USING HINT = 'invitation_expired';
+  END IF;
+  
+  -- Check if email matches invitation
+  IF invitation_record.email != NEW.email THEN
+    RAISE EXCEPTION 'Email does not match invitation'
+      USING HINT = 'email_mismatch';
+  END IF;
+  
+  -- All checks passed, allow signup
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Drop trigger if exists
+DROP TRIGGER IF EXISTS validate_invitation_before_signup ON auth.users;
+
+-- Create trigger that runs BEFORE insert on auth.users
+-- This will run before Supabase creates the user account
+CREATE TRIGGER validate_invitation_before_signup
+  BEFORE INSERT ON auth.users
+  FOR EACH ROW
+  EXECUTE FUNCTION public.validate_invitation_on_signup();
+
+-- ============================================
+-- 10. INDEXES for performance
 -- ============================================
 CREATE INDEX IF NOT EXISTS idx_grant_applications_user_id ON public.grant_applications(user_id);
 CREATE INDEX IF NOT EXISTS idx_grant_applications_status ON public.grant_applications(status);

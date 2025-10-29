@@ -19,22 +19,27 @@ The application follows a modern full-stack architecture with clear separation b
 ### Backend Architecture
 - **Runtime**: Node.js with Express.js framework
 - **Language**: TypeScript with ES modules
-- **Authentication**: Replit Auth with OpenID Connect
-- **Session Management**: express-session with PostgreSQL store
+- **Authentication**: Supabase Auth with JWT tokens
+- **Authorization**: JWT-based middleware with role checking
 - **File Handling**: Multer for multipart form data and file uploads
 
 ### Database Architecture
-- **Database**: PostgreSQL with Neon serverless driver
+- **Database**: Supabase PostgreSQL (fully managed)
 - **ORM**: Drizzle ORM for type-safe database operations
-- **Schema Management**: Drizzle Kit for migrations and schema management
+- **Row Level Security**: Database-level access control policies
+- **Schema Management**: SQL migrations executed in Supabase
 
 ## Key Components
 
 ### Authentication System
-- **Provider**: Replit Auth using OpenID Connect protocol
-- **Session Storage**: PostgreSQL-backed sessions with connect-pg-simple
-- **User Management**: Automatic user creation and profile management
-- **Security**: HTTP-only cookies with secure session handling
+- **Provider**: Supabase Auth
+- **Authentication Methods**: 
+  - Email/password authentication
+  - Magic link (passwordless) authentication
+- **Session Management**: JWT-based stateless authentication
+- **User Management**: Automatic profile creation via database triggers
+- **Security**: JWT tokens, Row Level Security policies, invitation-only signup
+- **Authorization**: Role-based access control (admin vs user) stored in database
 
 ### Grant Application Management
 - **Multi-step Forms**: Progressive application completion with status tracking
@@ -56,41 +61,40 @@ The application follows a modern full-stack architecture with clear separation b
 ## Data Flow
 
 ### Application Workflow
-1. **User Authentication**: Users authenticate via Replit Auth
-2. **Application Creation**: New grant applications created with draft status
-3. **Progressive Completion**: Users complete sections (agricultural returns, land declarations, consent forms, supporting documents)
-4. **Progress Tracking**: System tracks completion percentage across all required sections
-5. **Document Upload**: Secure file upload with validation and storage
-6. **Digital Signatures**: Canvas-based signature capture for consent forms
-7. **Submission**: Final application submission with status change to submitted
+1. **Invitation**: Admin sends email invitation with unique token (7-day expiry)
+2. **User Registration**: Users sign up with invitation token (enforced at database level)
+3. **Authentication**: Users sign in via email/password or magic link
+4. **Authorization**: JWT token validated on every API request, role checked for admin routes
+5. **Application Creation**: New grant applications created with draft status
+6. **Progressive Completion**: Users complete sections (agricultural returns, land declarations, consent forms, supporting documents)
+7. **Progress Tracking**: System tracks completion percentage across all required sections
+8. **Document Upload**: Secure file upload with validation and storage
+9. **Digital Signatures**: Canvas-based signature capture for consent forms
+10. **Submission**: Final application submission with status change to submitted
 
 ### Data Persistence
-- **User Data**: Stored in users table with profile information
+- **User Data**: Stored in users table (references Supabase auth.users via UUID)
 - **Applications**: Grant applications with status and progress tracking
 - **Documents**: File metadata and references stored in documents table
-- **Sessions**: Authentication sessions persisted in PostgreSQL
+- **Invitations**: Invitation tokens with email, expiry, and usage tracking
+- **Sessions**: Stateless JWT tokens (no server-side session storage)
 
 ## External Dependencies
 
 ### Core Dependencies
-- **@neondatabase/serverless**: PostgreSQL database connectivity
+- **@supabase/supabase-js**: Supabase client for auth and database
 - **drizzle-orm**: Type-safe database operations
 - **@tanstack/react-query**: Server state management
 - **@radix-ui/react-***: Accessible UI primitives
 - **express**: Web application framework
 - **multer**: File upload handling
-- **passport**: Authentication middleware
+- **resend**: Email service for invitations
 
 ### Development Dependencies
 - **vite**: Build tool and development server
 - **typescript**: Type safety and tooling
 - **tailwindcss**: Utility-first CSS framework
-- **eslint**: Code linting and quality
-
-### Authentication Dependencies
-- **openid-client**: OpenID Connect implementation
-- **connect-pg-simple**: PostgreSQL session store
-- **express-session**: Session management middleware
+- **drizzle-kit**: Database schema management
 
 ## Deployment Strategy
 
@@ -107,16 +111,33 @@ The application follows a modern full-stack architecture with clear separation b
 - **Deployment**: Replit autoscale deployment with health checks
 
 ### Environment Configuration
-- **Database**: Automatic DATABASE_URL provisioning
-- **Sessions**: Secure session secret configuration
-- **Authentication**: Replit domains and OIDC configuration
+- **Database**: DATABASE_URL pointing to Supabase PostgreSQL
+- **Authentication**: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
+- **Frontend**: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+- **Email**: RESEND_API_KEY for sending invitations
 - **File Storage**: Configurable upload directory
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
 
+### Security Features
+- **Invitation-Only Signup**: Pre-signup validation enforced at database level via SQL trigger
+- **Row Level Security (RLS)**: Database policies ensure users only access their own data
+- **Role-Based Access**: Admin vs user roles with different permissions
+- **JWT Authentication**: Stateless token-based auth with automatic refresh
+- **Email Validation**: Invitation emails must match signup emails
+- **Token Expiry**: Invitations expire after 7 days
+- **One-Time Use**: Invitation tokens can only be used once
+
 ## Changelog
 
 Changelog:
+- October 29, 2025. **MAJOR MIGRATION**: Migrated from Replit Auth to Supabase Auth
+  - Replaced OIDC authentication with Supabase email/password + magic link
+  - Migrated from Neon to Supabase PostgreSQL
+  - Implemented Row Level Security policies for all tables
+  - Added invitation-only signup with database-level enforcement
+  - Removed session-based auth in favor of JWT tokens
+  - Added role-based access control via database column
 - June 27, 2025. Initial setup

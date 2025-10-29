@@ -37,17 +37,23 @@
 
 ## Step 3: Create First Admin User
 
-After migration, you need to manually set the first admin user:
+**IMPORTANT**: The system enforces invitation-only signup. To create the first admin user:
 
-1. Go to **SQL Editor** in Supabase
-2. First, sign up a user through your app (or manually create one in **Authentication** → **Users**)
-3. Run this SQL to make that user an admin (replace the email):
+1. Go to **Authentication** → **Users** in Supabase dashboard
+2. Click **Add User** → **Create new user**
+3. Fill in the email and password
+4. In **User Metadata**, add this JSON:
+   ```json
+   {
+     "role": "admin",
+     "first_name": "Admin",
+     "last_name": "User"
+   }
+   ```
+5. Click **Create User**
+6. The user will be created as an admin and can log in immediately
 
-```sql
-UPDATE public.users
-SET role = 'admin'
-WHERE email = 'your-admin-email@example.com';
-```
+**Note**: Setting `role: "admin"` in user metadata during manual creation is the ONLY way to bypass the invitation requirement. This is intentional for security.
 
 ## Step 4: Verify RLS Policies
 

@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { isAuthenticated, isAdmin, validateInvitationToken, markInvitationUsed } from "./supabaseAuth";
 import { insertGrantApplicationSchema, insertAgriculturalReturnSchema, insertDocumentSchema, insertAgriculturalFormTemplateSchema, insertAgriculturalFormResponseSchema, insertInvitationSchema } from "@shared/schema";
 import { sendInvitationEmail } from "./resend";
 import { randomBytes } from "crypto";
@@ -38,33 +38,65 @@ const upload = multer({
   },
 });
 
-// Admin authorization middleware
-function isAdmin(req: any, res: any, next: any) {
-  try {
-    const userEmail = req.user?.claims?.email;
-    const adminEmails = process.env.ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
-    
-    if (!userEmail || !adminEmails.includes(userEmail)) {
-      return res.status(403).json({ 
-        message: "Access denied. Admin privileges required." 
-      });
-    }
-    
-    next();
-  } catch (error) {
-    console.error("Error checking admin authorization:", error);
-    res.status(500).json({ message: "Authorization check failed" });
-  }
-}
-
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
-  await setupAuth(app);
+  // Invitation validation endpoints (no auth required)
+  app.get('/api/validate-invitation', async (req, res) => {
+    try {
+      const { token } = req.query;
+      
+      if (!token || typeof token !== 'string') {
+        return res.status(400).json({ valid: false, message: 'Token is required' });
+      }
+
+      const result = await validateInvitationToken(token);
+      res.json(result);
+    } catch (error) {
+      console.error('Error validating invitation:', error);
+      res.status(500).json({ valid: false, message: 'Failed to validate invitation' });
+    }
+  });
+
+  app.post('/api/use-invitation', async (req, res) => {
+    try {
+      const { token, userId } = req.body;
+      
+      if (!token || !userId) {
+        return res.status(400).json({ message: 'Token and userId are required' });
+      }
+
+      // Validate the invitation token
+      const validation = await validateInvitationToken(token);
+      if (!validation.valid || !validation.invitationId || !validation.email) {
+        return res.status(400).json({ message: 'Invalid invitation token' });
+      }
+
+      // Fetch the user from Supabase to verify they exist and get their email
+      const { supabaseAdmin } = await import('./supabase');
+      const { data: { user }, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId);
+      
+      if (userError || !user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // CRITICAL SECURITY CHECK: Verify the user's email matches the invitation email
+      if (user.email !== validation.email) {
+        console.warn(`Invitation email mismatch: user ${user.email} tried to use invitation for ${validation.email}`);
+        return res.status(403).json({ message: 'Email does not match invitation' });
+      }
+
+      // Mark invitation as used with the verified user ID
+      await markInvitationUsed(validation.invitationId, userId);
+      res.json({ message: 'Invitation marked as used' });
+    } catch (error) {
+      console.error('Error using invitation:', error);
+      res.status(500).json({ message: 'Failed to mark invitation as used' });
+    }
+  });
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
@@ -405,7 +437,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         token,
         used: false,
         expiresAt,
-        createdBy: req.user.claims.sub,
+        createdBy: req.user.id,
       });
 
       const invitation = await storage.createInvitation(invitationData);
@@ -870,7 +902,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Verify user owns the application
       const application = await storage.getGrantApplication(parseInt(applicationId));
-      if (!application || application.userId !== req.user.claims.sub) {
+      if (!application || application.userId !== req.user.id) {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
@@ -891,7 +923,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Verify user owns the application
       const application = await storage.getGrantApplication(responseData.applicationId);
-      if (!application || application.userId !== req.user.claims.sub) {
+      if (!application || application.userId !== req.user.id) {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
@@ -928,7 +960,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Verify user owns the application
       const application = await storage.getGrantApplication(existingResponse.applicationId);
-      if (!application || application.userId !== req.user.claims.sub) {
+      if (!application || application.userId !== req.user.id) {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
@@ -958,7 +990,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Grant Application routes
   app.get("/api/grant-applications", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const applications = await storage.getUserGrantApplications(userId);
       res.json(applications);
     } catch (error) {
@@ -969,7 +1001,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/grant-applications", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const currentYear = new Date().getFullYear();
       
       const applicationData = insertGrantApplicationSchema.parse({
@@ -1011,7 +1043,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if user owns this application
-      if (application.userId !== req.user.claims.sub) {
+      if (application.userId !== req.user.id) {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
@@ -1032,7 +1064,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if user owns this application
-      if (application.userId !== req.user.claims.sub) {
+      if (application.userId !== req.user.id) {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
@@ -1061,7 +1093,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if user owns this application
-      if (application.userId !== req.user.claims.sub) {
+      if (application.userId !== req.user.id) {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
@@ -1084,7 +1116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Verify user owns the application
       const application = await storage.getGrantApplication(returnData.applicationId);
-      if (!application || application.userId !== req.user.claims.sub) {
+      if (!application || application.userId !== req.user.id) {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
@@ -1114,7 +1146,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Verify user owns the application
       const application = await storage.getGrantApplication(applicationId);
-      if (!application || application.userId !== req.user.claims.sub) {
+      if (!application || application.userId !== req.user.id) {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
@@ -1138,7 +1170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Verify user owns the application
       const application = await storage.getGrantApplication(applicationId);
-      if (!application || application.userId !== req.user.claims.sub) {
+      if (!application || application.userId !== req.user.id) {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
@@ -1185,7 +1217,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Verify user owns the application
       const application = await storage.getGrantApplication(applicationId);
-      if (!application || application.userId !== req.user.claims.sub) {
+      if (!application || application.userId !== req.user.id) {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
@@ -1218,7 +1250,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Application not found" });
       }
       
-      if (application.userId !== req.user.claims.sub) {
+      if (application.userId !== req.user.id) {
         return res.status(403).json({ message: "Unauthorized access to document" });
       }
       
@@ -1282,7 +1314,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Verify user owns the application
       const application = await storage.getGrantApplication(applicationId);
-      if (!application || application.userId !== req.user.claims.sub) {
+      if (!application || application.userId !== req.user.id) {
         return res.status(403).json({ message: "Unauthorized" });
       }
       

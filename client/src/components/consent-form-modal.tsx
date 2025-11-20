@@ -33,53 +33,8 @@ export default function ConsentFormModal({ open, onOpenChange, applicationId }: 
   const { toast } = useToast();
   const [signature, setSignature] = useState<string | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [templateUrl, setTemplateUrl] = useState<string | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const templateUrlRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    const loadTemplate = async () => {
-      if (!open) {
-        setTemplateUrl(null);
-        return;
-      }
-      
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.access_token) {
-          console.error("No access token available");
-          return;
-        }
-
-        const response = await fetch("/api/download-template/rss-application", {
-          headers: {
-            "Authorization": `Bearer ${session.access_token}`,
-          },
-        });
-
-        if (response.ok) {
-          const blob = await response.blob();
-          const url = URL.createObjectURL(blob);
-          templateUrlRef.current = url;
-          setTemplateUrl(url);
-        } else {
-          console.error("Failed to fetch template:", response.status, response.statusText);
-        }
-      } catch (error) {
-        console.error("Failed to load template:", error);
-      }
-    };
-
-    loadTemplate();
-
-    return () => {
-      if (templateUrlRef.current) {
-        URL.revokeObjectURL(templateUrlRef.current);
-        templateUrlRef.current = null;
-      }
-    };
-  }, [open]);
 
   const form = useForm<ConsentFormData>({
     resolver: zodResolver(consentFormSchema),
@@ -253,18 +208,16 @@ export default function ConsentFormModal({ open, onOpenChange, applicationId }: 
         <div className="space-y-6">
           <Card className="p-4">
             <h3 className="text-lg font-semibold mb-2">Declaration Preview</h3>
-            {templateUrl ? (
-              <iframe
-                src={templateUrl}
-                className="w-full h-[400px] border rounded"
-                title="RSS Application Template"
-                data-testid="iframe-template-preview"
-              />
-            ) : (
-              <div className="w-full h-[400px] border rounded flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
-            )}
+            <object
+              data="/api/download-template/rss-application"
+              type="application/pdf"
+              className="w-full h-[400px] border rounded"
+              data-testid="object-template-preview"
+            >
+              <p className="text-sm text-muted-foreground p-4">
+                PDF preview not available in your browser. The template will be filled with your details when you generate the PDF below.
+              </p>
+            </object>
           </Card>
 
           <Form {...form}>

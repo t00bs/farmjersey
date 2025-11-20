@@ -11,7 +11,7 @@ import Sidebar from "@/components/sidebar";
 import TopBar from "@/components/top-bar";
 import ApplicationSection from "@/components/application-section";
 import FileUploadModal from "@/components/file-upload-modal";
-import SignatureCanvas from "@/components/signature-canvas";
+import ConsentFormModal from "@/components/consent-form-modal";
 import DocumentDisplay from "@/components/document-display";
 import ProgressIndicator from "@/components/progress-indicator";
 import AgriculturalReturnForm from "@/components/agricultural-return-form";
@@ -486,7 +486,7 @@ export default function GrantApplication() {
         applicationId={applicationId!}
         documentType={uploadType}
       />
-      <SignatureCanvas
+      <ConsentFormModal
         open={signatureModalOpen}
         onOpenChange={setSignatureModalOpen}
         applicationId={applicationId!}

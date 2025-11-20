@@ -8,6 +8,7 @@ import { randomBytes } from "crypto";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 
 // Helper function to prevent CSV/XLSX formula injection
 const sanitizeForExport = (value: any): string => {
@@ -1378,11 +1379,148 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Fill consent form PDF route
+  app.post("/api/fill-consent-pdf", isAuthenticated, async (req: any, res) => {
+    try {
+      const { name, address, farmCode, email, signature } = req.body;
+      
+      if (!name || !address || !farmCode || !email) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      // Read the PDF template
+      const templatePath = path.join("templates", "rss-application-template.pdf");
+      
+      if (!fs.existsSync(templatePath)) {
+        console.error("RSS Application template not found:", templatePath);
+        return res.status(404).json({ message: "Template file not found" });
+      }
+      
+      const existingPdfBytes = fs.readFileSync(templatePath);
+      const pdfDoc = await PDFDocument.load(existingPdfBytes);
+      const pages = pdfDoc.getPages();
+      
+      if (pages.length === 0) {
+        return res.status(400).json({ message: "Invalid PDF template" });
+      }
+      
+      const firstPage = pages[0];
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const fontSize = 10;
+      const maxLineWidth = 250; // Maximum width for text before wrapping
+      
+      // Helper function to wrap text
+      const wrapText = (text: string, maxWidth: number): string[] => {
+        const words = text.split(' ');
+        const lines: string[] = [];
+        let currentLine = '';
+        
+        words.forEach(word => {
+          const testLine = currentLine ? `${currentLine} ${word}` : word;
+          const textWidth = font.widthOfTextAtSize(testLine, fontSize);
+          
+          if (textWidth <= maxWidth) {
+            currentLine = testLine;
+          } else {
+            if (currentLine) lines.push(currentLine);
+            currentLine = word;
+          }
+        });
+        
+        if (currentLine) lines.push(currentLine);
+        return lines;
+      };
+      
+      // Add name to the PDF (truncate if too long)
+      const nameText = name.length > 40 ? name.substring(0, 40) + '...' : name;
+      firstPage.drawText(nameText, {
+        x: 50,
+        y: firstPage.getHeight() - 165,
+        size: fontSize,
+        font: font,
+        color: rgb(0, 0, 0),
+      });
+      
+      // Add address (split into multiple lines with wrapping)
+      const addressLines = address.split('\n').flatMap((line: string) => wrapText(line, maxLineWidth));
+      const maxAddressLines = 4; // Limit to prevent overflow
+      let yOffset = firstPage.getHeight() - 180;
+      addressLines.slice(0, maxAddressLines).forEach((line: string, index: number) => {
+        firstPage.drawText(line, {
+          x: 50,
+          y: yOffset - (index * 12),
+          size: fontSize,
+          font: font,
+          color: rgb(0, 0, 0),
+        });
+      });
+      
+      // Add farm code (appears on the right side)
+      firstPage.drawText(farmCode, {
+        x: 470,
+        y: firstPage.getHeight() - 165,
+        size: fontSize,
+        font: font,
+        color: rgb(0, 0, 0),
+      });
+      
+      // Add email (truncate if too long)
+      const emailText = email.length > 30 ? email.substring(0, 30) + '...' : email;
+      firstPage.drawText(emailText, {
+        x: 470,
+        y: firstPage.getHeight() - 180,
+        size: fontSize,
+        font: font,
+        color: rgb(0, 0, 0),
+      });
+      
+      // Add signature if provided (verify page 5 exists)
+      if (signature) {
+        if (pages.length < 5) {
+          console.warn("PDF template has fewer than 5 pages, signature will be placed on last page");
+        }
+        
+        const signaturePageIndex = Math.min(4, pages.length - 1); // Page 5 or last page
+        const signaturePage = pages[signaturePageIndex];
+        
+        try {
+          // Parse the base64 signature image
+          const signatureData = signature.replace(/^data:image\/png;base64,/, '');
+          const signatureBytes = Buffer.from(signatureData, 'base64');
+          const signatureImage = await pdfDoc.embedPng(signatureBytes);
+          
+          // Add signature to the page (adjust coordinates as needed)
+          const signatureDims = signatureImage.scale(0.3);
+          signaturePage.drawImage(signatureImage, {
+            x: 50,
+            y: 100,
+            width: signatureDims.width,
+            height: signatureDims.height,
+          });
+        } catch (signatureError) {
+          console.error("Error embedding signature:", signatureError);
+          // Continue without signature rather than failing completely
+        }
+      }
+      
+      // Serialize the PDFDocument to bytes
+      const pdfBytes = await pdfDoc.save();
+      
+      // Send the PDF as a response
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'inline; filename="RSS_Application_Filled.pdf"');
+      res.send(Buffer.from(pdfBytes));
+    } catch (error) {
+      console.error("Error filling consent PDF:", error);
+      res.status(500).json({ message: "Failed to fill consent PDF" });
+    }
+  });
+
   // Digital signature route
   app.post("/api/digital-signature/:applicationId", isAuthenticated, async (req: any, res) => {
     try {
       const applicationId = parseInt(req.params.applicationId);
-      const { signature } = req.body;
+      const { signature, name, address, farmCode, email } = req.body;
       
       // Verify user owns the application
       const application = await storage.getGrantApplication(applicationId);
@@ -1392,6 +1530,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const updatedApplication = await storage.updateGrantApplication(applicationId, {
         digitalSignature: signature,
+        consentName: name,
+        consentAddress: address,
+        consentFarmCode: farmCode,
+        consentEmail: email,
         consentFormCompleted: true,
         progressPercentage: calculateProgressSync({
           ...application,

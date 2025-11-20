@@ -130,9 +130,23 @@ Preferred communication style: Simple, everyday language.
 - **Token Expiry**: Invitations expire after 7 days
 - **One-Time Use**: Invitation tokens can only be used once
 
+## Known Issues
+
+### Profile Fetch Performance
+- **Issue**: User profile queries from Supabase sometimes take longer than expected (>10 seconds)
+- **Mitigation**: Implemented 10-second timeout wrapper in `useAuth` hook to prevent infinite loading states
+- **Impact**: Users may see login page after timeout with console warning, but app remains functional
+- **Potential Causes**: RLS policy complexity, missing indexes, network latency with Supabase pooler
+- **Status**: Timeout protection deployed, root cause investigation pending
+
 ## Changelog
 
 Changelog:
+- November 20, 2025. Fixed infinite loading state after page refresh
+  - Added timeout wrapper function to prevent Supabase queries from hanging
+  - Implemented try-finally blocks to ensure loading state always completes
+  - Added console warnings for timeout debugging
+  - Documented known profile fetch performance issue
 - October 29, 2025. **MAJOR MIGRATION**: Migrated from Replit Auth to Supabase Auth
   - Replaced OIDC authentication with Supabase email/password + magic link
   - Migrated from Neon to Supabase PostgreSQL

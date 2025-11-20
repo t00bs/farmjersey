@@ -1431,20 +1431,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return lines;
       };
       
-      // Add name to the PDF (truncate if too long)
+      // Page 1: Add name on the right side
       const nameText = name.length > 40 ? name.substring(0, 40) + '...' : name;
       firstPage.drawText(nameText, {
-        x: 50,
+        x: 350,
+        y: firstPage.getHeight() - 150,
+        size: fontSize,
+        font: font,
+        color: rgb(0, 0, 0),
+      });
+      
+      // Page 1: Add farm code on the right side below name
+      firstPage.drawText(farmCode, {
+        x: 350,
         y: firstPage.getHeight() - 165,
         size: fontSize,
         font: font,
         color: rgb(0, 0, 0),
       });
       
-      // Add address (split into multiple lines with wrapping)
+      // Page 1: Add address on the left side (split into multiple lines with wrapping)
       const addressLines = address.split('\n').flatMap((line: string) => wrapText(line, maxLineWidth));
       const maxAddressLines = 4; // Limit to prevent overflow
-      let yOffset = firstPage.getHeight() - 180;
+      let yOffset = firstPage.getHeight() - 165;
       addressLines.slice(0, maxAddressLines).forEach((line: string, index: number) => {
         firstPage.drawText(line, {
           x: 50,
@@ -1455,24 +1464,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       });
       
-      // Add farm code (appears on the right side)
-      firstPage.drawText(farmCode, {
-        x: 470,
-        y: firstPage.getHeight() - 165,
-        size: fontSize,
-        font: font,
-        color: rgb(0, 0, 0),
-      });
-      
-      // Add email (truncate if too long)
-      const emailText = email.length > 30 ? email.substring(0, 30) + '...' : email;
-      firstPage.drawText(emailText, {
-        x: 470,
-        y: firstPage.getHeight() - 180,
-        size: fontSize,
-        font: font,
-        color: rgb(0, 0, 0),
-      });
+      // Page 3: Add name after "Declaration Notes re Rural Support Scheme" heading
+      if (pages.length >= 3) {
+        const thirdPage = pages[2]; // Page 3 (0-indexed)
+        thirdPage.drawText(nameText, {
+          x: 50,
+          y: thirdPage.getHeight() - 275,
+          size: fontSize,
+          font: font,
+          color: rgb(0, 0, 0),
+        });
+      }
       
       // Add signature if provided (verify page 5 exists)
       if (signature) {

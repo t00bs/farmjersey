@@ -1351,9 +1351,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const templateType = req.params.type;
       
       if (templateType === "land-declaration") {
-        // Generate CSV template for land declaration
-        const templatePath = generateLandDeclarationTemplate();
-        res.download(templatePath, "land-declaration-template.csv", (error) => {
+        // Serve the Excel template for land declaration
+        const templatePath = path.join("templates", "land-declaration-template.xlsx");
+        
+        if (!fs.existsSync(templatePath)) {
+          console.error("Land declaration template not found:", templatePath);
+          return res.status(404).json({ message: "Template file not found" });
+        }
+        
+        res.download(templatePath, "Land_Declaration_2024_for_2025.xlsx", (error) => {
           if (error) {
             console.error("Error serving template download:", error);
             if (!res.headersSent) {
@@ -1438,28 +1444,4 @@ function calculateProgressSync(application: any): number {
   if (application.supportingDocsCompleted) completed++;
   
   return Math.round((completed / total) * 100);
-}
-
-function generateLandDeclarationTemplate(): string {
-  try {
-    // Simple CSV template generation
-    const templateContent = `Field Name,Land Type,Acreage,Crop Type,Irrigation Type
-Example Field 1,Arable,10.5,Wheat,Sprinkler
-Example Field 2,Pasture,5.2,Grass,None
-`;
-    
-    const templatePath = path.join("uploads", "land-declaration-template.csv");
-    
-    // Ensure uploads directory exists
-    const uploadsDir = path.dirname(templatePath);
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
-    
-    fs.writeFileSync(templatePath, templateContent);
-    return templatePath;
-  } catch (error) {
-    console.error("Error generating land declaration template:", error);
-    throw new Error("Failed to generate template file");
-  }
 }

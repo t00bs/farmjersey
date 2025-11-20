@@ -105,6 +105,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User profile routes
+  app.patch('/api/user/profile', isAuthenticated, upload.single('profileImage'), async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { firstName, lastName } = req.body;
+      
+      const updates: any = {};
+      if (firstName !== undefined) updates.firstName = firstName;
+      if (lastName !== undefined) updates.lastName = lastName;
+      
+      // Handle profile image upload
+      if (req.file) {
+        const fileExtension = path.extname(req.file.originalname);
+        const newFilename = `profile-${userId}${fileExtension}`;
+        const newPath = path.join('uploads', newFilename);
+        
+        // Rename the uploaded file
+        fs.renameSync(req.file.path, newPath);
+        updates.profileImageUrl = `/${newPath}`;
+      }
+      
+      // Update user profile
+      const updatedUser = await storage.upsertUser({
+        id: userId,
+        ...updates,
+      });
+      
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user profile:", error);
+      res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
+
+  app.delete('/api/user/account', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { supabaseAdmin } = await import('./supabase');
+      
+      // Delete all user's grant applications and related data
+      const applications = await storage.getUserGrantApplications(userId);
+      
+      for (const application of applications) {
+        // Delete all documents for this application
+        const documents = await storage.getDocumentsByApplicationId(application.id);
+        for (const doc of documents) {
+          // Delete physical file
+          if (doc.filePath && fs.existsSync(doc.filePath)) {
+            fs.unlinkSync(doc.filePath);
+          }
+          await storage.deleteDocument(doc.id);
+        }
+        
+        // Delete application
+        await storage.deleteGrantApplication(application.id);
+      }
+      
+      // Delete user from Supabase Auth (this will cascade to public.users via ON DELETE CASCADE)
+      const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+      
+      if (error) {
+        console.error("Error deleting user from Supabase:", error);
+        return res.status(500).json({ message: "Failed to delete account" });
+      }
+      
+      res.json({ message: "Account deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting user account:", error);
+      res.status(500).json({ message: "Failed to delete account" });
+    }
+  });
+
   // Admin routes
   app.get("/api/admin/applications", isAuthenticated, isAdmin, async (req: any, res) => {
     try {

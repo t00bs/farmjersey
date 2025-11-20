@@ -1,5 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
-import { Bell, ChevronDown, User } from "lucide-react";
+import { Bell, ChevronDown, User, Settings as SettingsIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Breadcrumb,
@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 
 export default function TopBar() {
   const { user } = useAuth();
@@ -91,17 +91,17 @@ export default function TopBar() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                Profile
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                Settings
-              </DropdownMenuItem>
+              <Link href="/settings">
+                <DropdownMenuItem data-testid="menu-settings">
+                  <SettingsIcon className="mr-2 h-4 w-4" />
+                  Settings
+                </DropdownMenuItem>
+              </Link>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
                 onClick={() => window.location.href = '/api/logout'}
                 className="text-red-600"
+                data-testid="menu-logout"
               >
                 Sign Out
               </DropdownMenuItem>

@@ -10,6 +10,7 @@ import GrantApplication from "@/pages/grant-application";
 import AdminDashboard from "@/pages/admin-dashboard";
 import AgriculturalFormBuilder from "@/pages/agricultural-form-builder";
 import AuthPage from "@/pages/auth";
+import Settings from "@/pages/settings";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -33,6 +34,7 @@ function Router() {
       ) : (
         <>
           <Route path="/auth" component={Dashboard} />
+          <Route path="/settings" component={Settings} />
           <Route path="/admin/form-builder" component={AgriculturalFormBuilder} />
           <Route path="/admin-dashboard" component={AdminDashboard} />
           <Route path="/admin" component={AdminDashboard} />

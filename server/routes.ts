@@ -1476,32 +1476,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Add signature if provided (verify page 5 exists)
-      if (signature) {
-        if (pages.length < 5) {
-          console.warn("PDF template has fewer than 5 pages, signature will be placed on last page");
-        }
+      // Page 5: Add name, date, and signature
+      if (pages.length >= 5) {
+        const fifthPage = pages[4]; // Page 5 (0-indexed)
         
-        const signaturePageIndex = Math.min(4, pages.length - 1); // Page 5 or last page
-        const signaturePage = pages[signaturePageIndex];
+        // Add name on page 5 (near "Print name" label)
+        fifthPage.drawText(nameText, {
+          x: 90,
+          y: fifthPage.getHeight() - 655,
+          size: fontSize,
+          font: font,
+          color: rgb(0, 0, 0),
+        });
         
-        try {
-          // Parse the base64 signature image
-          const signatureData = signature.replace(/^data:image\/png;base64,/, '');
-          const signatureBytes = Buffer.from(signatureData, 'base64');
-          const signatureImage = await pdfDoc.embedPng(signatureBytes);
-          
-          // Add signature to the page (adjust coordinates as needed)
-          const signatureDims = signatureImage.scale(0.3);
-          signaturePage.drawImage(signatureImage, {
-            x: 50,
-            y: 100,
-            width: signatureDims.width,
-            height: signatureDims.height,
-          });
-        } catch (signatureError) {
-          console.error("Error embedding signature:", signatureError);
-          // Continue without signature rather than failing completely
+        // Add today's date on page 5 (near "Date" label)
+        const today = new Date();
+        const formattedDate = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
+        fifthPage.drawText(formattedDate, {
+          x: 460,
+          y: fifthPage.getHeight() - 655,
+          size: fontSize,
+          font: font,
+          color: rgb(0, 0, 0),
+        });
+        
+        // Add signature next to "Signed" label
+        if (signature) {
+          try {
+            // Parse the base64 signature image
+            const signatureData = signature.replace(/^data:image\/png;base64,/, '');
+            const signatureBytes = Buffer.from(signatureData, 'base64');
+            const signatureImage = await pdfDoc.embedPng(signatureBytes);
+            
+            // Scale smaller (0.2 instead of 0.3) and position next to "Signed"
+            const signatureDims = signatureImage.scale(0.2);
+            fifthPage.drawImage(signatureImage, {
+              x: 320,
+              y: fifthPage.getHeight() - 660,
+              width: signatureDims.width,
+              height: signatureDims.height,
+            });
+          } catch (signatureError) {
+            console.error("Error embedding signature:", signatureError);
+            // Continue without signature rather than failing completely
+          }
         }
       }
       

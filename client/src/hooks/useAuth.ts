@@ -11,6 +11,16 @@ interface UserProfile {
   profileImageUrl: string | null;
 }
 
+// Timeout wrapper to prevent queries from hanging indefinitely
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error('Query timeout')), timeoutMs)
+    ),
+  ]);
+}
+
 export function useAuth() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -18,27 +28,44 @@ export function useAuth() {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        setSupabaseUser(session.user);
-        await fetchUserProfile(session.user.id);
-      } else {
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setSupabaseUser(session.user);
+          await fetchUserProfile(session.user.id);
+        } else {
+          setUser(null);
+          setSupabaseUser(null);
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
         setUser(null);
         setSupabaseUser(null);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
-    });
+    };
+
+    initializeAuth();
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
-        setSupabaseUser(session.user);
-        await fetchUserProfile(session.user.id);
-      } else {
+      try {
+        if (session?.user) {
+          setSupabaseUser(session.user);
+          await fetchUserProfile(session.user.id);
+        } else {
+          setUser(null);
+          setSupabaseUser(null);
+        }
+      } catch (error) {
+        console.error('Error in auth state change:', error);
         setUser(null);
         setSupabaseUser(null);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -46,11 +73,14 @@ export function useAuth() {
 
   async function fetchUserProfile(userId: string) {
     try {
-      const { data, error } = await supabase
+      // Wrap the query with a 10-second timeout
+      const queryPromise = supabase
         .from('users')
         .select('*')
         .eq('id', userId)
         .single();
+
+      const { data, error } = await withTimeout(queryPromise, 10000);
 
       if (error) {
         console.error('Error fetching user profile:', error);
@@ -68,8 +98,12 @@ export function useAuth() {
           profileImageUrl: data.profile_image_url,
         });
       }
-    } catch (error) {
-      console.error('Error in fetchUserProfile:', error);
+    } catch (error: any) {
+      if (error.message === 'Query timeout') {
+        console.warn('Profile fetch timed out after 10 seconds. This may indicate a connection issue with Supabase.');
+      } else {
+        console.error('Error in fetchUserProfile:', error);
+      }
       setUser(null);
     }
   }

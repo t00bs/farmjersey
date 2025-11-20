@@ -195,39 +195,6 @@ export default function ConsentFormModal({ open, onOpenChange, applicationId }: 
     setSignature(null);
   };
 
-  const handleDownloadTemplate = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error("Not authenticated");
-      }
-
-      const response = await fetch("/api/download-template/rss-application", {
-        headers: {
-          "Authorization": `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to download template");
-      }
-
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "RSS_Application_Template.pdf";
-      link.click();
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to download template. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -240,19 +207,7 @@ export default function ConsentFormModal({ open, onOpenChange, applicationId }: 
 
         <div className="space-y-6">
           <Card className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-lg font-semibold">RSS Application Template</h3>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleDownloadTemplate}
-                data-testid="button-download-template"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Download Template
-              </Button>
-            </div>
+            <h3 className="text-lg font-semibold mb-2">Declaration Preview</h3>
             <iframe
               src="/api/download-template/rss-application"
               className="w-full h-[400px] border rounded"

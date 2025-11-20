@@ -1476,31 +1476,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Page 5: Add name, date, and signature
+      // Page 5: Add name, date, and signature (centered, stacked vertically)
       if (pages.length >= 5) {
         const fifthPage = pages[4]; // Page 5 (0-indexed)
+        const centerX = 298; // Middle of page (A4 width is 595pt)
         
-        // Add name on page 5 (near "Print name" label)
+        // Add name on page 5 (centered, with label to the left)
         fifthPage.drawText(nameText, {
-          x: 90,
-          y: fifthPage.getHeight() - 655,
+          x: centerX,
+          y: fifthPage.getHeight() - 360,
           size: fontSize,
           font: font,
           color: rgb(0, 0, 0),
         });
         
-        // Add today's date on page 5 (near "Date" label)
+        // Add today's date on page 5 (centered, with label to the left)
         const today = new Date();
         const formattedDate = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
         fifthPage.drawText(formattedDate, {
-          x: 460,
-          y: fifthPage.getHeight() - 655,
+          x: centerX,
+          y: fifthPage.getHeight() - 420,
           size: fontSize,
           font: font,
           color: rgb(0, 0, 0),
         });
         
-        // Add signature next to "Signed" label
+        // Add signature (centered, with label to the left)
         if (signature) {
           try {
             // Parse the base64 signature image
@@ -1508,11 +1509,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const signatureBytes = Buffer.from(signatureData, 'base64');
             const signatureImage = await pdfDoc.embedPng(signatureBytes);
             
-            // Scale smaller (0.2 instead of 0.3) and position next to "Signed"
+            // Scale to 0.2 and position centered
             const signatureDims = signatureImage.scale(0.2);
             fifthPage.drawImage(signatureImage, {
-              x: 320,
-              y: fifthPage.getHeight() - 660,
+              x: centerX,
+              y: fifthPage.getHeight() - 480,
               width: signatureDims.width,
               height: signatureDims.height,
             });

@@ -13,12 +13,25 @@ interface UserProfile {
 
 // Timeout wrapper to prevent queries from hanging indefinitely
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error('Query timeout')), timeoutMs)
-    ),
-  ]);
+  let timeoutHandle: NodeJS.Timeout;
+  
+  return new Promise<T>((resolve, reject) => {
+    // Set up timeout
+    timeoutHandle = setTimeout(() => {
+      reject(new Error('Query timeout'));
+    }, timeoutMs);
+    
+    // Wrap original promise to clear timeout on completion
+    promise
+      .then((result) => {
+        clearTimeout(timeoutHandle);
+        resolve(result);
+      })
+      .catch((error) => {
+        clearTimeout(timeoutHandle);
+        reject(error);
+      });
+  });
 }
 
 export function useAuth() {
@@ -74,13 +87,16 @@ export function useAuth() {
   async function fetchUserProfile(userId: string) {
     try {
       // Wrap the query with a 10-second timeout
-      const queryPromise = supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      const { data, error } = await withTimeout(queryPromise, 10000);
+      const { data, error } = await withTimeout(
+        Promise.resolve(
+          supabase
+            .from('users')
+            .select('*')
+            .eq('id', userId)
+            .single()
+        ),
+        10000
+      );
 
       if (error) {
         console.error('Error fetching user profile:', error);

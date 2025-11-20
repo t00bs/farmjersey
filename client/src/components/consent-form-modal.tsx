@@ -195,6 +195,39 @@ export default function ConsentFormModal({ open, onOpenChange, applicationId }: 
     setSignature(null);
   };
 
+  const handleDownloadTemplate = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error("Not authenticated");
+      }
+
+      const response = await fetch("/api/download-template/rss-application", {
+        headers: {
+          "Authorization": `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to download template");
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "RSS_Application_Template.pdf";
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to download template. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -206,6 +239,28 @@ export default function ConsentFormModal({ open, onOpenChange, applicationId }: 
         </DialogHeader>
 
         <div className="space-y-6">
+          <Card className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-semibold">RSS Application Template</h3>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadTemplate}
+                data-testid="button-download-template"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Download Template
+              </Button>
+            </div>
+            <iframe
+              src="/api/download-template/rss-application"
+              className="w-full h-[400px] border rounded"
+              title="RSS Application Template"
+              data-testid="iframe-template-preview"
+            />
+          </Card>
+
           <Form {...form}>
             <form className="space-y-4">
               <FormField
@@ -303,7 +358,7 @@ export default function ConsentFormModal({ open, onOpenChange, applicationId }: 
                   type="button"
                   onClick={handlePreview}
                   disabled={fillPdfMutation.isPending}
-                  data-testid="button-preview-pdf"
+                  data-testid="button-generate-pdf"
                 >
                   {fillPdfMutation.isPending ? (
                     <>
@@ -313,62 +368,42 @@ export default function ConsentFormModal({ open, onOpenChange, applicationId }: 
                   ) : (
                     <>
                       <FileText className="mr-2 h-4 w-4" />
-                      Preview PDF
+                      Generate PDF
                     </>
                   )}
                 </Button>
 
                 {pdfUrl && (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={handleDownload}
-                    data-testid="button-download-pdf"
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Download PDF
-                  </Button>
+                  <>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={handleDownload}
+                      data-testid="button-download-pdf"
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      Download PDF
+                    </Button>
+
+                    <Button
+                      onClick={handleComplete}
+                      disabled={saveSignatureMutation.isPending}
+                      data-testid="button-complete-form"
+                    >
+                      {saveSignatureMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        "Complete Consent Form"
+                      )}
+                    </Button>
+                  </>
                 )}
               </div>
             </form>
           </Form>
-
-          {pdfUrl && (
-            <div className="space-y-4">
-              <div className="border rounded-lg overflow-hidden">
-                <iframe
-                  src={pdfUrl}
-                  className="w-full h-[500px]"
-                  title="PDF Preview"
-                  data-testid="iframe-pdf-preview"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
-                  data-testid="button-cancel"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleComplete}
-                  disabled={saveSignatureMutation.isPending}
-                  data-testid="button-complete-form"
-                >
-                  {saveSignatureMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    "Complete Consent Form"
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
         </div>
       </DialogContent>
     </Dialog>

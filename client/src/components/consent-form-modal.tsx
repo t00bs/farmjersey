@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -33,8 +33,42 @@ export default function ConsentFormModal({ open, onOpenChange, applicationId }: 
   const { toast } = useToast();
   const [signature, setSignature] = useState<string | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [templateUrl, setTemplateUrl] = useState<string | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const loadTemplate = async () => {
+      if (!open) return;
+      
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) return;
+
+        const response = await fetch("/api/download-template/rss-application", {
+          headers: {
+            "Authorization": `Bearer ${session.access_token}`,
+          },
+        });
+
+        if (response.ok) {
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          setTemplateUrl(url);
+        }
+      } catch (error) {
+        console.error("Failed to load template:", error);
+      }
+    };
+
+    loadTemplate();
+
+    return () => {
+      if (templateUrl) {
+        URL.revokeObjectURL(templateUrl);
+      }
+    };
+  }, [open]);
 
   const form = useForm<ConsentFormData>({
     resolver: zodResolver(consentFormSchema),
@@ -208,12 +242,18 @@ export default function ConsentFormModal({ open, onOpenChange, applicationId }: 
         <div className="space-y-6">
           <Card className="p-4">
             <h3 className="text-lg font-semibold mb-2">Declaration Preview</h3>
-            <iframe
-              src="/api/download-template/rss-application"
-              className="w-full h-[400px] border rounded"
-              title="RSS Application Template"
-              data-testid="iframe-template-preview"
-            />
+            {templateUrl ? (
+              <iframe
+                src={templateUrl}
+                className="w-full h-[400px] border rounded"
+                title="RSS Application Template"
+                data-testid="iframe-template-preview"
+              />
+            ) : (
+              <div className="w-full h-[400px] border rounded flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            )}
           </Card>
 
           <Form {...form}>

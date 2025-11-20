@@ -376,11 +376,17 @@ export default function Settings() {
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+                        <AlertDialogCancel 
+                          data-testid="button-cancel-delete"
+                          disabled={deleteAccountMutation.isPending}
+                        >
+                          Cancel
+                        </AlertDialogCancel>
                         <AlertDialogAction
                           onClick={handleDeleteAccount}
                           className="bg-red-600 hover:bg-red-700"
                           data-testid="button-confirm-delete"
+                          disabled={deleteAccountMutation.isPending}
                         >
                           {deleteAccountMutation.isPending ? "Deleting..." : "Delete Account"}
                         </AlertDialogAction>

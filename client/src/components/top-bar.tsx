@@ -31,6 +31,13 @@ export default function TopBar() {
       ];
     }
     
+    if (location === "/settings") {
+      return [
+        { label: "Home", href: "/" },
+        { label: "Settings", current: true },
+      ];
+    }
+    
     if (location.startsWith("/application/")) {
       return [
         { label: "Home", href: "/" },
@@ -81,7 +88,7 @@ export default function TopBar() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center space-x-3 hover:bg-gray-50">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={user?.profileImageUrl} />
+                  <AvatarImage src={user?.profileImageUrl || undefined} />
                   <AvatarFallback className="bg-gray-300 text-gray-600">
                     <User className="h-4 w-4" />
                   </AvatarFallback>

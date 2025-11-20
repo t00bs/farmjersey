@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { supabase } from "@/lib/supabase";
 import { useRoute } from "wouter";
 import type { GrantApplication } from "@shared/schema";
 import Sidebar from "@/components/sidebar";
@@ -169,8 +170,57 @@ export default function GrantApplication() {
     },
   });
 
-  const handleDownloadTemplate = () => {
-    window.open(`/api/download-template/land-declaration`, '_blank');
+  const handleDownloadTemplate = async () => {
+    try {
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast({
+          title: "Authentication required",
+          description: "Please sign in to download the template.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Fetch the file with authentication
+      const response = await fetch('/api/download-template/land-declaration', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to download template');
+      }
+
+      // Create a blob from the response
+      const blob = await response.blob();
+      
+      // Create a temporary URL and trigger download
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'Land_Declaration_2024_for_2025.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Template downloaded",
+        description: "The land declaration template has been downloaded successfully.",
+      });
+    } catch (error) {
+      console.error('Error downloading template:', error);
+      toast({
+        title: "Download failed",
+        description: "Failed to download the template. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleUpload = (type: "land_declaration" | "supporting_doc") => {

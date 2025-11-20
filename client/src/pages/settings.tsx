@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
@@ -15,9 +15,8 @@ import { User, Lock, Trash2, Upload, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 
 export default function Settings() {
-  const { user } = useAuth();
+  const { user, refetchUser } = useAuth();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   // Profile state
   const [firstName, setFirstName] = useState(user?.firstName || "");
@@ -49,12 +48,13 @@ export default function Settings() {
       }
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: "Profile updated",
         description: "Your profile has been updated successfully.",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      // Refetch the user data to update the avatar in the top bar
+      await refetchUser();
     },
     onError: () => {
       toast({

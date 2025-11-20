@@ -124,11 +124,18 @@ export function useAuth() {
     }
   }
 
+  async function refetchUser() {
+    if (supabaseUser) {
+      await fetchUserProfile(supabaseUser.id);
+    }
+  }
+
   return {
     user,
     supabaseUser,
     isLoading,
     isAuthenticated: !!user,
     isAdmin: user?.role === 'admin',
+    refetchUser,
   };
 }

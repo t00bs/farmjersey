@@ -10,8 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { User, Lock, Trash2, Upload, ArrowLeft } from "lucide-react";
+import { User, Lock, Trash2, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 
 export default function Settings() {
@@ -21,8 +20,6 @@ export default function Settings() {
   // Profile state
   const [firstName, setFirstName] = useState(user?.firstName || "");
   const [lastName, setLastName] = useState(user?.lastName || "");
-  const [profileImage, setProfileImage] = useState<File | null>(null);
-  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(user?.profileImageUrl || null);
 
   // Password state
   const [newPassword, setNewPassword] = useState("");
@@ -30,30 +27,14 @@ export default function Settings() {
 
   // Update profile mutation
   const updateProfileMutation = useMutation({
-    mutationFn: async (data: FormData) => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers: Record<string, string> = {};
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
-      }
-      
-      const res = await fetch('/api/user/profile', {
-        method: 'PATCH',
-        headers,
-        body: data,
-      });
-      
-      if (!res.ok) {
-        throw new Error('Failed to update profile');
-      }
-      return await res.json();
+    mutationFn: async (data: { firstName: string; lastName: string }) => {
+      return await apiRequest('PATCH', '/api/user/profile', data);
     },
     onSuccess: async () => {
       toast({
         title: "Profile updated",
         description: "Your profile has been updated successfully.",
       });
-      // Refetch the user data to update the avatar in the top bar
       await refetchUser();
     },
     onError: () => {
@@ -113,13 +94,7 @@ export default function Settings() {
 
   const handleProfileSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const formData = new FormData();
-    formData.append('firstName', firstName);
-    formData.append('lastName', lastName);
-    if (profileImage) {
-      formData.append('profileImage', profileImage);
-    }
-    updateProfileMutation.mutate(formData);
+    updateProfileMutation.mutate({ firstName, lastName });
   };
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
@@ -144,18 +119,6 @@ export default function Settings() {
     }
 
     updatePasswordMutation.mutate(newPassword);
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setProfileImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
   };
 
   const handleDeleteAccount = () => {
@@ -199,40 +162,11 @@ export default function Settings() {
               <CardHeader>
                 <CardTitle>Profile Information</CardTitle>
                 <CardDescription>
-                  Update your name and profile picture
+                  Update your name
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleProfileSubmit} className="space-y-6">
-                  {/* Profile Picture */}
-                  <div className="flex items-center space-x-6">
-                    <Avatar className="h-24 w-24">
-                      <AvatarImage src={profileImagePreview || undefined} />
-                      <AvatarFallback className="bg-gray-300 text-gray-600 text-2xl">
-                        <User className="h-12 w-12" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <Label htmlFor="profileImage" className="cursor-pointer">
-                        <div className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-                          <Upload className="h-4 w-4 mr-2" />
-                          Upload new picture
-                        </div>
-                        <Input
-                          id="profileImage"
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={handleImageChange}
-                          data-testid="input-profile-image"
-                        />
-                      </Label>
-                      <p className="text-xs text-gray-500 mt-2">
-                        JPG, PNG or GIF (max. 5MB)
-                      </p>
-                    </div>
-                  </div>
-
                   {/* Name Fields */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">

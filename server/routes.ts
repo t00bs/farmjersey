@@ -38,24 +38,6 @@ const upload = multer({
   },
 });
 
-// Configure multer for profile picture uploads (images only)
-const uploadProfilePicture = multer({
-  dest: "uploads/",
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit for images
-  },
-  fileFilter: (req, file, cb) => {
-    const allowedImageTypes = /jpeg|jpg|png|gif|webp/;
-    const extname = allowedImageTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = file.mimetype.startsWith('image/');
-    
-    if (mimetype && extname) {
-      return cb(null, true);
-    } else {
-      cb(new Error("Only image files (JPEG, PNG, GIF, WebP) are allowed for profile pictures"));
-    }
-  },
-});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Invitation validation endpoints (no auth required)
@@ -125,7 +107,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User profile routes
-  app.patch('/api/user/profile', isAuthenticated, uploadProfilePicture.single('profileImage'), async (req: any, res) => {
+  app.patch('/api/user/profile', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const { firstName, lastName } = req.body;
@@ -133,35 +115,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updates: any = {};
       if (firstName !== undefined) updates.firstName = firstName;
       if (lastName !== undefined) updates.lastName = lastName;
-      
-      // Handle profile image upload
-      if (req.file) {
-        // Get current user to find old profile image
-        const currentUser = await storage.getUser(userId);
-        
-        // Delete old profile image if it exists
-        if (currentUser?.profileImageUrl) {
-          const oldImagePath = currentUser.profileImageUrl.startsWith('/') 
-            ? currentUser.profileImageUrl.substring(1) 
-            : currentUser.profileImageUrl;
-          
-          if (fs.existsSync(oldImagePath)) {
-            try {
-              fs.unlinkSync(oldImagePath);
-            } catch (err) {
-              console.error("Failed to delete old profile image:", err);
-            }
-          }
-        }
-        
-        const fileExtension = path.extname(req.file.originalname);
-        const newFilename = `profile-${userId}${fileExtension}`;
-        const newPath = path.join('uploads', newFilename);
-        
-        // Rename the uploaded file
-        fs.renameSync(req.file.path, newPath);
-        updates.profileImageUrl = `/${newPath}`;
-      }
       
       // Update user profile
       const updatedUser = await storage.upsertUser({
@@ -180,9 +133,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.id;
       const { supabaseAdmin } = await import('./supabase');
-      
-      // Get current user to delete profile image
-      const currentUser = await storage.getUser(userId);
       
       // Delete all user's grant applications and related data
       const applications = await storage.getUserGrantApplications(userId);
@@ -204,21 +154,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Delete application
         await storage.deleteGrantApplication(application.id);
-      }
-      
-      // Delete user's profile image
-      if (currentUser?.profileImageUrl) {
-        const profileImagePath = currentUser.profileImageUrl.startsWith('/') 
-          ? currentUser.profileImageUrl.substring(1) 
-          : currentUser.profileImageUrl;
-        
-        if (fs.existsSync(profileImagePath)) {
-          try {
-            fs.unlinkSync(profileImagePath);
-          } catch (err) {
-            console.error("Failed to delete profile image:", err);
-          }
-        }
       }
       
       // Delete user from Supabase Auth (this will cascade to public.users via ON DELETE CASCADE)

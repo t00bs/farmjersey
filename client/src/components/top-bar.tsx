@@ -16,7 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useLocation, Link } from "wouter";
 
 export default function TopBar() {
@@ -51,6 +51,20 @@ export default function TopBar() {
 
   const breadcrumbs = getBreadcrumbs();
   const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : "User";
+  
+  // Get user initials for avatar
+  const getInitials = () => {
+    if (user?.firstName && user?.lastName) {
+      return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
+    }
+    if (user?.firstName) {
+      return user.firstName[0].toUpperCase();
+    }
+    if (user?.email) {
+      return user.email[0].toUpperCase();
+    }
+    return "U";
+  };
 
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
@@ -88,9 +102,8 @@ export default function TopBar() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center space-x-3 hover:bg-gray-50">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={user?.profileImageUrl || undefined} />
-                  <AvatarFallback className="bg-gray-300 text-gray-600">
-                    <User className="h-4 w-4" />
+                  <AvatarFallback className="bg-primary text-primary-foreground font-medium">
+                    {getInitials()}
                   </AvatarFallback>
                 </Avatar>
                 <span className="text-sm font-medium">{userName}</span>

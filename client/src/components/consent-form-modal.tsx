@@ -36,14 +36,21 @@ export default function ConsentFormModal({ open, onOpenChange, applicationId }: 
   const [templateUrl, setTemplateUrl] = useState<string | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const templateUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
     const loadTemplate = async () => {
-      if (!open) return;
+      if (!open) {
+        setTemplateUrl(null);
+        return;
+      }
       
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.access_token) return;
+        if (!session?.access_token) {
+          console.error("No access token available");
+          return;
+        }
 
         const response = await fetch("/api/download-template/rss-application", {
           headers: {
@@ -54,7 +61,10 @@ export default function ConsentFormModal({ open, onOpenChange, applicationId }: 
         if (response.ok) {
           const blob = await response.blob();
           const url = URL.createObjectURL(blob);
+          templateUrlRef.current = url;
           setTemplateUrl(url);
+        } else {
+          console.error("Failed to fetch template:", response.status, response.statusText);
         }
       } catch (error) {
         console.error("Failed to load template:", error);
@@ -64,8 +74,9 @@ export default function ConsentFormModal({ open, onOpenChange, applicationId }: 
     loadTemplate();
 
     return () => {
-      if (templateUrl) {
-        URL.revokeObjectURL(templateUrl);
+      if (templateUrlRef.current) {
+        URL.revokeObjectURL(templateUrlRef.current);
+        templateUrlRef.current = null;
       }
     };
   }, [open]);

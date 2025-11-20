@@ -1368,6 +1368,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
         });
+      } else if (templateType === "rss-application") {
+        // Serve the PDF template for RSS application
+        const templatePath = path.join("templates", "rss-application-template.pdf");
+        
+        if (!fs.existsSync(templatePath)) {
+          console.error("RSS application template not found:", templatePath);
+          return res.status(404).json({ message: "Template file not found" });
+        }
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'inline; filename="RSS_Application_Template.pdf"');
+        res.sendFile(path.resolve(templatePath), (error) => {
+          if (error) {
+            console.error("Error serving template:", error);
+            if (!res.headersSent) {
+              res.status(500).json({ message: "Failed to serve template" });
+            }
+          }
+        });
       } else {
         res.status(404).json({ message: "Template not found" });
       }

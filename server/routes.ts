@@ -1476,7 +1476,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Page 5: Add name, date, and signature (centered, stacked vertically)
+      // Page 5: Add name, date, and signature (centered, 3/4 down the page)
       if (pages.length >= 5) {
         const fifthPage = pages[4]; // Page 5 (0-indexed)
         const centerX = 298; // Middle of page (A4 width is 595pt)
@@ -1484,7 +1484,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Add name on page 5 (centered, with label to the left)
         fifthPage.drawText(nameText, {
           x: centerX,
-          y: fifthPage.getHeight() - 360,
+          y: fifthPage.getHeight() - 632,
           size: fontSize,
           font: font,
           color: rgb(0, 0, 0),
@@ -1495,7 +1495,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const formattedDate = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
         fifthPage.drawText(formattedDate, {
           x: centerX,
-          y: fifthPage.getHeight() - 420,
+          y: fifthPage.getHeight() - 692,
           size: fontSize,
           font: font,
           color: rgb(0, 0, 0),
@@ -1513,7 +1513,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const signatureDims = signatureImage.scale(0.2);
             fifthPage.drawImage(signatureImage, {
               x: centerX,
-              y: fifthPage.getHeight() - 480,
+              y: fifthPage.getHeight() - 752,
               width: signatureDims.width,
               height: signatureDims.height,
             });

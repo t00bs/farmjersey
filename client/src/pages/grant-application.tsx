@@ -386,7 +386,7 @@ export default function GrantApplication() {
               iconType="signature"
               requiresSignature
               primaryAction={{
-                label: "Sign",
+                label: application?.consentFormCompleted ? "View" : "Sign",
                 onClick: handleSign,
                 variant: "secondary",
               }}

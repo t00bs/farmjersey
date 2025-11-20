@@ -566,7 +566,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Accept invitation (public route - redirects to login with token)
+  // Accept invitation (public route - redirects to signup with token)
   app.get("/api/accept-invitation", async (req: any, res) => {
     try {
       const { token } = req.query;
@@ -589,11 +589,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).send("This invitation has expired");
       }
 
-      // Store token in session for validation after login
-      req.session.invitationToken = token;
-      
-      // Redirect to login
-      res.redirect('/api/login');
+      // Redirect to frontend signup page with token
+      res.redirect(`/auth?token=${token}`);
     } catch (error) {
       console.error("Error accepting invitation:", error);
       res.status(500).send("Failed to process invitation");

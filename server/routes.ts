@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { isAuthenticated, isAdmin, validateInvitationToken, markInvitationUsed } from "./supabaseAuth";
-import { insertGrantApplicationSchema, insertAgriculturalReturnSchema, insertDocumentSchema, insertAgriculturalFormTemplateSchema, insertAgriculturalFormResponseSchema, insertInvitationSchema, users, passwordResetTokens } from "@shared/schema";
+import { insertGrantApplicationSchema, insertAgriculturalReturnSchema, insertDocumentSchema, insertAgriculturalFormTemplateSchema, insertAgriculturalFormResponseSchema, insertInvitationSchema, passwordResetTokens } from "@shared/schema";
 import { sendInvitationEmail, sendPasswordResetEmail } from "./resend";
 import { eq, and, gt } from "drizzle-orm";
 import { db } from "./db";
@@ -191,16 +191,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Email is required' });
       }
 
-      // Check if user exists in our users table (more reliable than Supabase Admin API)
-      const [existingUser] = await db
-        .select()
-        .from(users)
-        .where(eq(users.email, email.toLowerCase()))
-        .limit(1);
+      // Check if user exists using Supabase RPC function (queries auth.users directly)
+      // This is more reliable than listUsers() which can fail with pagination issues
+      const { supabaseAdmin } = await import('./supabase');
+      const { data: userData, error: userError } = await supabaseAdmin.rpc('get_user_id_by_email', {
+        user_email: email.toLowerCase()
+      });
+      
+      if (userError) {
+        console.error('Error checking user by email:', userError);
+      }
       
       // Always return success to prevent email enumeration
       // but only send email if user exists
-      if (existingUser) {
+      if (userData && userData.length > 0 && !userError) {
         // Generate secure token
         const token = randomBytes(32).toString('hex');
         const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour expiry

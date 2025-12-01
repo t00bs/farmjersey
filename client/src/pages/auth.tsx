@@ -202,9 +202,6 @@ export default function AuthPage() {
           <img src={logoPath} alt="Rural Support Scheme Logo" className="h-20 object-contain" data-testid="img-logo" />
         </div>
         <Card>
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">Rural Support Scheme</CardTitle>
-          </CardHeader>
         <CardContent>
           <Tabs defaultValue={invitationToken ? "signup" : "signin"} className="w-full">
             <TabsList className="grid w-full grid-cols-3">

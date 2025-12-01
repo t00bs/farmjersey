@@ -173,16 +173,22 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      const response = await fetch('/api/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
       });
 
-      if (error) throw error;
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to send password reset email');
+      }
 
       setResetEmailSent(true);
       toast({
         title: 'Password Reset Email Sent',
-        description: 'Check your email for a link to reset your password.',
+        description: 'If an account exists with this email, you will receive a reset link.',
       });
     } catch (error: any) {
       toast({

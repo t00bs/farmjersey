@@ -7,7 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mail, Lock, User } from 'lucide-react';
+import { Loader2, Mail, Lock, User, ArrowLeft } from 'lucide-react';
+import logoPath from "@assets/FJ Brand Logo_1759502325451.png";
 
 export default function AuthPage() {
   const [email, setEmail] = useState('');
@@ -17,6 +18,8 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [invitationToken, setInvitationToken] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
   const { toast } = useToast();
 
   // Check for invitation token in URL
@@ -165,15 +168,46 @@ export default function AuthPage() {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) throw error;
+
+      setResetEmailSent(true);
+      toast({
+        title: 'Password Reset Email Sent',
+        description: 'Check your email for a link to reset your password.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Failed',
+        description: error.message || 'Failed to send password reset email',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Rural Support Scheme</CardTitle>
-          <CardDescription className="text-center">
-            Farm Grant Application Portal
-          </CardDescription>
-        </CardHeader>
+      <div className="w-full max-w-md">
+        <div className="flex justify-center mb-6">
+          <img src={logoPath} alt="Rural Support Scheme Logo" className="h-20 object-contain" data-testid="img-logo" />
+        </div>
+        <Card>
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold text-center">Rural Support Scheme</CardTitle>
+            <CardDescription className="text-center">
+              Farm Grant Application Portal
+            </CardDescription>
+          </CardHeader>
         <CardContent>
           <Tabs defaultValue={invitationToken ? "signup" : "signin"} className="w-full">
             <TabsList className="grid w-full grid-cols-3">
@@ -184,49 +218,125 @@ export default function AuthPage() {
 
             {/* Sign In Tab */}
             <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="signin-email"
-                      type="email"
-                      placeholder="your.email@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10"
-                      required
-                      data-testid="input-signin-email"
-                    />
+              {showForgotPassword ? (
+                resetEmailSent ? (
+                  <div className="space-y-4">
+                    <Alert>
+                      <AlertDescription>
+                        We've sent you a password reset link. Please check your email and follow the instructions to reset your password.
+                      </AlertDescription>
+                    </Alert>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        setShowForgotPassword(false);
+                        setResetEmailSent(false);
+                      }}
+                      data-testid="button-back-to-signin"
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Back to Sign In
+                    </Button>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signin-password">Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="signin-password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10"
-                      required
-                      data-testid="input-signin-password"
-                    />
+                ) : (
+                  <form onSubmit={handleForgotPassword} className="space-y-4">
+                    <div className="space-y-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowForgotPassword(false)}
+                        className="flex items-center text-sm text-gray-500 hover:text-gray-700"
+                        data-testid="button-back-link"
+                      >
+                        <ArrowLeft className="mr-1 h-4 w-4" />
+                        Back to Sign In
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="reset-email">Email Address</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <Input
+                          id="reset-email"
+                          type="email"
+                          placeholder="your.email@example.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="pl-10"
+                          required
+                          data-testid="input-reset-email"
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      disabled={loading}
+                      data-testid="button-send-reset"
+                    >
+                      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Send Reset Link
+                    </Button>
+                    <p className="text-sm text-gray-500 text-center">
+                      Enter your email address and we'll send you a link to reset your password.
+                    </p>
+                  </form>
+                )
+              ) : (
+                <form onSubmit={handleSignIn} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="signin-email"
+                        type="email"
+                        placeholder="your.email@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-10"
+                        required
+                        data-testid="input-signin-email"
+                      />
+                    </div>
                   </div>
-                </div>
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={loading}
-                  data-testid="button-signin"
-                >
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Sign In
-                </Button>
-              </form>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <Label htmlFor="signin-password">Password</Label>
+                      <button
+                        type="button"
+                        onClick={() => setShowForgotPassword(true)}
+                        className="text-sm text-primary hover:underline"
+                        data-testid="link-forgot-password"
+                      >
+                        Forgot Password?
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="signin-password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-10"
+                        required
+                        data-testid="input-signin-password"
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={loading}
+                    data-testid="button-signin"
+                  >
+                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Sign In
+                  </Button>
+                </form>
+              )}
             </TabsContent>
 
             {/* Sign Up Tab */}
@@ -360,6 +470,7 @@ export default function AuthPage() {
           </Tabs>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

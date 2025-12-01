@@ -9,6 +9,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import { ensureBucketExists, uploadFile, downloadFile, deleteFile, deleteMultipleFiles, getSignedUrl, isSupabasePath } from "./supabaseStorage";
 
 // Helper function to prevent CSV/XLSX formula injection
 const sanitizeForExport = (value: any): string => {
@@ -20,9 +21,9 @@ const sanitizeForExport = (value: any): string => {
   return str;
 };
 
-// Configure multer for file uploads
+// Configure multer for file uploads - use memory storage for Supabase upload
 const upload = multer({
-  dest: "uploads/",
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
@@ -41,6 +42,9 @@ const upload = multer({
 
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Initialize Supabase Storage bucket
+  await ensureBucketExists();
+  
   // Invitation validation endpoints (no auth required)
   app.get('/api/validate-invitation', async (req, res) => {
     try {
@@ -141,16 +145,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const application of applications) {
         // Delete all documents for this application
         const documents = await storage.getDocumentsByApplicationId(application.id);
+        const supabasePaths: string[] = [];
+        
         for (const doc of documents) {
-          // Delete physical file
-          if (doc.filePath && fs.existsSync(doc.filePath)) {
-            try {
-              fs.unlinkSync(doc.filePath);
-            } catch (err) {
-              console.error("Failed to delete document file:", err);
+          if (doc.filePath) {
+            if (isSupabasePath(doc.filePath)) {
+              // Collect Supabase paths for batch deletion
+              supabasePaths.push(doc.filePath);
+            } else if (fs.existsSync(doc.filePath)) {
+              // Delete local file
+              try {
+                fs.unlinkSync(doc.filePath);
+              } catch (err) {
+                console.error("Failed to delete document file:", err);
+              }
             }
           }
           await storage.deleteDocument(doc.id);
+        }
+        
+        // Delete all Supabase Storage files in batch
+        if (supabasePaths.length > 0) {
+          const { error: deleteError } = await deleteMultipleFiles(supabasePaths);
+          if (deleteError) {
+            console.error("Failed to delete Supabase files:", deleteError);
+          }
         }
         
         // Delete application
@@ -438,15 +457,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Document not found" });
       }
       
-      // Check if file exists
-      if (!fs.existsSync(document.filePath)) {
-        return res.status(404).json({ message: "File not found on server" });
+      // Check if file is stored in Supabase or locally
+      if (isSupabasePath(document.filePath)) {
+        // Download from Supabase Storage
+        const { data: fileData, error: downloadError } = await downloadFile(document.filePath);
+        
+        if (downloadError || !fileData) {
+          console.error(`Failed to download from Supabase: ${document.filePath}`, downloadError);
+          return res.status(404).json({ message: "File not found in storage" });
+        }
+        
+        res.setHeader('Content-Type', document.fileType);
+        res.setHeader('Content-Disposition', `attachment; filename="${document.fileName}"`);
+        res.setHeader('Content-Length', fileData.length);
+        res.send(fileData);
+      } else {
+        // Legacy: Download from local filesystem
+        if (!fs.existsSync(document.filePath)) {
+          return res.status(404).json({ message: "File not found on server" });
+        }
+        
+        res.setHeader('Content-Type', document.fileType);
+        res.setHeader('Content-Disposition', `attachment; filename="${document.fileName}"`);
+        res.download(document.filePath, document.fileName);
       }
-      
-      // Set proper content type and force download
-      res.setHeader('Content-Type', document.fileType);
-      res.setHeader('Content-Disposition', `attachment; filename="${document.fileName}"`);
-      res.download(document.filePath, document.fileName);
     } catch (error) {
       console.error("Error downloading document:", error);
       res.status(500).json({ message: "Failed to download document" });
@@ -467,15 +501,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Document not found" });
       }
       
-      // Check if file exists
-      if (!fs.existsSync(document.filePath)) {
-        return res.status(404).json({ message: "File not found on server" });
+      // Check if file is stored in Supabase or locally
+      if (isSupabasePath(document.filePath)) {
+        // Download from Supabase Storage and serve inline
+        const { data: fileData, error: downloadError } = await downloadFile(document.filePath);
+        
+        if (downloadError || !fileData) {
+          console.error(`Failed to download from Supabase: ${document.filePath}`, downloadError);
+          return res.status(404).json({ message: "File not found in storage" });
+        }
+        
+        res.setHeader('Content-Type', document.fileType);
+        res.setHeader('Content-Disposition', `inline; filename="${document.fileName}"`);
+        res.setHeader('Content-Length', fileData.length);
+        res.send(fileData);
+      } else {
+        // Legacy: Serve from local filesystem
+        if (!fs.existsSync(document.filePath)) {
+          return res.status(404).json({ message: "File not found on server" });
+        }
+        
+        res.setHeader('Content-Type', document.fileType);
+        res.setHeader('Content-Disposition', `inline; filename="${document.fileName}"`);
+        res.sendFile(path.resolve(document.filePath));
       }
-      
-      // Set proper content type and serve inline
-      res.setHeader('Content-Type', document.fileType);
-      res.setHeader('Content-Disposition', `inline; filename="${document.fileName}"`);
-      res.sendFile(path.resolve(document.filePath));
     } catch (error) {
       console.error("Error viewing document:", error);
       res.status(500).json({ message: "Failed to view document" });
@@ -1238,12 +1287,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
+      // Upload file to Supabase Storage
+      const { path: storagePath, error: uploadError } = await uploadFile(
+        req.file.buffer,
+        req.file.originalname,
+        req.file.mimetype,
+        applicationId,
+        documentType
+      );
+      
+      if (uploadError || !storagePath) {
+        console.error("Supabase upload error:", uploadError);
+        return res.status(500).json({ message: "Failed to upload file to storage" });
+      }
+      
       const documentData = insertDocumentSchema.parse({
         applicationId,
         fileName: req.file.originalname,
         fileType: req.file.mimetype,
         fileSize: req.file.size,
-        filePath: req.file.path,
+        filePath: storagePath,
         documentType,
       });
       
@@ -1318,23 +1381,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Unauthorized access to document" });
       }
       
-      // Check if file exists on the filesystem
-      if (!fs.existsSync(document.filePath)) {
-        console.error(`Document file not found: ${document.filePath}`);
-        return res.status(404).json({ message: "File not found on server" });
-      }
-      
-      // Set proper content type and force download
-      res.setHeader('Content-Type', document.fileType);
-      res.setHeader('Content-Disposition', `attachment; filename="${document.fileName}"`);
-      res.download(document.filePath, document.fileName, (error) => {
-        if (error) {
-          console.error("Error serving document download:", error);
-          if (!res.headersSent) {
-            res.status(500).json({ message: "Failed to download document" });
-          }
+      // Check if file is stored in Supabase or locally
+      if (isSupabasePath(document.filePath)) {
+        // Download from Supabase Storage
+        const { data: fileData, error: downloadError } = await downloadFile(document.filePath);
+        
+        if (downloadError || !fileData) {
+          console.error(`Failed to download from Supabase: ${document.filePath}`, downloadError);
+          return res.status(404).json({ message: "File not found in storage" });
         }
-      });
+        
+        res.setHeader('Content-Type', document.fileType);
+        res.setHeader('Content-Disposition', `attachment; filename="${document.fileName}"`);
+        res.setHeader('Content-Length', fileData.length);
+        res.send(fileData);
+      } else {
+        // Legacy: Download from local filesystem
+        if (!fs.existsSync(document.filePath)) {
+          console.error(`Document file not found: ${document.filePath}`);
+          return res.status(404).json({ message: "File not found on server" });
+        }
+        
+        res.setHeader('Content-Type', document.fileType);
+        res.setHeader('Content-Disposition', `attachment; filename="${document.fileName}"`);
+        res.download(document.filePath, document.fileName, (error) => {
+          if (error) {
+            console.error("Error serving document download:", error);
+            if (!res.headersSent) {
+              res.status(500).json({ message: "Failed to download document" });
+            }
+          }
+        });
+      }
     } catch (error) {
       console.error("Error downloading document:", error);
       if (!res.headersSent) {

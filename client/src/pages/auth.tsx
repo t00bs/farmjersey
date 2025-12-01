@@ -204,9 +204,6 @@ export default function AuthPage() {
         <Card>
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold text-center">Rural Support Scheme</CardTitle>
-            <CardDescription className="text-center">
-              Farm Grant Application Portal
-            </CardDescription>
           </CardHeader>
         <CardContent>
           <Tabs defaultValue={invitationToken ? "signup" : "signin"} className="w-full">

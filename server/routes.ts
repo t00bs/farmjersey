@@ -3,7 +3,10 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { isAuthenticated, isAdmin, validateInvitationToken, markInvitationUsed } from "./supabaseAuth";
 import { insertGrantApplicationSchema, insertAgriculturalReturnSchema, insertDocumentSchema, insertAgriculturalFormTemplateSchema, insertAgriculturalFormResponseSchema, insertInvitationSchema } from "@shared/schema";
-import { sendInvitationEmail } from "./resend";
+import { sendInvitationEmail, sendPasswordResetEmail } from "./resend";
+import { passwordResetTokens } from "@shared/schema";
+import { eq, and, gt } from "drizzle-orm";
+import { db } from "./db";
 import { randomBytes } from "crypto";
 import multer from "multer";
 import path from "path";
@@ -177,6 +180,166 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error using invitation:', error);
       res.status(500).json({ message: 'Failed to mark invitation as used' });
+    }
+  });
+
+  // Password reset endpoints (no auth required)
+  app.post('/api/forgot-password', async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email || typeof email !== 'string') {
+        return res.status(400).json({ message: 'Email is required' });
+      }
+
+      // Check if user exists with this email
+      const { supabaseAdmin } = await import('./supabase');
+      const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+      
+      if (listError) {
+        console.error('Error listing users:', listError);
+        return res.status(500).json({ message: 'Failed to process request' });
+      }
+
+      const userExists = users.users.some(u => u.email?.toLowerCase() === email.toLowerCase());
+      
+      // Always return success to prevent email enumeration
+      // but only send email if user exists
+      if (userExists) {
+        // Generate secure token
+        const token = randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour expiry
+        
+        // Store token in database
+        await db.insert(passwordResetTokens).values({
+          email: email.toLowerCase(),
+          token,
+          expiresAt,
+          used: false,
+        });
+
+        // Build the reset URL using the request host
+        const protocol = req.headers['x-forwarded-proto'] || 'https';
+        const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:5000';
+        const resetUrl = `${protocol}://${host}/reset-password?token=${token}`;
+        
+        // Send email via Resend
+        try {
+          await sendPasswordResetEmail(email, resetUrl);
+          console.log(`Password reset email sent to ${email}`);
+        } catch (emailError) {
+          console.error('Error sending password reset email:', emailError);
+          // Don't fail the request - we still want to return success
+        }
+      } else {
+        console.log(`Password reset requested for non-existent email: ${email}`);
+      }
+
+      // Always return success to prevent email enumeration attacks
+      res.json({ message: 'If an account exists with this email, a password reset link has been sent.' });
+    } catch (error) {
+      console.error('Error in forgot-password:', error);
+      res.status(500).json({ message: 'Failed to process password reset request' });
+    }
+  });
+
+  app.get('/api/validate-reset-token', async (req, res) => {
+    try {
+      const { token } = req.query;
+      
+      if (!token || typeof token !== 'string') {
+        return res.json({ valid: false, message: 'Token is required' });
+      }
+
+      // Find the token in database
+      const [resetToken] = await db
+        .select()
+        .from(passwordResetTokens)
+        .where(
+          and(
+            eq(passwordResetTokens.token, token),
+            eq(passwordResetTokens.used, false),
+            gt(passwordResetTokens.expiresAt, new Date())
+          )
+        )
+        .limit(1);
+
+      if (!resetToken) {
+        return res.json({ valid: false, message: 'Invalid or expired token' });
+      }
+
+      res.json({ valid: true, email: resetToken.email });
+    } catch (error) {
+      console.error('Error validating reset token:', error);
+      res.status(500).json({ valid: false, message: 'Failed to validate token' });
+    }
+  });
+
+  app.post('/api/reset-password', async (req, res) => {
+    try {
+      const { token, password } = req.body;
+      
+      if (!token || typeof token !== 'string') {
+        return res.status(400).json({ message: 'Token is required' });
+      }
+      
+      if (!password || typeof password !== 'string' || password.length < 6) {
+        return res.status(400).json({ message: 'Password must be at least 6 characters' });
+      }
+
+      // Find and validate the token
+      const [resetToken] = await db
+        .select()
+        .from(passwordResetTokens)
+        .where(
+          and(
+            eq(passwordResetTokens.token, token),
+            eq(passwordResetTokens.used, false),
+            gt(passwordResetTokens.expiresAt, new Date())
+          )
+        )
+        .limit(1);
+
+      if (!resetToken) {
+        return res.status(400).json({ message: 'Invalid or expired token' });
+      }
+
+      // Find user by email
+      const { supabaseAdmin } = await import('./supabase');
+      const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+      
+      if (listError) {
+        console.error('Error listing users:', listError);
+        return res.status(500).json({ message: 'Failed to process request' });
+      }
+
+      const user = users.users.find(u => u.email?.toLowerCase() === resetToken.email.toLowerCase());
+      
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Update password in Supabase
+      const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
+        password: password,
+      });
+
+      if (updateError) {
+        console.error('Error updating password:', updateError);
+        return res.status(500).json({ message: 'Failed to update password' });
+      }
+
+      // Mark token as used
+      await db
+        .update(passwordResetTokens)
+        .set({ used: true, usedAt: new Date() })
+        .where(eq(passwordResetTokens.id, resetToken.id));
+
+      console.log(`Password reset completed for ${resetToken.email}`);
+      res.json({ message: 'Password has been reset successfully' });
+    } catch (error) {
+      console.error('Error in reset-password:', error);
+      res.status(500).json({ message: 'Failed to reset password' });
     }
   });
 

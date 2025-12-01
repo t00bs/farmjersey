@@ -201,7 +201,7 @@ export default function AuthPage() {
         <div className="flex justify-center mb-6">
           <img src={logoPath} alt="Rural Support Scheme Logo" className="w-40 object-contain" data-testid="img-logo" />
         </div>
-        <Card>
+        <Card className="bg-transparent border-0 shadow-none">
         <CardContent className="p-0">
           <Tabs defaultValue={invitationToken ? "signup" : "signin"} className="w-full">
             <TabsList className="grid w-full grid-cols-3">

@@ -89,7 +89,7 @@ The application follows a modern full-stack architecture with clear separation b
 - **@radix-ui/react-***: Accessible UI primitives
 - **express**: Web application framework
 - **multer**: File upload handling
-- **resend**: Email service for invitations
+- **resend**: Email service for invitations and password reset
 
 ### Development Dependencies
 - **vite**: Build tool and development server
@@ -143,6 +143,13 @@ Preferred communication style: Simple, everyday language.
 ## Changelog
 
 Changelog:
+- December 1, 2025. **CUSTOM PASSWORD RESET**: Implemented custom password reset flow via Resend
+  - Added password_reset_tokens table for secure token storage
+  - Created /api/forgot-password endpoint that generates tokens and sends branded emails via Resend
+  - Created /api/validate-reset-token and /api/reset-password endpoints for secure password updates
+  - Tokens expire after 1 hour and are single-use
+  - Uses x-forwarded headers for correct production URL generation
+  - Professional HTML email template with Farm Jersey branding
 - December 1, 2025. **FILE STORAGE MIGRATION**: Migrated document storage from local filesystem to Supabase Storage
   - All uploaded documents now stored in Supabase Storage bucket for geographic consistency
   - Documents stored in same region as database for data residency compliance

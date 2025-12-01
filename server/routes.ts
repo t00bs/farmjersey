@@ -2,9 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { isAuthenticated, isAdmin, validateInvitationToken, markInvitationUsed } from "./supabaseAuth";
-import { insertGrantApplicationSchema, insertAgriculturalReturnSchema, insertDocumentSchema, insertAgriculturalFormTemplateSchema, insertAgriculturalFormResponseSchema, insertInvitationSchema } from "@shared/schema";
+import { insertGrantApplicationSchema, insertAgriculturalReturnSchema, insertDocumentSchema, insertAgriculturalFormTemplateSchema, insertAgriculturalFormResponseSchema, insertInvitationSchema, users, passwordResetTokens } from "@shared/schema";
 import { sendInvitationEmail, sendPasswordResetEmail } from "./resend";
-import { passwordResetTokens } from "@shared/schema";
 import { eq, and, gt } from "drizzle-orm";
 import { db } from "./db";
 import { randomBytes } from "crypto";
@@ -192,20 +191,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Email is required' });
       }
 
-      // Check if user exists with this email
-      const { supabaseAdmin } = await import('./supabase');
-      const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-      
-      if (listError) {
-        console.error('Error listing users:', listError);
-        return res.status(500).json({ message: 'Failed to process request' });
-      }
-
-      const userExists = users.users.some(u => u.email?.toLowerCase() === email.toLowerCase());
+      // Check if user exists in our users table (more reliable than Supabase Admin API)
+      const [existingUser] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email.toLowerCase()))
+        .limit(1);
       
       // Always return success to prevent email enumeration
       // but only send email if user exists
-      if (userExists) {
+      if (existingUser) {
         // Generate secure token
         const token = randomBytes(32).toString('hex');
         const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour expiry

@@ -11,6 +11,7 @@ import AdminDashboard from "@/pages/admin-dashboard";
 import AgriculturalFormBuilder from "@/pages/agricultural-form-builder";
 import AuthPage from "@/pages/auth";
 import Settings from "@/pages/settings";
+import ResetPasswordPage from "@/pages/reset-password";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -26,6 +27,7 @@ function Router() {
 
   return (
     <Switch>
+      <Route path="/reset-password" component={ResetPasswordPage} />
       {!isAuthenticated ? (
         <>
           <Route path="/auth" component={AuthPage} />

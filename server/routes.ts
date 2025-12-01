@@ -21,6 +21,87 @@ const sanitizeForExport = (value: any): string => {
   return str;
 };
 
+// Default form sections for agricultural return forms - matches the form builder
+function getDefaultFormSections() {
+  return [
+    {
+      id: "section-a",
+      title: "Landowner / Occupier Details",
+      description: "Please update below if details supplied are incorrect",
+      order: 1,
+      fields: [
+        { id: "full-name", type: "text", label: "Full Name", required: true },
+        { id: "address-line-1", type: "text", label: "Address Line 1", required: true },
+        { id: "address-line-2", type: "text", label: "Address Line 2", required: false },
+        { id: "parish", type: "text", label: "Parish", required: true },
+        { id: "postcode", type: "text", label: "Postcode", required: true },
+        { id: "email", type: "text", label: "Email Address", required: true, validation: { pattern: "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$" } }
+      ]
+    },
+    {
+      id: "section-b",
+      title: "Farm Workers, Accommodation and Facilities",
+      description: "Please provide details of the maximum number in each category during the year",
+      order: 2,
+      fields: [
+        { id: "owned-accommodation-units", type: "number", label: "How many units of staff accommodation do you own?", required: false, validation: { min: 0 } },
+        { id: "owned-bed-spaces", type: "number", label: "How many total bed spaces are provided within the owned units?", required: false, validation: { min: 0 } },
+        { id: "rented-accommodation-units", type: "number", label: "How many units of staff accommodation do you rent for your staff?", required: false, validation: { min: 0 } },
+        { id: "rented-bed-spaces", type: "number", label: "How many total bed spaces are provided within the rented units?", required: false, validation: { min: 0 } },
+        { id: "pesticide-stores", type: "number", label: "Pesticide and Chemical Store - Number of stores", required: false, validation: { min: 0 } },
+        { id: "slurry-stores", type: "number", label: "Slurry Storage - Number of stores", required: false, validation: { min: 0 } },
+        { id: "slurry-capacity", type: "number", label: "Slurry Storage - Total Capacity (litres)", required: false, validation: { min: 0 } }
+      ]
+    },
+    {
+      id: "section-c",
+      title: "Land and Crops",
+      description: "All land occupiers must supply a list of fields farmed and the crops and primary land use",
+      order: 3,
+      fields: [
+        { id: "land-declaration-notes", type: "textarea", label: "Land Declaration Notes", placeholder: "The land declaration should be emailed as a spreadsheet...", required: false }
+      ]
+    },
+    {
+      id: "section-d",
+      title: "Farm Livestock",
+      description: "Please advise the number of the following farm livestock that you own or keep",
+      order: 4,
+      fields: [
+        { id: "pigs", type: "number", label: "Pigs (total 'finished' in 2024)", required: false, validation: { min: 0 } },
+        { id: "sheep", type: "number", label: "Sheep", required: false, validation: { min: 0 } },
+        { id: "goats", type: "number", label: "Goats", required: false, validation: { min: 0 } },
+        { id: "chickens", type: "number", label: "Chickens", required: false, validation: { min: 0 } },
+        { id: "other-fowl", type: "number", label: "Other Fowl", required: false, validation: { min: 0 } },
+        { id: "horses-owned", type: "number", label: "Horses Owned", required: false, validation: { min: 0 } },
+        { id: "horses-livery", type: "number", label: "Horses Livery", required: false, validation: { min: 0 } },
+        { id: "donkeys-mules", type: "number", label: "Donkeys / Mules", required: false, validation: { min: 0 } },
+        { id: "other-livestock", type: "text", label: "Other (please specify)", required: false }
+      ]
+    },
+    {
+      id: "section-e",
+      title: "Integrated Farm Management",
+      description: "Please indicate where you have the following integrated farm management plans",
+      order: 5,
+      fields: [
+        { id: "soil-management-plan", type: "checkbox", label: "Soil Management Plan", required: false },
+        { id: "water-management-plan", type: "checkbox", label: "Water Management Plan", required: false },
+        { id: "nutrient-management-plan", type: "checkbox", label: "Nutrient Management Plan", required: false },
+        { id: "waste-management-plan", type: "checkbox", label: "Waste Management Plan", required: false },
+        { id: "animal-health-plan", type: "checkbox", label: "Animal Health Plan", required: false },
+        { id: "conservation-landscape-plan", type: "checkbox", label: "Conservation and Landscape Plan", required: false },
+        { id: "energy-audit-plan", type: "checkbox", label: "Energy Audit and Plan", required: false },
+        { id: "carbon-net-zero-plan", type: "checkbox", label: "Carbon Net Zero Plan", required: false },
+        { id: "carbon-net-zero-data", type: "checkbox", label: "Carbon Net Zero Data Collection", required: false },
+        { id: "woodland-management-plan", type: "checkbox", label: "Woodland Management Plan", required: false },
+        { id: "animal-welfare-vet-scheme", type: "checkbox", label: "Animal Welfare Vet Scheme", required: false },
+        { id: "health-safety-plan", type: "checkbox", label: "Health and Safety Plan", required: false }
+      ]
+    }
+  ];
+}
+
 // Configure multer for file uploads - use memory storage for Supabase upload
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -739,96 +820,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           description: "Annual agricultural return form for crop and livestock reporting",
           year: 2025,
           isActive: true,
-          sections: [
-            {
-              id: "landowner-details",
-              title: "Landowner Details",
-              description: "Basic information about the landowner",
-              order: 1,
-              fields: [
-                {
-                  id: "full-name",
-                  type: "text",
-                  label: "Full Name",
-                  placeholder: "Enter your full name",
-                  required: true
-                },
-                {
-                  id: "address",
-                  type: "textarea",
-                  label: "Address",
-                  placeholder: "Enter your full address",
-                  required: true
-                },
-                {
-                  id: "phone",
-                  type: "text",
-                  label: "Phone Number",
-                  placeholder: "Enter your phone number",
-                  required: true
-                }
-              ]
-            },
-            {
-              id: "land-crops",
-              title: "Land & Crops",
-              description: "Information about your land usage and crops",
-              order: 2,
-              fields: [
-                {
-                  id: "total-area",
-                  type: "number",
-                  label: "Total Land Area (hectares)",
-                  placeholder: "Enter total area in hectares",
-                  required: true
-                },
-                {
-                  id: "crop-types",
-                  type: "textarea",
-                  label: "Crop Types",
-                  placeholder: "List the main crops you grow",
-                  required: true
-                },
-                {
-                  id: "farming-method",
-                  type: "select",
-                  label: "Farming Method",
-                  placeholder: "Select your primary farming method",
-                  required: true,
-                  options: ["Organic", "Conventional", "Mixed"]
-                }
-              ]
-            },
-            {
-              id: "livestock",
-              title: "Livestock",
-              description: "Information about livestock on your farm",
-              order: 3,
-              fields: [
-                {
-                  id: "cattle-count",
-                  type: "number",
-                  label: "Number of Cattle",
-                  placeholder: "Enter number of cattle",
-                  required: false
-                },
-                {
-                  id: "sheep-count",
-                  type: "number",
-                  label: "Number of Sheep",
-                  placeholder: "Enter number of sheep",
-                  required: false
-                },
-                {
-                  id: "other-livestock",
-                  type: "textarea",
-                  label: "Other Livestock",
-                  placeholder: "Describe any other livestock",
-                  required: false
-                }
-              ]
-            }
-          ]
+          sections: getDefaultFormSections()
         };
         
         const newTemplate = await storage.createAgriculturalFormTemplate(defaultTemplate);
@@ -876,65 +868,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           description: "Annual agricultural return form for crop and livestock reporting",
           year: 2025,
           isActive: true,
-          sections: [
-            {
-              id: "landowner-details",
-              title: "Landowner Details",
-              description: "Basic information about the landowner",
-              order: 1,
-              fields: [
-                {
-                  id: "full-name",
-                  type: "text",
-                  label: "Full Name",
-                  placeholder: "Enter your full name",
-                  required: true
-                },
-                {
-                  id: "address",
-                  type: "textarea",
-                  label: "Address",
-                  placeholder: "Enter your full address",
-                  required: true
-                },
-                {
-                  id: "phone",
-                  type: "text",
-                  label: "Phone Number",
-                  placeholder: "Enter your phone number",
-                  required: true
-                }
-              ]
-            },
-            {
-              id: "land-crops",
-              title: "Land & Crops",
-              description: "Information about your land usage and crops",
-              order: 2,
-              fields: [
-                {
-                  id: "total-acreage",
-                  type: "number",
-                  label: "Total Acreage",
-                  placeholder: "Enter total acreage",
-                  required: true
-                },
-                {
-                  id: "crop-type",
-                  type: "select",
-                  label: "Primary Crop Type",
-                  required: true,
-                  options: ["Wheat", "Corn", "Soybeans", "Rice", "Barley", "Other"]
-                },
-                {
-                  id: "organic-farming",
-                  type: "checkbox",
-                  label: "I practice organic farming",
-                  required: false
-                }
-              ]
-            }
-          ]
+          sections: getDefaultFormSections()
         };
         
         const createdTemplate = await storage.createAgriculturalFormTemplate(defaultTemplate);

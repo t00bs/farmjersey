@@ -78,3 +78,76 @@ export async function sendInvitationEmail(toEmail: string, invitationUrl: string
 
   return data;
 }
+
+export async function sendPasswordResetEmail(toEmail: string, resetUrl: string) {
+  const { client } = await getUncachableResendClient();
+  
+  const senderEmail = 'Farm Jersey <noreply@updates.electricsheep.design>';
+  
+  const { data, error } = await client.emails.send({
+    from: senderEmail,
+    to: [toEmail],
+    subject: 'Reset Your Password - Farm Jersey',
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="font-family: Arial, sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px;">
+        <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <!-- Header -->
+          <div style="background-color: #231f20; padding: 30px; text-align: center;">
+            <h1 style="color: #c69a71; margin: 0; font-size: 24px;">Farm Jersey</h1>
+          </div>
+          
+          <!-- Content -->
+          <div style="padding: 40px 30px;">
+            <h2 style="color: #231f20; margin: 0 0 20px 0; font-size: 22px;">Password Reset Request</h2>
+            
+            <p style="color: #555555; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+              We received a request to reset your password for your Farm Jersey account. Click the button below to create a new password:
+            </p>
+            
+            <!-- CTA Button -->
+            <div style="text-align: center; margin: 35px 0;">
+              <a href="${resetUrl}" style="background-color: #c69a71; color: #231f20; padding: 14px 32px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold; font-size: 16px;">
+                Reset Password
+              </a>
+            </div>
+            
+            <p style="color: #555555; font-size: 14px; line-height: 1.6; margin: 0 0 10px 0;">
+              Or copy and paste this link into your browser:
+            </p>
+            <p style="color: #c69a71; font-size: 14px; word-break: break-all; margin: 0 0 30px 0;">
+              ${resetUrl}
+            </p>
+            
+            <!-- Security Notice -->
+            <div style="background-color: #f9f9f9; border-radius: 6px; padding: 20px; margin-top: 30px;">
+              <p style="color: #666666; font-size: 13px; line-height: 1.5; margin: 0;">
+                <strong>Security Notice:</strong> This link will expire in 1 hour. If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged.
+              </p>
+            </div>
+          </div>
+          
+          <!-- Footer -->
+          <div style="background-color: #f5f5f5; padding: 20px 30px; text-align: center; border-top: 1px solid #eeeeee;">
+            <p style="color: #999999; font-size: 12px; margin: 0;">
+              Rural Support Scheme Portal | Government of Jersey
+            </p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+  });
+
+  if (error) {
+    console.error('Error sending password reset email:', error);
+    throw new Error('Failed to send password reset email');
+  }
+
+  return data;
+}

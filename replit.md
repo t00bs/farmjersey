@@ -50,8 +50,9 @@ The application follows a modern full-stack architecture with clear separation b
 ### Document Management
 - **File Upload**: Secure file handling with type validation (images, PDFs, Office docs)
 - **Document Types**: Land declarations, supporting documents, agricultural returns
-- **Storage**: Local file system with configurable upload limits (10MB)
+- **Storage**: Supabase Storage with 10MB upload limit (same geographic region as database)
 - **Templates**: Downloadable document templates for users
+- **Migration**: Scripts available to migrate legacy local files to Supabase Storage
 
 ### Digital Signature System
 - **Canvas-based Signatures**: HTML5 canvas for signature capture
@@ -115,7 +116,7 @@ The application follows a modern full-stack architecture with clear separation b
 - **Authentication**: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
 - **Frontend**: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
 - **Email**: RESEND_API_KEY for sending invitations
-- **File Storage**: Configurable upload directory
+- **File Storage**: Supabase Storage (uses same credentials as database)
 
 ## User Preferences
 
@@ -142,6 +143,12 @@ Preferred communication style: Simple, everyday language.
 ## Changelog
 
 Changelog:
+- December 1, 2025. **FILE STORAGE MIGRATION**: Migrated document storage from local filesystem to Supabase Storage
+  - All uploaded documents now stored in Supabase Storage bucket for geographic consistency
+  - Documents stored in same region as database for data residency compliance
+  - Added backward compatibility for legacy local files
+  - Created migration script (scripts/migrate-to-supabase-storage.ts) for existing files
+  - Updated upload, download, and delete routes to use Supabase Storage
 - November 20, 2025. Fixed infinite loading state after page refresh
   - Added timeout wrapper function to prevent Supabase queries from hanging
   - Implemented try-finally blocks to ensure loading state always completes

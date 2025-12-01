@@ -211,7 +211,7 @@ export default function AuthPage() {
             </TabsList>
 
             {/* Sign In Tab */}
-            <TabsContent value="signin">
+            <TabsContent value="signin" className="min-h-[280px]">
               {showForgotPassword ? (
                 resetEmailSent ? (
                   <div className="space-y-4">
@@ -334,7 +334,7 @@ export default function AuthPage() {
             </TabsContent>
 
             {/* Sign Up Tab */}
-            <TabsContent value="signup">
+            <TabsContent value="signup" className="min-h-[280px]">
               {!invitationToken ? (
                 <Alert>
                   <AlertDescription>
@@ -421,7 +421,7 @@ export default function AuthPage() {
             </TabsContent>
 
             {/* Magic Link Tab */}
-            <TabsContent value="magic">
+            <TabsContent value="magic" className="min-h-[280px]">
               {magicLinkSent ? (
                 <Alert>
                   <AlertDescription>

@@ -1,12 +1,13 @@
 import { Home, FileText, HelpCircle, Settings, Shield } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 import logoPath from "@assets/FJ Brand Logo_1759502325451.png";
 
 const navigation = [
   { name: "Home", href: "/", icon: Home },
   { name: "Grant Applications", href: "/", icon: FileText },
-  { name: "Admin Dashboard", href: "/admin", icon: Shield },
+  { name: "Admin Dashboard", href: "/admin", icon: Shield, adminOnly: true },
 ];
 
 const bottomNavigation = [
@@ -16,6 +17,9 @@ const bottomNavigation = [
 
 export default function Sidebar() {
   const [location] = useLocation();
+  const { isAdmin } = useAuth();
+  
+  const filteredNavigation = navigation.filter(item => !item.adminOnly || isAdmin);
 
   return (
     <aside className="w-64 bg-white shadow-sm border-r border-gray-200 flex flex-col">
@@ -30,7 +34,7 @@ export default function Sidebar() {
 
       {/* Navigation Menu */}
       <nav className="flex-1 p-4 space-y-2">
-        {navigation.map((item) => {
+        {filteredNavigation.map((item) => {
           const Icon = item.icon;
           const isActive = location === item.href || 
             (item.name === "Grant Applications" && location.startsWith("/application"));

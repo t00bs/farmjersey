@@ -1,6 +1,8 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,7 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
-import { Eye, FileText, Calendar, User, AlertTriangle, CheckCircle, FormInput, Download, CalendarDays, Mail, Trash2 } from "lucide-react";
+import { Eye, FileText, Calendar, User, AlertTriangle, CheckCircle, FormInput, Download, CalendarDays, Mail, Trash2, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { DateRange } from "react-day-picker";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -25,6 +27,37 @@ import Sidebar from "@/components/sidebar";
 import TopBar from "@/components/top-bar";
 
 export default function AdminDashboard() {
+  const { toast } = useToast();
+  const { isAdmin, isLoading: authLoading } = useAuth();
+  const [, setLocation] = useLocation();
+  
+  useEffect(() => {
+    if (!authLoading && !isAdmin) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to access the admin dashboard.",
+        variant: "destructive",
+      });
+      setLocation("/");
+    }
+  }, [authLoading, isAdmin, setLocation, toast]);
+  
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary-custom" />
+      </div>
+    );
+  }
+  
+  if (!isAdmin) {
+    return null;
+  }
+
+  return <AdminDashboardContent />;
+}
+
+function AdminDashboardContent() {
   const { toast } = useToast();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateRange, setDateRange] = useState<DateRange | undefined>();

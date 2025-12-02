@@ -7,6 +7,7 @@ import { sendInvitationEmail, sendPasswordResetEmail } from "./resend";
 import { eq, and, gt } from "drizzle-orm";
 import { db } from "./db";
 import { randomBytes, createHash } from "crypto";
+import rateLimit from "express-rate-limit";
 
 // Hash tokens before storing for security (protects against DB leaks)
 function hashToken(token: string): string {
@@ -145,6 +146,23 @@ const upload = multer({
   },
 });
 
+// Rate limiters for authentication endpoints
+const authRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Limit each IP to 10 requests per windowMs for sensitive auth actions
+  message: { message: 'Too many requests, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const forgotPasswordRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5, // Limit to 5 password reset requests per hour per IP
+  message: { message: 'Too many password reset requests, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize Supabase Storage bucket
@@ -204,8 +222,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Password reset endpoints (no auth required)
-  app.post('/api/forgot-password', async (req, res) => {
+  // Password reset endpoints (no auth required) - with rate limiting
+  app.post('/api/forgot-password', forgotPasswordRateLimiter, async (req, res) => {
     try {
       const { email } = req.body;
       
@@ -265,7 +283,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/validate-reset-token', async (req, res) => {
+  app.get('/api/validate-reset-token', authRateLimiter, async (req, res) => {
     try {
       const { token } = req.query;
       
@@ -300,7 +318,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/reset-password', async (req, res) => {
+  app.post('/api/reset-password', authRateLimiter, async (req, res) => {
     try {
       const { token, password } = req.body;
       

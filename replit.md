@@ -147,6 +147,11 @@ Preferred communication style: Simple, everyday language.
 ## Changelog
 
 Changelog:
+- December 2, 2025. **ADMIN USER MANAGEMENT**:
+  - Added Users tab in admin dashboard for role management
+  - Created API endpoints GET /api/admin/users and PATCH /api/admin/users/:id/role
+  - Admins can promote users to admin role or demote back to regular users
+  - Self-demotion protection on both backend and frontend (admins cannot demote themselves)
 - December 2, 2025. **USER EXPERIENCE & ADMIN ACCESS CONTROL**:
   - Added post-signup confirmation screen with success message and next steps guidance
   - Hidden admin dashboard navigation from sidebar for non-admin users

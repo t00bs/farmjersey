@@ -15,14 +15,14 @@ import { Progress } from "@/components/ui/progress";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
-import { Eye, FileText, Calendar, User, AlertTriangle, CheckCircle, FormInput, Download, CalendarDays, Mail, Trash2, Loader2 } from "lucide-react";
+import { Eye, FileText, Calendar, User, Users, AlertTriangle, CheckCircle, FormInput, Download, CalendarDays, Mail, Trash2, Loader2, Shield, ShieldOff } from "lucide-react";
 import { format } from "date-fns";
 import { DateRange } from "react-day-picker";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import type { GrantApplication, AgriculturalReturn, Document, ApplicationWithUserData, AgriculturalFormResponse, Invitation } from "@shared/schema";
+import type { GrantApplication, AgriculturalReturn, Document, ApplicationWithUserData, AgriculturalFormResponse, Invitation, User as UserType } from "@shared/schema";
 import Sidebar from "@/components/sidebar";
 import TopBar from "@/components/top-bar";
 
@@ -184,6 +184,7 @@ function AdminDashboardContent() {
               <TabsList>
                 <TabsTrigger value="applications">Applications</TabsTrigger>
                 <TabsTrigger value="invitations">Invitations</TabsTrigger>
+                <TabsTrigger value="users">Users</TabsTrigger>
               </TabsList>
 
               <TabsContent value="applications" className="space-y-6 mt-6">
@@ -451,6 +452,10 @@ function AdminDashboardContent() {
               <TabsContent value="invitations" className="space-y-6 mt-6">
                 <InvitationsTab />
               </TabsContent>
+
+              <TabsContent value="users" className="space-y-6 mt-6">
+                <UsersTab />
+              </TabsContent>
             </Tabs>
           </div>
         </main>
@@ -642,6 +647,147 @@ function InvitationsTab() {
                       >
                         <Trash2 className="h-4 w-4 text-red-600" />
                       </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function UsersTab() {
+  const { toast } = useToast();
+  const { user: currentUser } = useAuth();
+
+  const { data: users = [], isLoading } = useQuery<UserType[]>({
+    queryKey: ["/api/admin/users"],
+  });
+
+  const updateRoleMutation = useMutation({
+    mutationFn: async ({ id, role }: { id: string; role: 'admin' | 'user' }) => {
+      return await apiRequest("PATCH", `/api/admin/users/${id}/role`, { role });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({
+        title: "Role Updated",
+        description: "User role has been updated successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update user role",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleRoleToggle = (user: UserType) => {
+    const newRole = user.role === 'admin' ? 'user' : 'admin';
+    updateRoleMutation.mutate({ id: user.id, role: newRole });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                User Management
+              </CardTitle>
+              <CardDescription>
+                Manage user roles and permissions
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>User</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Joined</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {users.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-gray-500 dark:text-gray-400">
+                    No users found.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                users.map((user) => (
+                  <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
+                    <TableCell className="font-medium" data-testid={`text-name-${user.id}`}>
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-gray-500" />
+                        {user.firstName && user.lastName 
+                          ? `${user.firstName} ${user.lastName}`
+                          : user.email?.split('@')[0] || 'Unknown User'
+                        }
+                      </div>
+                    </TableCell>
+                    <TableCell data-testid={`text-email-${user.id}`}>
+                      {user.email || 'N/A'}
+                    </TableCell>
+                    <TableCell>
+                      {user.role === 'admin' ? (
+                        <Badge variant="default" className="bg-amber-600" data-testid={`badge-admin-${user.id}`}>
+                          <Shield className="h-3 w-3 mr-1" />
+                          Admin
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" data-testid={`badge-user-${user.id}`}>
+                          User
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell data-testid={`text-joined-${user.id}`}>
+                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                    </TableCell>
+                    <TableCell>
+                      {currentUser?.id === user.id ? (
+                        <span className="text-sm text-gray-500 italic">Current user</span>
+                      ) : (
+                        <Button
+                          variant={user.role === 'admin' ? "outline" : "default"}
+                          size="sm"
+                          onClick={() => handleRoleToggle(user)}
+                          disabled={updateRoleMutation.isPending}
+                          data-testid={`button-toggle-role-${user.id}`}
+                        >
+                          {user.role === 'admin' ? (
+                            <>
+                              <ShieldOff className="h-4 w-4 mr-1" />
+                              Demote
+                            </>
+                          ) : (
+                            <>
+                              <Shield className="h-4 w-4 mr-1" />
+                              Promote
+                            </>
+                          )}
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))

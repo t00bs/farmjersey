@@ -72,6 +72,35 @@ export default function AuthPage() {
         return;
       }
 
+      // Validate password strength
+      if (password.length < 8) {
+        toast({
+          title: 'Weak Password',
+          description: 'Password must be at least 8 characters',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+      if (!/[a-zA-Z]/.test(password)) {
+        toast({
+          title: 'Weak Password',
+          description: 'Password must contain at least one letter',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+      if (!/[0-9]/.test(password)) {
+        toast({
+          title: 'Weak Password',
+          description: 'Password must contain at least one number',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+
       // Sign up with Supabase
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -407,11 +436,11 @@ export default function AuthPage() {
                         onChange={(e) => setPassword(e.target.value)}
                         className="pl-10"
                         required
-                        minLength={6}
+                        minLength={8}
                         data-testid="input-signup-password"
                       />
                     </div>
-                    <p className="text-sm text-gray-500">Minimum 6 characters</p>
+                    <p className="text-sm text-gray-500">Minimum 8 characters with letters and numbers</p>
                   </div>
                   <Button
                     type="submit"

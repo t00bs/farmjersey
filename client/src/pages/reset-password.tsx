@@ -62,8 +62,18 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+
+    if (!/[a-zA-Z]/.test(password)) {
+      setError('Password must contain at least one letter');
+      return;
+    }
+
+    if (!/[0-9]/.test(password)) {
+      setError('Password must contain at least one number');
       return;
     }
 
@@ -202,11 +212,11 @@ export default function ResetPasswordPage() {
                       onChange={(e) => setPassword(e.target.value)}
                       className="pl-10"
                       required
-                      minLength={6}
+                      minLength={8}
                       data-testid="input-new-password"
                     />
                   </div>
-                  <p className="text-sm text-gray-500">Minimum 6 characters</p>
+                  <p className="text-sm text-gray-500">Minimum 8 characters with letters and numbers</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirm-password">Confirm Password</Label>
@@ -220,7 +230,7 @@ export default function ResetPasswordPage() {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       className="pl-10"
                       required
-                      minLength={6}
+                      minLength={8}
                       data-testid="input-confirm-password"
                     />
                   </div>

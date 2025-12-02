@@ -12,6 +12,23 @@ import { randomBytes, createHash } from "crypto";
 function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
+
+// Validate password strength: 8+ chars, at least one letter and one number
+function validatePassword(password: string): { valid: boolean; message: string } {
+  if (!password || typeof password !== 'string') {
+    return { valid: false, message: 'Password is required' };
+  }
+  if (password.length < 8) {
+    return { valid: false, message: 'Password must be at least 8 characters' };
+  }
+  if (!/[a-zA-Z]/.test(password)) {
+    return { valid: false, message: 'Password must contain at least one letter' };
+  }
+  if (!/[0-9]/.test(password)) {
+    return { valid: false, message: 'Password must contain at least one number' };
+  }
+  return { valid: true, message: '' };
+}
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -291,8 +308,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Token is required' });
       }
       
-      if (!password || typeof password !== 'string' || password.length < 6) {
-        return res.status(400).json({ message: 'Password must be at least 6 characters' });
+      // Validate password strength
+      const passwordValidation = validatePassword(password);
+      if (!passwordValidation.valid) {
+        return res.status(400).json({ message: passwordValidation.message });
       }
 
       // Hash the incoming token to compare with stored hash

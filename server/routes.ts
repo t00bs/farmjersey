@@ -14,6 +14,81 @@ function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 
+// Sensitive fields that should be redacted from logs
+const SENSITIVE_FIELDS = ['password', 'token', 'signature', 'signatureData', 'authorization', 'cookie', 'api_key', 'apiKey', 'secret', 'accessToken', 'refreshToken', 'jwt', 'bearer'];
+
+// Redact sensitive data from objects before logging
+// This function recursively traverses objects and arrays to find and redact sensitive fields
+function sanitizeForLogging(data: any, depth: number = 0): any {
+  // Prevent infinite recursion
+  if (depth > 10) {
+    return '[MAX_DEPTH_EXCEEDED]';
+  }
+  
+  if (data === null || data === undefined) {
+    return data;
+  }
+  
+  // For strings, search and replace tokens/secrets that may be embedded anywhere in the string
+  if (typeof data === 'string') {
+    let sanitized = data;
+    // Replace JWT tokens anywhere in the string
+    sanitized = sanitized.replace(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*/g, '[JWT_REDACTED]');
+    // Replace long hex strings (32+ chars, likely tokens) anywhere in the string
+    sanitized = sanitized.replace(/\b[a-f0-9]{32,}\b/gi, '[TOKEN_REDACTED]');
+    // Replace Bearer tokens (match any non-whitespace sequence after Bearer to handle base64 chars like +, /, =)
+    sanitized = sanitized.replace(/Bearer\s+\S+/gi, 'Bearer [REDACTED]');
+    // Replace Basic auth tokens
+    sanitized = sanitized.replace(/Basic\s+\S+/gi, 'Basic [REDACTED]');
+    // Replace full Authorization header values (everything after "Authorization:" to end of line or string)
+    sanitized = sanitized.replace(/Authorization[:\s]+[^\n\r]*/gi, 'Authorization: [REDACTED]');
+    return sanitized;
+  }
+  
+  if (typeof data !== 'object') {
+    return data;
+  }
+  
+  // Handle Error objects specially
+  if (data instanceof Error) {
+    return {
+      name: data.name,
+      message: sanitizeForLogging(data.message, depth + 1),
+      stack: data.stack?.split('\n').slice(0, 3).join('\n') + '...',
+    };
+  }
+  
+  if (Array.isArray(data)) {
+    return data.map(item => sanitizeForLogging(item, depth + 1));
+  }
+  
+  const sanitized: any = {};
+  for (const [key, value] of Object.entries(data)) {
+    const keyLower = key.toLowerCase();
+    // Check if key contains any sensitive field name
+    if (SENSITIVE_FIELDS.some(field => keyLower.includes(field.toLowerCase()))) {
+      sanitized[key] = '[REDACTED]';
+    } else if (typeof value === 'object' && value !== null) {
+      sanitized[key] = sanitizeForLogging(value, depth + 1);
+    } else if (typeof value === 'string') {
+      sanitized[key] = sanitizeForLogging(value, depth + 1);
+    } else {
+      sanitized[key] = value;
+    }
+  }
+  return sanitized;
+}
+
+// Safe logging function that redacts sensitive data
+function secureLog(level: 'log' | 'error' | 'warn', message: string, data?: any): void {
+  const sanitizedData = data ? sanitizeForLogging(data) : undefined;
+  if (sanitizedData !== undefined) {
+    console[level](message, sanitizedData);
+  } else {
+    console[level](message);
+  }
+}
+
 // Validate password strength: 8+ chars, at least one letter and one number
 function validatePassword(password: string): { valid: boolean; message: string } {
   if (!password || typeof password !== 'string') {
@@ -180,7 +255,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await validateInvitationToken(token);
       res.json(result);
     } catch (error) {
-      console.error('Error validating invitation:', error);
+      secureLog('error', 'Error validating invitation:', error);
       res.status(500).json({ valid: false, message: 'Failed to validate invitation' });
     }
   });
@@ -217,7 +292,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await markInvitationUsed(validation.invitationId, userId);
       res.json({ message: 'Invitation marked as used' });
     } catch (error) {
-      console.error('Error using invitation:', error);
+      secureLog('error', 'Error using invitation:', error);
       res.status(500).json({ message: 'Failed to mark invitation as used' });
     }
   });
@@ -239,7 +314,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       if (userError) {
-        console.error('Error checking user by email:', userError);
+        secureLog('error', 'Error checking user by email:', userError);
       }
       
       // Always return success to prevent email enumeration
@@ -268,7 +343,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await sendPasswordResetEmail(email, resetUrl);
           console.log(`Password reset email sent to ${email}`);
         } catch (emailError) {
-          console.error('Error sending password reset email:', emailError);
+          secureLog('error', 'Error sending password reset email:', emailError);
           // Don't fail the request - we still want to return success
         }
       } else {
@@ -278,7 +353,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Always return success to prevent email enumeration attacks
       res.json({ message: 'If an account exists with this email, a password reset link has been sent.' });
     } catch (error) {
-      console.error('Error in forgot-password:', error);
+      secureLog('error', 'Error in forgot-password:', error);
       res.status(500).json({ message: 'Failed to process password reset request' });
     }
   });
@@ -313,7 +388,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({ valid: true, email: resetToken.email });
     } catch (error) {
-      console.error('Error validating reset token:', error);
+      secureLog('error', 'Error validating reset token:', error);
       res.status(500).json({ valid: false, message: 'Failed to validate token' });
     }
   });
@@ -359,7 +434,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       if (userError || !userData || userData.length === 0) {
-        console.error('Error finding user by email:', userError);
+        secureLog('error', 'Error finding user by email:', userError);
         return res.status(404).json({ message: 'User not found' });
       }
 
@@ -371,7 +446,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       if (updateError) {
-        console.error('Error updating password:', updateError);
+        secureLog('error', 'Error updating password:', updateError);
         return res.status(500).json({ message: 'Failed to update password' });
       }
 
@@ -384,7 +459,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Password reset completed for ${resetToken.email}`);
       res.json({ message: 'Password has been reset successfully' });
     } catch (error) {
-      console.error('Error in reset-password:', error);
+      secureLog('error', 'Error in reset-password:', error);
       res.status(500).json({ message: 'Failed to reset password' });
     }
   });
@@ -396,7 +471,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
-      console.error("Error fetching user:", error);
+      secureLog('error', 'Error fetching user:', error);
       res.status(500).json({ message: "Failed to fetch user" });
     }
   });
@@ -419,7 +494,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(updatedUser);
     } catch (error) {
-      console.error("Error updating user profile:", error);
+      secureLog('error', 'Error updating user profile:', error);
       res.status(500).json({ message: "Failed to update profile" });
     }
   });
@@ -470,13 +545,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
       
       if (error) {
-        console.error("Error deleting user from Supabase:", error);
+        secureLog('error', 'Error deleting user from Supabase:', error);
         return res.status(500).json({ message: "Failed to delete account" });
       }
       
       res.json({ message: "Account deleted successfully" });
     } catch (error) {
-      console.error("Error deleting user account:", error);
+      secureLog('error', 'Error deleting user account:', error);
       res.status(500).json({ message: "Failed to delete account" });
     }
   });
@@ -1735,7 +1810,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               height: signatureDims.height,
             });
           } catch (signatureError) {
-            console.error("Error embedding signature:", signatureError);
+            secureLog('error', 'Error embedding signature:', signatureError);
             // Continue without signature rather than failing completely
           }
         }
@@ -1801,7 +1876,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(updatedApplication);
     } catch (error) {
-      console.error("Error saving digital signature:", error);
+      secureLog('error', 'Error saving digital signature:', error);
       res.status(500).json({ message: "Failed to save digital signature" });
     }
   });

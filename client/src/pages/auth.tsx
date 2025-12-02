@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mail, Lock, User, ArrowLeft } from 'lucide-react';
+import { Loader2, Mail, Lock, User, ArrowLeft, CheckCircle } from 'lucide-react';
 import logoPath from "@assets/FJ Brand Logo_1759502325451.png";
 
 export default function AuthPage() {
@@ -20,6 +20,7 @@ export default function AuthPage() {
   const [invitationToken, setInvitationToken] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [signupComplete, setSignupComplete] = useState(false);
   const { toast } = useToast();
 
   // Check for invitation token in URL
@@ -124,10 +125,8 @@ export default function AuthPage() {
           body: JSON.stringify({ token: invitationToken, userId: data.user.id }),
         });
 
-        toast({
-          title: 'Account Created',
-          description: 'Your account has been created successfully. Please check your email to confirm.',
-        });
+        // Show the success screen
+        setSignupComplete(true);
       }
     } catch (error: any) {
       toast({
@@ -370,7 +369,40 @@ export default function AuthPage() {
 
             {/* Sign Up Tab */}
             <TabsContent value="signup" className="min-h-[280px]">
-              {!invitationToken ? (
+              {signupComplete ? (
+                <div className="space-y-6 text-center py-4">
+                  <div className="flex justify-center">
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                      <CheckCircle className="w-10 h-10 text-green-600" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-semibold text-gray-900">Account Created Successfully!</h3>
+                    <p className="text-gray-600">
+                      Welcome to the Rural Support Scheme Portal. Please check your email to confirm your account before signing in.
+                    </p>
+                  </div>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm text-blue-800">
+                      <strong>Next step:</strong> Click the confirmation link in your email, then return here to sign in.
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      setSignupComplete(false);
+                      setEmail('');
+                      setPassword('');
+                      setFirstName('');
+                      setLastName('');
+                    }}
+                    data-testid="button-back-to-signin-from-signup"
+                  >
+                    Go to Sign In
+                  </Button>
+                </div>
+              ) : !invitationToken ? (
                 <Alert>
                   <AlertDescription>
                     You need an invitation to sign up. Please contact an administrator or check your email for an invitation link.

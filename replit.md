@@ -147,6 +147,11 @@ Preferred communication style: Simple, everyday language.
 ## Changelog
 
 Changelog:
+- December 2, 2025. **USER EXPERIENCE & ADMIN ACCESS CONTROL**:
+  - Added post-signup confirmation screen with success message and next steps guidance
+  - Hidden admin dashboard navigation from sidebar for non-admin users
+  - Added frontend route protection for admin pages with redirect and notification for unauthorized users
+  - Implemented wrapper component pattern in admin dashboard for proper React hooks compliance
 - December 2, 2025. **SECURITY HARDENING**: Enhanced authentication security
   - SHA-256 token hashing for password reset tokens before database storage
   - Strengthened password policy requiring 8+ characters with letters and numbers

@@ -980,6 +980,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all users (admin only)
+  app.get("/api/admin/users", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  // Update user role (admin only)
+  app.patch("/api/admin/users/:id/role", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { role } = req.body;
+      
+      if (!role || !['admin', 'user'].includes(role)) {
+        return res.status(400).json({ message: "Invalid role. Must be 'admin' or 'user'" });
+      }
+      
+      // Prevent admin from demoting themselves
+      if (id === req.user.id && role === 'user') {
+        return res.status(400).json({ message: "You cannot demote yourself" });
+      }
+      
+      const updatedUser = await storage.updateUserRole(id, role);
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user role:", error);
+      res.status(500).json({ message: "Failed to update user role" });
+    }
+  });
+
   // Accept invitation (public route - redirects to signup with token)
   app.get("/api/accept-invitation", async (req: any, res) => {
     try {

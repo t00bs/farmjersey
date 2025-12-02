@@ -130,6 +130,10 @@ Preferred communication style: Simple, everyday language.
 - **Email Validation**: Invitation emails must match signup emails
 - **Token Expiry**: Invitations expire after 7 days
 - **One-Time Use**: Invitation tokens can only be used once
+- **Password Reset Security**: SHA-256 hashed tokens stored in database, single-use with 1-hour expiry
+- **Password Policy**: Minimum 8 characters with at least one letter and one number (enforced frontend + backend)
+- **Rate Limiting**: Authentication endpoints protected (forgot-password: 5/hour, reset-password: 10/15min)
+- **Log Redaction**: Sensitive fields (passwords, tokens, JWTs, Authorization headers) automatically redacted from server logs
 
 ## Known Issues
 
@@ -143,6 +147,12 @@ Preferred communication style: Simple, everyday language.
 ## Changelog
 
 Changelog:
+- December 2, 2025. **SECURITY HARDENING**: Enhanced authentication security
+  - SHA-256 token hashing for password reset tokens before database storage
+  - Strengthened password policy requiring 8+ characters with letters and numbers
+  - Added rate limiting: forgot-password (5 requests/hour), reset-password (10/15min)
+  - Implemented secure logging with automatic redaction of sensitive data (passwords, tokens, JWTs, Authorization headers)
+  - Log sanitization handles embedded tokens in error messages and nested objects
 - December 1, 2025. **CUSTOM PASSWORD RESET**: Implemented custom password reset flow via Resend
   - Added password_reset_tokens table for secure token storage
   - Created /api/forgot-password endpoint that generates tokens and sends branded emails via Resend

@@ -6,7 +6,12 @@ import { insertGrantApplicationSchema, insertAgriculturalReturnSchema, insertDoc
 import { sendInvitationEmail, sendPasswordResetEmail } from "./resend";
 import { eq, and, gt } from "drizzle-orm";
 import { db } from "./db";
-import { randomBytes } from "crypto";
+import { randomBytes, createHash } from "crypto";
+
+// Hash tokens before storing for security (protects against DB leaks)
+function hashToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
+}
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -207,17 +212,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (userData && userData.length > 0 && !userError) {
         // Generate secure token
         const token = randomBytes(32).toString('hex');
+        const hashedToken = hashToken(token); // Hash before storing for security
         const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour expiry
         
-        // Store token in database
+        // Store HASHED token in database (protects against DB leaks)
         await db.insert(passwordResetTokens).values({
           email: email.toLowerCase(),
-          token,
+          token: hashedToken,
           expiresAt,
           used: false,
         });
 
-        // Build the reset URL using the request host
+        // Build the reset URL using the request host (send plain token in email)
         const protocol = req.headers['x-forwarded-proto'] || 'https';
         const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:5000';
         const resetUrl = `${protocol}://${host}/reset-password?token=${token}`;
@@ -250,13 +256,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ valid: false, message: 'Token is required' });
       }
 
+      // Hash the incoming token to compare with stored hash
+      const hashedToken = hashToken(token);
+
       // Find the token in database
       const [resetToken] = await db
         .select()
         .from(passwordResetTokens)
         .where(
           and(
-            eq(passwordResetTokens.token, token),
+            eq(passwordResetTokens.token, hashedToken),
             eq(passwordResetTokens.used, false),
             gt(passwordResetTokens.expiresAt, new Date())
           )
@@ -286,13 +295,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Password must be at least 6 characters' });
       }
 
+      // Hash the incoming token to compare with stored hash
+      const hashedToken = hashToken(token);
+
       // Find and validate the token
       const [resetToken] = await db
         .select()
         .from(passwordResetTokens)
         .where(
           and(
-            eq(passwordResetTokens.token, token),
+            eq(passwordResetTokens.token, hashedToken),
             eq(passwordResetTokens.used, false),
             gt(passwordResetTokens.expiresAt, new Date())
           )
@@ -303,23 +315,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid or expired token' });
       }
 
-      // Find user by email
+      // Find user by email using RPC function (more reliable than listUsers)
       const { supabaseAdmin } = await import('./supabase');
-      const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+      const { data: userData, error: userError } = await supabaseAdmin.rpc('get_user_id_by_email', {
+        user_email: resetToken.email.toLowerCase()
+      });
       
-      if (listError) {
-        console.error('Error listing users:', listError);
-        return res.status(500).json({ message: 'Failed to process request' });
-      }
-
-      const user = users.users.find(u => u.email?.toLowerCase() === resetToken.email.toLowerCase());
-      
-      if (!user) {
+      if (userError || !userData || userData.length === 0) {
+        console.error('Error finding user by email:', userError);
         return res.status(404).json({ message: 'User not found' });
       }
 
+      const userId = userData[0].id;
+
       // Update password in Supabase
-      const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
+      const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
         password: password,
       });
 

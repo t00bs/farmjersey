@@ -153,6 +153,11 @@ Changelog:
   - Added user profile caching in session storage with 5-minute TTL
   - Fixed query invalidation using predicate pattern for proper cache updates after mutations
   - Changed support link to mailto:help@farmjersey.je
+  - Added 5-second timeout protection for auth header fetches to prevent long waits
+  - Added in-memory response caching with 1-minute TTL on client side
+  - Configured React Query with 30-second stale time and 5-minute garbage collection
+  - Added Cache-Control headers to server responses (15-30s for data, 5min for templates)
+  - Fixed delete application redirect to go to root (/) instead of /dashboard
 - December 2, 2025. **ADMIN USER MANAGEMENT**:
   - Added Users tab in admin dashboard for role management
   - Created API endpoints GET /api/admin/users and PATCH /api/admin/users/:id/role

@@ -98,13 +98,42 @@ export const getQueryFn: <T>(options: {
     return await res.json();
   };
 
+// In-memory cache for API responses
+const responseCache = new Map<string, { data: unknown; timestamp: number }>();
+const CACHE_TTL = 60000; // 1 minute cache TTL
+
+export function getCachedData<T>(key: string): T | null {
+  const cached = responseCache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data as T;
+  }
+  return null;
+}
+
+export function setCachedData(key: string, data: unknown): void {
+  responseCache.set(key, { data, timestamp: Date.now() });
+}
+
+export function clearCache(keyPrefix?: string): void {
+  if (keyPrefix) {
+    Array.from(responseCache.keys()).forEach(key => {
+      if (key.startsWith(keyPrefix)) {
+        responseCache.delete(key);
+      }
+    });
+  } else {
+    responseCache.clear();
+  }
+}
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      staleTime: Infinity,
+      staleTime: 30000, // Data stays fresh for 30 seconds
+      gcTime: 300000, // Keep unused data in cache for 5 minutes
       retry: false,
     },
     mutations: {

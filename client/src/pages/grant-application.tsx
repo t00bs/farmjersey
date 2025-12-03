@@ -146,8 +146,8 @@ export default function GrantApplication() {
         title: "Application Deleted",
         description: "Your application has been deleted successfully.",
       });
-      // Redirect to dashboard after deletion
-      window.location.href = "/dashboard";
+      // Redirect to home after deletion
+      window.location.href = "/";
     },
     onError: (error) => {
       if (isUnauthorizedError(error)) {

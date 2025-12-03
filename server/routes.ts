@@ -109,6 +109,27 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import memoizee from "memoizee";
+
+// Server-side cache for user data (5 minute TTL)
+const userCache = new Map<string, { data: any; timestamp: number }>();
+const USER_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCachedUser(userId: string) {
+  const cached = userCache.get(userId);
+  if (cached && Date.now() - cached.timestamp < USER_CACHE_TTL) {
+    return cached.data;
+  }
+  return null;
+}
+
+function setCachedUser(userId: string, data: any) {
+  userCache.set(userId, { data, timestamp: Date.now() });
+}
+
+function invalidateUserCache(userId: string) {
+  userCache.delete(userId);
+}
 import { ensureBucketExists, uploadFile, downloadFile, deleteFile, deleteMultipleFiles, getSignedUrl, isSupabasePath } from "./supabaseStorage";
 
 // Helper function to prevent CSV/XLSX formula injection
@@ -592,6 +613,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         limit: limitNum,
       });
       
+      // Add cache control for browser caching (shorter for admin data)
+      res.set('Cache-Control', 'private, max-age=15');
       res.json(result);
     } catch (error) {
       console.error("Error fetching admin applications:", error);
@@ -1140,6 +1163,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Public endpoint for users to access active agricultural form templates
   app.get("/api/agricultural-forms/templates", isAuthenticated, async (req: any, res) => {
     try {
+      // Add cache control - templates rarely change
+      res.set('Cache-Control', 'private, max-age=300'); // 5 minutes
       let templates = await storage.getAgriculturalFormTemplates();
       
       // Create default template if none exist
@@ -1368,6 +1393,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.id;
       const applications = await storage.getUserGrantApplications(userId);
+      // Add cache control for browser caching
+      res.set('Cache-Control', 'private, max-age=30');
       res.json(applications);
     } catch (error) {
       console.error("Error fetching grant applications:", error);
@@ -1423,6 +1450,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
+      // Add cache control for browser caching
+      res.set('Cache-Control', 'private, max-age=30');
       res.json(application);
     } catch (error) {
       console.error("Error fetching grant application:", error);
@@ -1527,6 +1556,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const agriculturalReturn = await storage.getAgriculturalReturnByApplicationId(applicationId);
+      // Add cache control for browser caching
+      res.set('Cache-Control', 'private, max-age=30');
       res.json(agriculturalReturn);
     } catch (error) {
       console.error("Error fetching agricultural return:", error);

@@ -17,7 +17,6 @@ import ProgressIndicator from "@/components/progress-indicator";
 import AgriculturalReturnForm from "@/components/agricultural-return-form";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { InfoIcon, Save, Send, Trash2 } from "lucide-react";
 
@@ -465,18 +464,6 @@ export default function GrantApplication() {
               </div>
             </div>
           </Card>
-
-          {/* Help Section */}
-          <Alert className="mt-6 border-secondary-custom/20 bg-secondary-custom/5">
-            <InfoIcon className="h-4 w-4 text-secondary-custom" />
-            <AlertDescription>
-              <span className="font-medium">Need Help?</span> Contact our support team at{" "}
-              <a href="mailto:support@farmjersey.je" className="text-secondary-custom hover:underline">
-                support@farmjersey.je
-              </a>{" "}
-              or call 1-800-RSS-HELP
-            </AlertDescription>
-          </Alert>
         </main>
       </div>
       {/* Modals */}

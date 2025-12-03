@@ -147,6 +147,12 @@ Preferred communication style: Simple, everyday language.
 ## Changelog
 
 Changelog:
+- December 3, 2025. **PERFORMANCE OPTIMIZATIONS**:
+  - Added auth token caching in memory to avoid repeated Supabase authentication calls
+  - Implemented pagination for admin applications endpoint (20 items per page with proper COUNT(*) aggregate)
+  - Added user profile caching in session storage with 5-minute TTL
+  - Fixed query invalidation using predicate pattern for proper cache updates after mutations
+  - Changed support link to mailto:help@farmjersey.je
 - December 2, 2025. **ADMIN USER MANAGEMENT**:
   - Added Users tab in admin dashboard for role management
   - Created API endpoints GET /api/admin/users and PATCH /api/admin/users/:id/role

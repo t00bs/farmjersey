@@ -84,7 +84,9 @@ export function useAuth() {
     return () => subscription.unsubscribe();
   }, []);
 
-  async function fetchUserProfile(userId: string) {
+  async function fetchUserProfile(userId: string, retryCount = 0) {
+    const maxRetries = 2;
+    
     try {
       // Wrap the query with a 10-second timeout
       const { data, error } = await withTimeout(
@@ -100,6 +102,11 @@ export function useAuth() {
 
       if (error) {
         console.error('Error fetching user profile:', error);
+        // On error, retry if we haven't exceeded max retries
+        if (retryCount < maxRetries) {
+          console.log(`Retrying profile fetch (attempt ${retryCount + 2}/${maxRetries + 1})...`);
+          return fetchUserProfile(userId, retryCount + 1);
+        }
         setUser(null);
         return;
       }
@@ -117,9 +124,15 @@ export function useAuth() {
     } catch (error: any) {
       if (error.message === 'Query timeout') {
         console.warn('Profile fetch timed out after 10 seconds. This may indicate a connection issue with Supabase.');
+        // On timeout, retry if we haven't exceeded max retries
+        if (retryCount < maxRetries) {
+          console.log(`Retrying profile fetch after timeout (attempt ${retryCount + 2}/${maxRetries + 1})...`);
+          return fetchUserProfile(userId, retryCount + 1);
+        }
       } else {
         console.error('Error in fetchUserProfile:', error);
       }
+      // Only set user to null after all retries are exhausted
       setUser(null);
     }
   }

@@ -11,7 +11,7 @@ const navigation = [
 ];
 
 const bottomNavigation = [
-  { name: "Support", href: "/support", icon: HelpCircle },
+  { name: "Support", href: "mailto:help@farmjersey.je", icon: HelpCircle, isExternal: true },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
@@ -59,12 +59,24 @@ export default function Sidebar() {
       <div className="p-4 border-t border-gray-200 space-y-2">
         {bottomNavigation.map((item) => {
           const Icon = item.icon;
+          const linkContent = (
+            <div className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-600 hover:bg-gray-50 hover:text-text-primary transition-colors cursor-pointer">
+              <Icon className="w-5 h-5" />
+              <span>{item.name}</span>
+            </div>
+          );
+          
+          if (item.isExternal) {
+            return (
+              <a key={item.name} href={item.href} data-testid={`link-${item.name.toLowerCase()}`}>
+                {linkContent}
+              </a>
+            );
+          }
+          
           return (
             <Link key={item.name} href={item.href}>
-              <div className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-600 hover:bg-gray-50 hover:text-text-primary transition-colors cursor-pointer">
-                <Icon className="w-5 h-5" />
-                <span>{item.name}</span>
-              </div>
+              {linkContent}
             </Link>
           );
         })}

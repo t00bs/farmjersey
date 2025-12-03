@@ -32,12 +32,26 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
     return headers;
   }
   
-  const { data: { session } } = await supabase.auth.getSession();
-  
-  if (session?.access_token) {
-    cachedAccessToken = session.access_token;
-    tokenExpiresAt = session.expires_at ? session.expires_at * 1000 : null;
-    headers['Authorization'] = `Bearer ${session.access_token}`;
+  // Add timeout protection for getSession to prevent long waits
+  try {
+    const sessionPromise = supabase.auth.getSession();
+    const timeoutPromise = new Promise<null>((_, reject) => 
+      setTimeout(() => reject(new Error('Session fetch timeout')), 5000)
+    );
+    
+    const result = await Promise.race([sessionPromise, timeoutPromise]);
+    
+    if (result && 'data' in result && result.data.session?.access_token) {
+      cachedAccessToken = result.data.session.access_token;
+      tokenExpiresAt = result.data.session.expires_at ? result.data.session.expires_at * 1000 : null;
+      headers['Authorization'] = `Bearer ${result.data.session.access_token}`;
+    }
+  } catch (error) {
+    console.warn('Auth headers fetch timed out or failed, using cached token if available');
+    // If we have an expired cached token, still try to use it
+    if (cachedAccessToken) {
+      headers['Authorization'] = `Bearer ${cachedAccessToken}`;
+    }
   }
   
   return headers;

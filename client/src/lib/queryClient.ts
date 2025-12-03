@@ -8,11 +8,35 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+let cachedAccessToken: string | null = null;
+let tokenExpiresAt: number | null = null;
+
+supabase.auth.onAuthStateChange((_event, session) => {
+  if (session?.access_token) {
+    cachedAccessToken = session.access_token;
+    tokenExpiresAt = session.expires_at ? session.expires_at * 1000 : null;
+  } else {
+    cachedAccessToken = null;
+    tokenExpiresAt = null;
+  }
+});
+
 async function getAuthHeaders(): Promise<Record<string, string>> {
-  const { data: { session } } = await supabase.auth.getSession();
   const headers: Record<string, string> = {};
   
+  const now = Date.now();
+  const tokenExpired = tokenExpiresAt && now >= tokenExpiresAt - 60000;
+  
+  if (cachedAccessToken && !tokenExpired) {
+    headers['Authorization'] = `Bearer ${cachedAccessToken}`;
+    return headers;
+  }
+  
+  const { data: { session } } = await supabase.auth.getSession();
+  
   if (session?.access_token) {
+    cachedAccessToken = session.access_token;
+    tokenExpiresAt = session.expires_at ? session.expires_at * 1000 : null;
     headers['Authorization'] = `Bearer ${session.access_token}`;
   }
   

@@ -11,6 +11,48 @@ interface UserProfile {
   profileImageUrl: string | null;
 }
 
+const PROFILE_CACHE_KEY = 'user_profile_cache';
+const PROFILE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCachedProfile(userId: string): UserProfile | null {
+  try {
+    const cached = sessionStorage.getItem(PROFILE_CACHE_KEY);
+    if (!cached) return null;
+    
+    const { profile, userId: cachedUserId, timestamp } = JSON.parse(cached);
+    
+    if (cachedUserId !== userId) return null;
+    if (Date.now() - timestamp > PROFILE_CACHE_TTL) {
+      sessionStorage.removeItem(PROFILE_CACHE_KEY);
+      return null;
+    }
+    
+    return profile;
+  } catch {
+    return null;
+  }
+}
+
+function setCachedProfile(userId: string, profile: UserProfile): void {
+  try {
+    sessionStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify({
+      profile,
+      userId,
+      timestamp: Date.now(),
+    }));
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+function clearCachedProfile(): void {
+  try {
+    sessionStorage.removeItem(PROFILE_CACHE_KEY);
+  } catch {
+    // Ignore storage errors
+  }
+}
+
 // Timeout wrapper to prevent queries from hanging indefinitely
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
   let timeoutHandle: NodeJS.Timeout;
@@ -46,10 +88,21 @@ export function useAuth() {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
           setSupabaseUser(session.user);
-          await fetchUserProfile(session.user.id);
+          
+          // Try to use cached profile first for faster initial load
+          const cached = getCachedProfile(session.user.id);
+          if (cached) {
+            setUser(cached);
+            setIsLoading(false);
+            // Refresh in background
+            fetchUserProfile(session.user.id);
+          } else {
+            await fetchUserProfile(session.user.id);
+          }
         } else {
           setUser(null);
           setSupabaseUser(null);
+          clearCachedProfile();
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
@@ -63,14 +116,23 @@ export function useAuth() {
     initializeAuth();
 
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       try {
         if (session?.user) {
           setSupabaseUser(session.user);
-          await fetchUserProfile(session.user.id);
+          
+          // On sign out, clear cache
+          if (event === 'SIGNED_OUT') {
+            clearCachedProfile();
+            setUser(null);
+            setSupabaseUser(null);
+          } else {
+            await fetchUserProfile(session.user.id);
+          }
         } else {
           setUser(null);
           setSupabaseUser(null);
+          clearCachedProfile();
         }
       } catch (error) {
         console.error('Error in auth state change:', error);
@@ -112,14 +174,16 @@ export function useAuth() {
       }
 
       if (data) {
-        setUser({
+        const profile: UserProfile = {
           id: data.id,
           email: data.email,
           firstName: data.first_name,
           lastName: data.last_name,
           role: data.role,
           profileImageUrl: data.profile_image_url,
-        });
+        };
+        setUser(profile);
+        setCachedProfile(userId, profile);
       }
     } catch (error: any) {
       if (error.message === 'Query timeout') {

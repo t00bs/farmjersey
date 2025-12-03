@@ -559,7 +559,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin routes
   app.get("/api/admin/applications", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
-      const { status, startDate, endDate } = req.query;
+      const { status, startDate, endDate, page, limit } = req.query;
+      
+      // Parse pagination parameters
+      const pageNum = parseInt(page as string) || 1;
+      const limitNum = Math.min(parseInt(limit as string) || 20, 100); // Max 100 per page
       
       // Parse date parameters
       const parsedStartDate = startDate ? new Date(startDate as string) : undefined;
@@ -579,14 +583,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid endDate format" });
       }
       
-      // Use the new filtered method that handles all scenarios
-      const applications = await storage.getGrantApplicationsWithUserDataFiltered(
-        status && status !== 'all' ? status as string : undefined,
-        parsedStartDate,
-        parsedEndDate
-      );
+      // Use paginated method for better performance
+      const result = await storage.getGrantApplicationsWithUserDataPaginated({
+        status: status && status !== 'all' ? status as string : undefined,
+        startDate: parsedStartDate,
+        endDate: parsedEndDate,
+        page: pageNum,
+        limit: limitNum,
+      });
       
-      res.json(applications);
+      res.json(result);
     } catch (error) {
       console.error("Error fetching admin applications:", error);
       res.status(500).json({ message: "Failed to fetch applications" });

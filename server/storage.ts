@@ -23,7 +23,7 @@ import {
   type ApplicationWithUserData,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, gte, lte, inArray } from "drizzle-orm";
+import { eq, and, desc, gte, lte, inArray, sql } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -44,6 +44,13 @@ export interface IStorage {
   getAllGrantApplicationsWithUserData(): Promise<ApplicationWithUserData[]>;
   getGrantApplicationsByStatusWithUserData(status: string): Promise<ApplicationWithUserData[]>;
   getGrantApplicationsWithUserDataFiltered(status?: string, startDate?: Date, endDate?: Date): Promise<ApplicationWithUserData[]>;
+  getGrantApplicationsWithUserDataPaginated(options: {
+    status?: string;
+    startDate?: Date;
+    endDate?: Date;
+    page: number;
+    limit: number;
+  }): Promise<{ data: ApplicationWithUserData[]; total: number; page: number; limit: number; totalPages: number }>;
   updateGrantApplication(id: number, updates: Partial<InsertGrantApplication>): Promise<GrantApplication | undefined>;
   deleteGrantApplication(id: number): Promise<boolean>;
   
@@ -221,6 +228,10 @@ export class DatabaseStorage implements IStorage {
         consentFormCompleted: grantApplications.consentFormCompleted,
         supportingDocsCompleted: grantApplications.supportingDocsCompleted,
         digitalSignature: grantApplications.digitalSignature,
+        consentName: grantApplications.consentName,
+        consentAddress: grantApplications.consentAddress,
+        consentFarmCode: grantApplications.consentFarmCode,
+        consentEmail: grantApplications.consentEmail,
         submittedAt: grantApplications.submittedAt,
         createdAt: grantApplications.createdAt,
         updatedAt: grantApplications.updatedAt,
@@ -246,6 +257,10 @@ export class DatabaseStorage implements IStorage {
         consentFormCompleted: grantApplications.consentFormCompleted,
         supportingDocsCompleted: grantApplications.supportingDocsCompleted,
         digitalSignature: grantApplications.digitalSignature,
+        consentName: grantApplications.consentName,
+        consentAddress: grantApplications.consentAddress,
+        consentFarmCode: grantApplications.consentFarmCode,
+        consentEmail: grantApplications.consentEmail,
         submittedAt: grantApplications.submittedAt,
         createdAt: grantApplications.createdAt,
         updatedAt: grantApplications.updatedAt,
@@ -287,6 +302,10 @@ export class DatabaseStorage implements IStorage {
         consentFormCompleted: grantApplications.consentFormCompleted,
         supportingDocsCompleted: grantApplications.supportingDocsCompleted,
         digitalSignature: grantApplications.digitalSignature,
+        consentName: grantApplications.consentName,
+        consentAddress: grantApplications.consentAddress,
+        consentFarmCode: grantApplications.consentFarmCode,
+        consentEmail: grantApplications.consentEmail,
         submittedAt: grantApplications.submittedAt,
         createdAt: grantApplications.createdAt,
         updatedAt: grantApplications.updatedAt,
@@ -298,6 +317,81 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(users, eq(grantApplications.userId, users.id))
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(desc(grantApplications.createdAt));
+  }
+
+  async getGrantApplicationsWithUserDataPaginated(options: {
+    status?: string;
+    startDate?: Date;
+    endDate?: Date;
+    page: number;
+    limit: number;
+  }): Promise<{ data: ApplicationWithUserData[]; total: number; page: number; limit: number; totalPages: number }> {
+    const { status, startDate, endDate, page, limit } = options;
+    const offset = (page - 1) * limit;
+    
+    // Build the where conditions
+    const conditions = [];
+    
+    if (status) {
+      conditions.push(eq(grantApplications.status, status));
+    }
+    
+    if (startDate) {
+      conditions.push(gte(grantApplications.createdAt, startDate));
+    }
+    
+    if (endDate) {
+      conditions.push(lte(grantApplications.createdAt, endDate));
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    // Get total count using SQL count aggregate
+    const countResult = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(grantApplications)
+      .where(whereClause);
+    
+    const total = countResult[0]?.count ?? 0;
+
+    // Get paginated data
+    const data = await db
+      .select({
+        id: grantApplications.id,
+        userId: grantApplications.userId,
+        status: grantApplications.status,
+        year: grantApplications.year,
+        progressPercentage: grantApplications.progressPercentage,
+        agriculturalReturnCompleted: grantApplications.agriculturalReturnCompleted,
+        landDeclarationCompleted: grantApplications.landDeclarationCompleted,
+        consentFormCompleted: grantApplications.consentFormCompleted,
+        supportingDocsCompleted: grantApplications.supportingDocsCompleted,
+        digitalSignature: grantApplications.digitalSignature,
+        consentName: grantApplications.consentName,
+        consentAddress: grantApplications.consentAddress,
+        consentFarmCode: grantApplications.consentFarmCode,
+        consentEmail: grantApplications.consentEmail,
+        submittedAt: grantApplications.submittedAt,
+        createdAt: grantApplications.createdAt,
+        updatedAt: grantApplications.updatedAt,
+        userFirstName: users.firstName,
+        userLastName: users.lastName,
+        userEmail: users.email,
+      })
+      .from(grantApplications)
+      .leftJoin(users, eq(grantApplications.userId, users.id))
+      .where(whereClause)
+      .orderBy(desc(grantApplications.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    };
   }
 
   async updateGrantApplication(id: number, updates: Partial<InsertGrantApplication>): Promise<GrantApplication | undefined> {

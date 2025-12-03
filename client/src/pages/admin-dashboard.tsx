@@ -57,14 +57,24 @@ export default function AdminDashboard() {
   return <AdminDashboardContent />;
 }
 
+interface PaginatedResponse {
+  data: ApplicationWithUserData[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 function AdminDashboardContent() {
   const { toast } = useToast();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [selectedApplication, setSelectedApplication] = useState<ApplicationWithUserData | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
 
-  const { data: applications = [], isLoading } = useQuery({
-    queryKey: ["/api/admin/applications", statusFilter, dateRange?.from, dateRange?.to],
+  const { data: paginatedData, isLoading } = useQuery<PaginatedResponse>({
+    queryKey: ["/api/admin/applications", { status: statusFilter, from: dateRange?.from?.toISOString(), to: dateRange?.to?.toISOString(), page: currentPage }],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (statusFilter !== "all") {
@@ -76,23 +86,35 @@ function AdminDashboardContent() {
       if (dateRange?.to) {
         params.append("endDate", dateRange.to.toISOString());
       }
+      params.append("page", currentPage.toString());
+      params.append("limit", pageSize.toString());
       
-      const url = params.toString() 
-        ? `/api/admin/applications?${params.toString()}`
-        : "/api/admin/applications";
+      const url = `/api/admin/applications?${params.toString()}`;
       
-      const response = await fetch(url);
-      if (!response.ok) throw new Error("Failed to fetch applications");
+      const response = await apiRequest("GET", url);
       return await response.json();
     },
   });
+
+  const applications = paginatedData?.data || [];
+  const totalPages = paginatedData?.totalPages || 1;
+  const totalCount = paginatedData?.total || 0;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, dateRange]);
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
       return await apiRequest("PATCH", `/api/admin/applications/${id}/status`, { status });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/applications"] });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.startsWith('/api/admin/applications');
+        }
+      });
       toast({
         title: "Status Updated",
         description: "Application status has been updated successfully.",
@@ -422,6 +444,38 @@ function AdminDashboardContent() {
                     ))}
                   </TableBody>
                 </Table>
+                
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                    <p className="text-sm text-gray-600">
+                      Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount} applications
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        data-testid="button-prev-page"
+                      >
+                        Previous
+                      </Button>
+                      <span className="text-sm px-2">
+                        Page {currentPage} of {totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        data-testid="button-next-page"
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

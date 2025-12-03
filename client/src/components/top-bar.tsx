@@ -1,5 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
-import { Bell, ChevronDown, User, Settings as SettingsIcon } from "lucide-react";
+import { signOut } from "@/lib/supabase";
+import { Bell, ChevronDown, User, Settings as SettingsIcon, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Breadcrumb,
@@ -119,10 +120,14 @@ export default function TopBar() {
               </Link>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
-                onClick={() => window.location.href = '/api/logout'}
+                onClick={async () => {
+                  await signOut();
+                  window.location.href = '/auth';
+                }}
                 className="text-red-600"
                 data-testid="menu-logout"
               >
+                <LogOut className="mr-2 h-4 w-4" />
                 Sign Out
               </DropdownMenuItem>
             </DropdownMenuContent>

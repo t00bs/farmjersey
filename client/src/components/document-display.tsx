@@ -148,14 +148,6 @@ export default function DocumentDisplay({ applicationId, open, onOpenChange }: D
                 View and download your uploaded documents
               </DialogDescription>
             </div>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => onOpenChange(false)}
-              data-testid="button-close-documents"
-            >
-              <X className="w-4 h-4" />
-            </Button>
           </div>
         </DialogHeader>
 

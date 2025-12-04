@@ -1715,8 +1715,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Download template route
-  app.get("/api/download-template/:type", isAuthenticated, (req, res) => {
+  // Download template route (public - templates are not sensitive)
+  app.get("/api/download-template/:type", (req, res) => {
     try {
       const templateType = req.params.type;
       

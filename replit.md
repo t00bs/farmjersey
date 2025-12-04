@@ -147,6 +147,11 @@ Preferred communication style: Simple, everyday language.
 ## Changelog
 
 Changelog:
+- December 4, 2025. **NAVIGATION PERFORMANCE FIX**:
+  - Changed delete redirect from window.location.href to wouter's navigate() for instant client-side navigation
+  - Optimized useAuth to skip Supabase profile fetches when session storage cache is fresh
+  - Auth state changes for TOKEN_REFRESHED and INITIAL_SESSION now use cached profile data
+  - Eliminates full page reload and auth re-initialization delays after deleting applications
 - December 3, 2025. **PERFORMANCE OPTIMIZATIONS**:
   - Added auth token caching in memory to avoid repeated Supabase authentication calls
   - Implemented pagination for admin applications endpoint (20 items per page with proper COUNT(*) aggregate)

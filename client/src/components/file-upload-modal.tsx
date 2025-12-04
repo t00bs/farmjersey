@@ -3,6 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { supabase } from "@/lib/supabase";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +27,7 @@ export default function FileUploadModal({
   documentType,
 }: FileUploadModalProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const { toast } = useToast();
 
   const uploadMutation = useMutation({
@@ -35,10 +37,17 @@ export default function FileUploadModal({
       formData.append("applicationId", applicationId.toString());
       formData.append("documentType", documentType);
 
+      const headers: Record<string, string> = {};
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+      }
+
       const response = await fetch("/api/documents", {
         method: "POST",
+        headers,
         body: formData,
-        credentials: "include",
       });
 
       if (!response.ok) {
@@ -91,6 +100,59 @@ export default function FileUploadModal({
     }
   };
 
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      const allowedTypes = [
+        'application/pdf',
+        'image/jpeg',
+        'image/png',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      ];
+      
+      const allowedExtensions = ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx', '.xls', '.xlsx'];
+      const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+      
+      const isValidByType = file.type && allowedTypes.includes(file.type);
+      const isValidByExtension = allowedExtensions.includes(fileExtension);
+      
+      if (isValidByType || isValidByExtension) {
+        setSelectedFile(file);
+      } else {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload a PDF, JPG, PNG, DOC, DOCX, XLS, or XLSX file.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   const getTitle = () => {
     return documentType === "land_declaration" 
       ? "Upload Land Declaration" 
@@ -116,12 +178,21 @@ export default function FileUploadModal({
         
         <div className="space-y-4">
           <div 
-            className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-primary-custom transition-colors"
+            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+              isDragging 
+                ? "border-primary-custom bg-primary-custom/5" 
+                : "border-gray-300 hover:border-primary-custom"
+            }`}
             onClick={() => document.getElementById('file-input')?.click()}
+            onDragOver={handleDragOver}
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            data-testid="dropzone-file-upload"
           >
-            <CloudUpload className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+            <CloudUpload className={`w-12 h-12 mx-auto mb-2 ${isDragging ? "text-primary-custom" : "text-gray-400"}`} />
             <p className="text-sm text-gray-600 mb-1">
-              {selectedFile ? selectedFile.name : "Drag and drop files here or click to select"}
+              {selectedFile ? selectedFile.name : isDragging ? "Drop file here" : "Drag and drop files here or click to select"}
             </p>
             <p className="text-xs text-gray-500">
               PDF, JPG, PNG, DOC, DOCX, XLS, XLSX (Max 10MB)

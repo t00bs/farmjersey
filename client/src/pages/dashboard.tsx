@@ -250,7 +250,11 @@ export default function Dashboard() {
                       <Link href={`/application/${application.id}`}>
                         <Button className="w-full mt-4 bg-white border-2 border-primary-custom text-primary-custom hover:bg-primary-custom hover:text-white">
                           <FileText className="w-4 h-4 mr-2" />
-                          {application.status === "draft" ? "Start Application" : "Continue Application"}
+                          {application.status === "submitted" || application.status === "approved" || application.status === "rejected" 
+                            ? "View Application" 
+                            : application.status === "draft" 
+                              ? "Start Application" 
+                              : "Continue Application"}
                         </Button>
                       </Link>
                     </div>

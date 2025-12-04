@@ -108,12 +108,14 @@ export default function GrantApplication() {
       });
     },
     onSuccess: () => {
-      // Invalidate and refetch the application data
+      // Invalidate all application queries including this specific one, then redirect to home
+      queryClient.invalidateQueries({ queryKey: ["/api/grant-applications"] });
       queryClient.invalidateQueries({ queryKey: ["/api/grant-applications", applicationId] });
       toast({
         title: "Application Submitted",
         description: "Your grant application has been submitted successfully.",
       });
+      navigate("/");
     },
     onError: (error) => {
       if (isUnauthorizedError(error)) {
@@ -224,7 +226,10 @@ export default function GrantApplication() {
     }
   };
 
+  const isReadOnly = application?.status === "submitted" || application?.status === "approved" || application?.status === "rejected";
+
   const handleUpload = (type: "land_declaration" | "supporting_doc") => {
+    if (isReadOnly) return;
     setUploadType(type);
     setUploadModalOpen(true);
   };
@@ -267,6 +272,7 @@ export default function GrantApplication() {
   };
 
   const handleSign = () => {
+    if (isReadOnly && !application?.consentFormCompleted) return;
     setSignatureModalOpen(true);
   };
 
@@ -356,9 +362,10 @@ export default function GrantApplication() {
               description="Submit your annual agricultural return with crop details and land usage"
               status={getAgriculturalReturnStatus()}
               estimatedTime="15 minutes"
+              disabled={isReadOnly && !application?.agriculturalReturnCompleted}
               primaryAction={{
-                label: application?.agriculturalReturnCompleted ? "Edit Return" : "Start Return",
-                onClick: () => setAgriculturalFormOpen(true),
+                label: application?.agriculturalReturnCompleted ? "View Return" : "Start Return",
+                onClick: () => (!isReadOnly || application?.agriculturalReturnCompleted) && setAgriculturalFormOpen(true),
                 variant: "outline",
               }}
             />
@@ -370,13 +377,13 @@ export default function GrantApplication() {
               iconType="download"
               requiresTemplate
               primaryAction={{
-                label: "Upload",
-                onClick: () => handleUpload("land_declaration"),
+                label: "View Documents",
+                onClick: () => setDocumentModalOpen(true),
                 variant: "default",
               }}
-              secondaryAction={{
-                label: "Download Template",
-                onClick: handleDownloadTemplate,
+              secondaryAction={isReadOnly ? undefined : {
+                label: "Upload",
+                onClick: () => handleUpload("land_declaration"),
               }}
             />
 
@@ -386,6 +393,7 @@ export default function GrantApplication() {
               status={getConsentFormStatus()}
               iconType="signature"
               requiresSignature
+              disabled={isReadOnly && !application?.consentFormCompleted}
               primaryAction={{
                 label: application?.consentFormCompleted ? "View" : "Sign",
                 onClick: handleSign,
@@ -400,13 +408,13 @@ export default function GrantApplication() {
               iconType="upload"
               acceptedFormats="PDF, JPG, PNG accepted"
               primaryAction={{
-                label: "Upload",
-                onClick: () => handleUpload("supporting_doc"),
-                variant: "default",
-              }}
-              secondaryAction={{
                 label: "View Documents",
                 onClick: () => setDocumentModalOpen(true),
+                variant: "default",
+              }}
+              secondaryAction={isReadOnly ? undefined : {
+                label: "Upload",
+                onClick: () => handleUpload("supporting_doc"),
               }}
             />
           </div>
@@ -427,43 +435,49 @@ export default function GrantApplication() {
                 </div>
               </div>
               
-              <div className="flex space-x-3">
-                <Button 
-                  variant="outline"
-                  onClick={() => saveProgressMutation.mutate()}
-                  disabled={saveProgressMutation.isPending}
-                  data-testid="button-save-progress"
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  {saveProgressMutation.isPending ? "Saving..." : "Save Progress"}
-                </Button>
-                <Button 
-                  variant="destructive"
-                  onClick={() => {
-                    if (confirm("Are you sure you want to delete this application? This action cannot be undone.")) {
-                      deleteApplicationMutation.mutate();
-                    }
-                  }}
-                  disabled={deleteApplicationMutation.isPending}
-                  data-testid="button-delete-application"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  {deleteApplicationMutation.isPending ? "Deleting..." : "Delete (Testing)"}
-                </Button>
-                <Button 
-                  disabled={!isApplicationComplete || submitApplicationMutation.isPending}
-                  className={isApplicationComplete ? "bg-success-custom hover:bg-success-custom/90 text-white" : ""}
-                  onClick={() => {
-                    if (isApplicationComplete) {
-                      submitApplicationMutation.mutate();
-                    }
-                  }}
-                  data-testid="button-submit-application"
-                >
-                  <Send className="w-4 h-4 mr-2" />
-                  {submitApplicationMutation.isPending ? "Submitting..." : "Submit Application"}
-                </Button>
-              </div>
+              {isReadOnly ? (
+                <div className="text-center py-2 px-4 bg-primary-custom/10 text-primary-custom rounded-lg font-medium">
+                  Application {application?.status === "submitted" ? "Submitted" : application?.status === "approved" ? "Approved" : "Rejected"} - View Only
+                </div>
+              ) : (
+                <div className="flex space-x-3">
+                  <Button 
+                    variant="outline"
+                    onClick={() => saveProgressMutation.mutate()}
+                    disabled={saveProgressMutation.isPending}
+                    data-testid="button-save-progress"
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    {saveProgressMutation.isPending ? "Saving..." : "Save Progress"}
+                  </Button>
+                  <Button 
+                    variant="destructive"
+                    onClick={() => {
+                      if (confirm("Are you sure you want to delete this application? This action cannot be undone.")) {
+                        deleteApplicationMutation.mutate();
+                      }
+                    }}
+                    disabled={deleteApplicationMutation.isPending}
+                    data-testid="button-delete-application"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    {deleteApplicationMutation.isPending ? "Deleting..." : "Delete (Testing)"}
+                  </Button>
+                  <Button 
+                    disabled={!isApplicationComplete || submitApplicationMutation.isPending}
+                    className={isApplicationComplete ? "bg-success-custom hover:bg-success-custom/90 text-white" : ""}
+                    onClick={() => {
+                      if (isApplicationComplete) {
+                        submitApplicationMutation.mutate();
+                      }
+                    }}
+                    data-testid="button-submit-application"
+                  >
+                    <Send className="w-4 h-4 mr-2" />
+                    {submitApplicationMutation.isPending ? "Submitting..." : "Submit Application"}
+                  </Button>
+                </div>
+              )}
             </div>
           </Card>
         </main>

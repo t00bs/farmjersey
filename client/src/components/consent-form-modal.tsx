@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { Loader2, Download, FileText } from "lucide-react";
+import { Loader2, Download, FileText, ExternalLink } from "lucide-react";
 
 const consentFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -35,7 +35,44 @@ export default function ConsentFormModal({ open, onOpenChange, applicationId }: 
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [pdfLoadError, setPdfLoadError] = useState(false);
+  const [templateBlobUrl, setTemplateBlobUrl] = useState<string | null>(null);
+  const [templateLoading, setTemplateLoading] = useState(true);
+  const [templateError, setTemplateError] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      if (templateBlobUrl) {
+        URL.revokeObjectURL(templateBlobUrl);
+        setTemplateBlobUrl(null);
+      }
+      if (pdfUrl) {
+        URL.revokeObjectURL(pdfUrl);
+        setPdfUrl(null);
+      }
+      return;
+    }
+
+    const loadTemplate = async () => {
+      setTemplateLoading(true);
+      setTemplateError(false);
+      
+      try {
+        const response = await fetch("/api/download-template/rss-application");
+        if (!response.ok) throw new Error("Failed to fetch template");
+        
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        setTemplateBlobUrl(url);
+      } catch (error) {
+        console.error("Failed to load template:", error);
+        setTemplateError(true);
+      } finally {
+        setTemplateLoading(false);
+      }
+    };
+
+    loadTemplate();
+  }, [open]);
 
   const form = useForm<ConsentFormData>({
     resolver: zodResolver(consentFormSchema),
@@ -210,33 +247,60 @@ export default function ConsentFormModal({ open, onOpenChange, applicationId }: 
           <Card className="p-4">
             <h3 className="text-lg font-semibold mb-2">Declaration Preview</h3>
             <div className="border rounded bg-gray-50 dark:bg-gray-900" data-testid="pdf-preview-container">
-              {pdfLoadError ? (
+              {templateLoading ? (
+                <div className="flex items-center justify-center h-[400px]">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : templateError ? (
                 <div className="flex flex-col items-center justify-center h-[400px] text-center p-4">
                   <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-sm text-muted-foreground">
-                    Unable to load PDF preview in your browser. Click below to download or view the template.
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Unable to load PDF preview. You can download the template or open it in a new tab.
                   </p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="mt-4"
-                    onClick={() => window.open("/api/download-template/rss-application", "_blank")}
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Download Template
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open("/api/download-template/rss-application", "_blank")}
+                    >
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Open in New Tab
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      asChild
+                    >
+                      <a href="/api/download-template/rss-application" download="RSS_Application_Template.pdf">
+                        <Download className="mr-2 h-4 w-4" />
+                        Download
+                      </a>
+                    </Button>
+                  </div>
                 </div>
-              ) : (
+              ) : templateBlobUrl ? (
                 <div className="flex flex-col items-center">
-                  <iframe
-                    src="/api/download-template/rss-application"
-                    className="w-full h-[500px] border-0"
+                  <embed
+                    src={templateBlobUrl}
+                    type="application/pdf"
+                    className="w-full h-[500px]"
                     title="RSS Application Form Preview"
-                    onError={() => setPdfLoadError(true)}
                   />
+                  <div className="flex gap-2 mt-3 pb-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open("/api/download-template/rss-application", "_blank")}
+                    >
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Open in New Tab
+                    </Button>
+                  </div>
                 </div>
-              )}
+              ) : null}
             </div>
           </Card>
 

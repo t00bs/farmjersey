@@ -13,6 +13,7 @@ interface ApplicationSectionProps {
   requiresTemplate?: boolean;
   requiresSignature?: boolean;
   acceptedFormats?: string;
+  disabled?: boolean;
   primaryAction: {
     label: string;
     onClick: () => void;
@@ -33,6 +34,7 @@ export default function ApplicationSection({
   requiresTemplate = false,
   requiresSignature = false,
   acceptedFormats,
+  disabled = false,
   primaryAction,
   secondaryAction,
 }: ApplicationSectionProps) {
@@ -115,6 +117,7 @@ export default function ApplicationSection({
             <Button
               onClick={primaryAction.onClick}
               className={`flex-1 ${getPrimaryButtonClass()}`}
+              disabled={disabled}
             >
               {primaryAction.label}
             </Button>
@@ -122,6 +125,7 @@ export default function ApplicationSection({
               onClick={secondaryAction.onClick}
               variant="outline"
               className="flex-1 font-medium py-3 px-4"
+              disabled={disabled}
             >
               {secondaryAction.label}
             </Button>
@@ -130,6 +134,7 @@ export default function ApplicationSection({
           <Button
             onClick={primaryAction.onClick}
             className={getPrimaryButtonClass()}
+            disabled={disabled}
           >
             {primaryAction.label}
           </Button>

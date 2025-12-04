@@ -147,6 +147,12 @@ Preferred communication style: Simple, everyday language.
 ## Changelog
 
 Changelog:
+- December 4, 2025. **PDF PREVIEW FIX**:
+  - Replaced browser-native `<object>` tag with react-pdf library for universal PDF rendering
+  - PDFs now render as canvas images that work in all browsers including mobile
+  - Added pagination controls for multi-page PDF documents
+  - Added loading spinner and fallback download button for error cases
+  - Uses PDF.js worker from unpkg CDN for efficient PDF parsing
 - December 4, 2025. **NAVIGATION PERFORMANCE FIX**:
   - Changed delete redirect from window.location.href to wouter's navigate() for instant client-side navigation
   - Optimized useAuth to skip Supabase profile fetches when session storage cache is fresh

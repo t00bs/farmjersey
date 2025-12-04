@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,15 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { Loader2, Download, FileText, ChevronLeft, ChevronRight } from "lucide-react";
-import { Document, Page, pdfjs } from "react-pdf";
-import "react-pdf/dist/Page/AnnotationLayer.css";
-import "react-pdf/dist/Page/TextLayer.css";
-
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url,
-).toString();
+import { Loader2, Download, FileText } from "lucide-react";
 
 const consentFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -43,21 +35,7 @@ export default function ConsentFormModal({ open, onOpenChange, applicationId }: 
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [numPages, setNumPages] = useState<number | null>(null);
-  const [pageNumber, setPageNumber] = useState(1);
   const [pdfLoadError, setPdfLoadError] = useState(false);
-
-  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
-    setNumPages(numPages);
-    setPdfLoadError(false);
-  }
-
-  function onDocumentLoadError() {
-    setPdfLoadError(true);
-  }
-
-  const goToPrevPage = () => setPageNumber((prev) => Math.max(prev - 1, 1));
-  const goToNextPage = () => setPageNumber((prev) => Math.min(prev + 1, numPages || 1));
 
   const form = useForm<ConsentFormData>({
     resolver: zodResolver(consentFormSchema),
@@ -236,7 +214,7 @@ export default function ConsentFormModal({ open, onOpenChange, applicationId }: 
                 <div className="flex flex-col items-center justify-center h-[400px] text-center p-4">
                   <FileText className="h-12 w-12 text-muted-foreground mb-4" />
                   <p className="text-sm text-muted-foreground">
-                    Unable to load PDF preview. The template will be filled with your details when you generate the PDF below.
+                    Unable to load PDF preview in your browser. Click below to download or view the template.
                   </p>
                   <Button
                     type="button"
@@ -251,48 +229,12 @@ export default function ConsentFormModal({ open, onOpenChange, applicationId }: 
                 </div>
               ) : (
                 <div className="flex flex-col items-center">
-                  <Document
-                    file="/api/download-template/rss-application"
-                    onLoadSuccess={onDocumentLoadSuccess}
-                    onLoadError={onDocumentLoadError}
-                    loading={
-                      <div className="flex items-center justify-center h-[400px]">
-                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                      </div>
-                    }
-                  >
-                    <Page 
-                      pageNumber={pageNumber} 
-                      width={600}
-                      renderTextLayer={true}
-                      renderAnnotationLayer={true}
-                    />
-                  </Document>
-                  {numPages && numPages > 1 && (
-                    <div className="flex items-center gap-4 py-3 border-t w-full justify-center bg-white dark:bg-gray-800">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={goToPrevPage}
-                        disabled={pageNumber <= 1}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      <span className="text-sm text-muted-foreground">
-                        Page {pageNumber} of {numPages}
-                      </span>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={goToNextPage}
-                        disabled={pageNumber >= numPages}
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
+                  <iframe
+                    src="/api/download-template/rss-application"
+                    className="w-full h-[500px] border-0"
+                    title="RSS Application Form Preview"
+                    onError={() => setPdfLoadError(true)}
+                  />
                 </div>
               )}
             </div>

@@ -5,7 +5,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { supabase } from "@/lib/supabase";
-import { useRoute } from "wouter";
+import { useRoute, useLocation } from "wouter";
 import type { GrantApplication } from "@shared/schema";
 import Sidebar from "@/components/sidebar";
 import TopBar from "@/components/top-bar";
@@ -24,6 +24,7 @@ export default function GrantApplication() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
   const [, params] = useRoute("/application/:id");
+  const [, navigate] = useLocation();
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [signatureModalOpen, setSignatureModalOpen] = useState(false);
   const [agriculturalFormOpen, setAgriculturalFormOpen] = useState(false);
@@ -146,8 +147,9 @@ export default function GrantApplication() {
         title: "Application Deleted",
         description: "Your application has been deleted successfully.",
       });
-      // Redirect to home after deletion
-      window.location.href = "/";
+      // Invalidate applications cache and use client-side navigation (no full page reload)
+      queryClient.invalidateQueries({ queryKey: ["/api/grant-applications"] });
+      navigate("/");
     },
     onError: (error) => {
       if (isUnauthorizedError(error)) {

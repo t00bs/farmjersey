@@ -126,7 +126,11 @@ export function useAuth() {
             clearCachedProfile();
             setUser(null);
             setSupabaseUser(null);
+          } else if (event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+            // For token refresh and initial session, skip network call if cache is fresh
+            await fetchUserProfile(session.user.id, 0, true);
           } else {
+            // For other events like SIGNED_IN, USER_UPDATED, fetch fresh data
             await fetchUserProfile(session.user.id);
           }
         } else {
@@ -146,8 +150,17 @@ export function useAuth() {
     return () => subscription.unsubscribe();
   }, []);
 
-  async function fetchUserProfile(userId: string, retryCount = 0) {
+  async function fetchUserProfile(userId: string, retryCount = 0, skipIfCached = false) {
     const maxRetries = 2;
+    
+    // If skipIfCached is true and we have a fresh cache, skip the network call
+    if (skipIfCached) {
+      const cached = getCachedProfile(userId);
+      if (cached) {
+        setUser(cached);
+        return;
+      }
+    }
     
     try {
       // Wrap the query with a 10-second timeout

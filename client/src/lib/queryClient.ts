@@ -33,10 +33,11 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   }
   
   // Add timeout protection for getSession to prevent long waits
+  // Use short timeout (2s) since we have cached token as fallback
   try {
     const sessionPromise = supabase.auth.getSession();
     const timeoutPromise = new Promise<null>((_, reject) => 
-      setTimeout(() => reject(new Error('Session fetch timeout')), 5000)
+      setTimeout(() => reject(new Error('Session fetch timeout')), 2000)
     );
     
     const result = await Promise.race([sessionPromise, timeoutPromise]);

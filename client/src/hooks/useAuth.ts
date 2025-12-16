@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, isFatalAuthError, handleFatalAuthError } from '@/lib/supabase';
 import type { User } from '@supabase/supabase-js';
 
 interface UserProfile {
@@ -85,7 +85,14 @@ export function useAuth() {
     // Get initial session
     const initializeAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        // Check for fatal auth errors (e.g., refresh_token_not_found)
+        if (error && isFatalAuthError(error)) {
+          await handleFatalAuthError();
+          return;
+        }
+        
         if (session?.user) {
           setSupabaseUser(session.user);
           
@@ -104,8 +111,13 @@ export function useAuth() {
           setSupabaseUser(null);
           clearCachedProfile();
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error initializing auth:', error);
+        // Check for fatal auth errors
+        if (isFatalAuthError(error)) {
+          await handleFatalAuthError();
+          return;
+        }
         setUser(null);
         setSupabaseUser(null);
       } finally {

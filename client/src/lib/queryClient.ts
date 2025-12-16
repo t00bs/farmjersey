@@ -1,5 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
-import { supabase } from "./supabase";
+import { supabase, isFatalAuthError, handleFatalAuthError } from "./supabase";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -41,12 +41,23 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
     
     const result = await Promise.race([sessionPromise, timeoutPromise]);
     
+    // Check for fatal auth errors
+    if (result && 'error' in result && result.error && isFatalAuthError(result.error)) {
+      await handleFatalAuthError();
+      return headers;
+    }
+    
     if (result && 'data' in result && result.data.session?.access_token) {
       cachedAccessToken = result.data.session.access_token;
       tokenExpiresAt = result.data.session.expires_at ? result.data.session.expires_at * 1000 : null;
       headers['Authorization'] = `Bearer ${result.data.session.access_token}`;
     }
-  } catch (error) {
+  } catch (error: any) {
+    // Check for fatal auth errors
+    if (isFatalAuthError(error)) {
+      await handleFatalAuthError();
+      return headers;
+    }
     console.warn('Auth headers fetch timed out or failed, using cached token if available');
     // If we have an expired cached token, still try to use it
     if (cachedAccessToken) {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mail, Lock, User, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Loader2, Mail, Lock, User, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
 import logoPath from "@assets/FJ Brand Logo_1759502325451.png";
 
 export default function AuthPage() {
@@ -21,16 +21,24 @@ export default function AuthPage() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [signupComplete, setSignupComplete] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const { toast } = useToast();
 
-  // Check for invitation token in URL
-  useState(() => {
+  // Check for invitation token and session expired flag in URL
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
     if (token) {
       setInvitationToken(token);
     }
-  });
+    
+    // Check if redirected due to session expiry
+    if (params.get('session_expired') === 'true') {
+      setSessionExpired(true);
+      // Clear the URL parameter without reload
+      window.history.replaceState({}, '', '/auth');
+    }
+  }, []);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -235,6 +243,15 @@ export default function AuthPage() {
         <div className="flex justify-center mb-6">
           <img src={logoPath} alt="Rural Support Scheme Logo" className="w-40 object-contain" data-testid="img-logo" />
         </div>
+        {sessionExpired && (
+          <Alert className="mb-4 border-amber-200 bg-amber-50">
+            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-amber-800">
+              Your session has expired. Please sign in again to continue.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <Card className="bg-transparent border-0 shadow-none">
         <CardContent className="p-0">
           <Tabs defaultValue={invitationToken ? "signup" : "signin"} className="w-full">

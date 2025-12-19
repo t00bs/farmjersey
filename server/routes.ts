@@ -1773,7 +1773,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(404).json({ message: "Template file not found" });
         }
         
-        res.download(templatePath, "Land_Declaration_2024_for_2025.xlsx", (error) => {
+        res.download(templatePath, "Land_Declaration_2025_for_2026.xlsx", (error) => {
           if (error) {
             console.error("Error serving template download:", error);
             if (!res.headersSent) {

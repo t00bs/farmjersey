@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -741,6 +742,26 @@ function UsersTab() {
     },
   });
 
+  const deleteUserMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest("DELETE", `/api/admin/users/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({
+        title: "User Deleted",
+        description: "User has been permanently deleted.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete user",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleRoleToggle = (user: UserType) => {
     const newRole = user.role === 'admin' ? 'user' : 'admin';
     updateRoleMutation.mutate({ id: user.id, role: newRole });
@@ -822,25 +843,56 @@ function UsersTab() {
                       {currentUser?.id === user.id ? (
                         <span className="text-sm text-gray-500 italic">Current user</span>
                       ) : (
-                        <Button
-                          variant={user.role === 'admin' ? "outline" : "default"}
-                          size="sm"
-                          onClick={() => handleRoleToggle(user)}
-                          disabled={updateRoleMutation.isPending}
-                          data-testid={`button-toggle-role-${user.id}`}
-                        >
-                          {user.role === 'admin' ? (
-                            <>
-                              <ShieldOff className="h-4 w-4 mr-1" />
-                              Demote
-                            </>
-                          ) : (
-                            <>
-                              <Shield className="h-4 w-4 mr-1" />
-                              Promote
-                            </>
-                          )}
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant={user.role === 'admin' ? "outline" : "default"}
+                            size="sm"
+                            onClick={() => handleRoleToggle(user)}
+                            disabled={updateRoleMutation.isPending}
+                            data-testid={`button-toggle-role-${user.id}`}
+                          >
+                            {user.role === 'admin' ? (
+                              <>
+                                <ShieldOff className="h-4 w-4 mr-1" />
+                                Demote
+                              </>
+                            ) : (
+                              <>
+                                <Shield className="h-4 w-4 mr-1" />
+                                Promote
+                              </>
+                            )}
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={deleteUserMutation.isPending}
+                                data-testid={`button-delete-user-${user.id}`}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-600" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete User</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to permanently delete this user? This will remove their account and all associated data. This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteUserMutation.mutate(user.id)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       )}
                     </TableCell>
                   </TableRow>

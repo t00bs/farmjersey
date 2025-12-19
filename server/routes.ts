@@ -1058,17 +1058,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "You cannot delete yourself" });
       }
       
+      // Check if user exists in our database
+      const existingUser = await storage.getUser(id);
+      if (!existingUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
       // First, delete from Supabase Auth
       const { supabaseAdmin } = await import('./supabase');
       const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(id);
       
-      if (authError) {
+      if (authError && !authError.message?.includes('not found')) {
         console.error("Error deleting user from Supabase Auth:", authError);
-        // Continue anyway to clean up local database
+        return res.status(500).json({ message: "Failed to delete user from authentication system" });
       }
       
-      // Then delete from our database
-      await storage.deleteUser(id);
+      // Delete user's grant applications (this will cascade to related data via foreign keys)
+      const userApplications = await storage.getUserGrantApplications(id);
+      for (const app of userApplications) {
+        await storage.deleteGrantApplication(app.id);
+      }
+      
+      // Delete user from our database
+      const deleted = await storage.deleteUser(id);
+      if (!deleted) {
+        return res.status(500).json({ message: "Failed to delete user from database" });
+      }
       
       res.json({ message: "User deleted successfully" });
     } catch (error) {

@@ -33,16 +33,16 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   }
   
   // Add timeout protection for getSession to prevent long waits
-  // Use short timeout (2s) since we have cached token as fallback
+  // Use 5s timeout - Supabase can be slow in some regions
   try {
     const sessionPromise = supabase.auth.getSession();
     const timeoutPromise = new Promise<null>((_, reject) => 
-      setTimeout(() => reject(new Error('Session fetch timeout')), 2000)
+      setTimeout(() => reject(new Error('Session fetch timeout')), 5000)
     );
     
     const result = await Promise.race([sessionPromise, timeoutPromise]);
     
-    // Check for fatal auth errors
+    // Only check for explicit fatal auth errors (not timeouts or network issues)
     if (result && 'error' in result && result.error && isFatalAuthError(result.error)) {
       await handleFatalAuthError();
       return headers;
@@ -52,15 +52,20 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
       cachedAccessToken = result.data.session.access_token;
       tokenExpiresAt = result.data.session.expires_at ? result.data.session.expires_at * 1000 : null;
       headers['Authorization'] = `Bearer ${result.data.session.access_token}`;
+    } else if (cachedAccessToken) {
+      // No new session but we have a cached token - use it anyway
+      // This handles cases where getSession returns null but token might still be valid
+      headers['Authorization'] = `Bearer ${cachedAccessToken}`;
     }
   } catch (error: any) {
-    // Check for fatal auth errors
+    // Only trigger logout for explicit auth errors, NOT for timeouts or network issues
     if (isFatalAuthError(error)) {
       await handleFatalAuthError();
       return headers;
     }
-    console.warn('Auth headers fetch timed out or failed, using cached token if available');
-    // If we have an expired cached token, still try to use it
+    
+    // Timeouts and network errors: keep using cached token, don't log out
+    console.warn('Session refresh timed out or failed, continuing with cached token');
     if (cachedAccessToken) {
       headers['Authorization'] = `Bearer ${cachedAccessToken}`;
     }

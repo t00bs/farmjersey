@@ -1,0 +1,77 @@
+Summary of the issue
+Title: RLS references user metadata
+Location: public.agricultural_form_templates (schema: public)
+Problem: An RLS policy named "Admins can delete templates" references Supabase Auth user_metadata.
+Why it's a problem: user_metadata is part of the JWT that can be set/modified by end users (or client-side operations) and therefore cannot be trusted for authorization decisions. Using it in RLS policies lets a user escalate privileges by altering their metadata, bypassing intended access controls.
+Risks
+Privilege escalation: A malicious or compromised client could set a claim in user_metadata that satisfies the RLS condition and perform unauthorized deletes.
+Broken security model: RLS should rely only on server-trusted claims (e.g., sub/auth.uid(), role assigned by server, or custom claims injected/validated by the auth provider) or on database-side relationships (e.g., membership tables).
+Recommended fixes (ordered by safety and best practice)
+Replace user_metadata checks with auth.uid() + DB relationships (recommended)
+
+Create an explicit server-side representation of admin users or roles in the database (e.g., users, user_roles, organization_memberships).
+Use the secure auth.uid() value inside policy expressions and join or subquery against that server-side table.
+Example approach:
+Table: admin_users(user_id uuid primary key, is_admin boolean) or user_roles(user_id uuid, role text)
+Policy: allow DELETE only when (SELECT is_admin FROM admin_users WHERE user_id = (SELECT auth.uid())) = true
+Why: authority is enforced by a database table controlled by administrators (not by client-supplied JWT fields).
+Use verified custom JWT claims issued by your authentication provider (if you need claim-based roles)
+
+If you must rely on JWT claims for roles, set them server-side when issuing tokens (e.g., via an admin-only process that updates a metadata store and issues a refreshed token).
+Reference claims via auth.jwt() ->> 'claim_name' but only if you guarantee the claim is inserted server-side and not editable by clients.
+Validate token issuance flow to ensure claims can't be user-controlled.
+Use the service_role for administrative actions (only from backend)
+
+If deletes are only performed by your backend, perform those operations using the Supabase service_role key which bypasses RLS, but keep such operations strictly in trusted server-side code.
+Do NOT expose service_role to clients.
+If immediate quick mitigation is needed: remove or disable the insecure policy
+
+Temporarily DROP or ALTER the policy to remove references to user_metadata until a secure replacement is implemented.
+Note: changing policies can break intended functionality; test after modifications.
+Concrete SQL examples
+Create admin mapping table:
+
+CREATE TABLE IF NOT EXISTS admin_users (
+  user_id uuid PRIMARY KEY,
+  is_admin boolean NOT NULL DEFAULT true
+);
+Example secure DELETE policy using auth.uid():
+
+-- Ensure RLS is enabled on the target table
+ALTER TABLE public.agricultural_form_templates ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Admins can delete templates" ON public.agricultural_form_templates
+  FOR DELETE
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.admin_users
+      WHERE user_id = (SELECT auth.uid())
+        AND is_admin = true
+    )
+  );
+If using server-issued claim 'role' (only if server-controlled):
+
+CREATE POLICY "Admins can delete templates (jwt role)"
+  ON public.agricultural_form_templates
+  FOR DELETE
+  TO authenticated
+  USING (
+    (auth.jwt() ->> 'role') = 'admin'
+  );
+Important: Only acceptable if the 'role' claim is set by a trusted server and not modifiable by end users.
+
+Validation & testing steps
+Confirm RLS enabled on the table: ALTER TABLE ... ENABLE ROW LEVEL SECURITY; (if not already).
+Add the admin mapping table and populate with a known admin user_id.
+Create the new policy and test:
+Log in as an admin user and attempt delete — should succeed.
+Log in as a non-admin user and attempt delete — should fail.
+Run tests from both client and backend to ensure functionality and that the insecure policy no longer applies.
+Audit other RLS policies across the database for any additional usage of user_metadata and apply the same fixes.
+Final notes
+Do not use user_metadata in any RLS policy. Treat JWT-supplied user metadata as untrusted.
+Prefer server-controlled roles or database-side mappings joined against auth.uid() for authorization checks.
+If you want, I can:
+Provide the exact SQL to drop the insecure policy and create the secure replacement (I will run it only after your confirmation), or
+Scan other policies for similar issues if you provide permission to list policies.

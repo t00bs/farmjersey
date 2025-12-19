@@ -60,13 +60,40 @@ export const grantApplications = pgTable("grant_applications", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Agricultural Returns
+// Agricultural Returns - Combined form matching RSS Agricultural Return 2026
 export const agriculturalReturns = pgTable("agricultural_returns", {
   id: serial("id").primaryKey(),
   applicationId: integer("application_id").notNull().references(() => grantApplications.id),
+  
+  // Legacy fields (kept for backward compatibility)
   cropData: jsonb("crop_data"), // JSON data for crop details
   landUsage: jsonb("land_usage"), // JSON data for land usage
   totalAcres: integer("total_acres"),
+  
+  // Section B - Financial Return
+  financialData: jsonb("financial_data"), // { produceSalesExport, produceSalesLocal, servicesRental, grantsSupport, otherIncome, totalIncome, wagesSalaries, itis, socialSecurity, propertyRental, allOtherExpenses, tradingProfit }
+  
+  // Section C - Land and Facilities
+  facilitiesData: jsonb("facilities_data"), // { pesticideStoreCount, pesticideStoreAddress, slurryStoreCount, slurryCapacityLitres }
+  
+  // Section D - Farm Livestock
+  livestockData: jsonb("livestock_data"), // { pigs, sheep, goats, chickens, otherFowl, horsesOwned, horsesLivery, donkeysMules, other, otherSpecify }
+  
+  // Section E - Integrated Farm Management Plans (checkboxes)
+  managementPlans: jsonb("management_plans"), // { soilPlan, waterPlan, nutrientPlan, wastePlan, animalHealthPlan, conservationPlan, energyAudit, carbonNetZeroPlan, carbonDataCollection, woodlandPlan, dairyWelfareVet, healthSafetyPlan }
+  
+  // Section G - Tier 3
+  tier3Data: jsonb("tier3_data"), // { eatSafeStars, genuineJerseyMember, greatTasteProducts, farmOpenDays, publicFootpathsMeters, wildlifePonds, wasteRecyclingTonnes }
+  
+  // Section H - Declaration & Signature
+  declarationName: varchar("declaration_name"),
+  declarationDate: timestamp("declaration_date"),
+  declarationSignature: text("declaration_signature"), // Base64 encoded canvas signature
+  
+  // Form completion tracking
+  isComplete: boolean("is_complete").default(false),
+  completedSections: jsonb("completed_sections"), // Track which sections are done
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

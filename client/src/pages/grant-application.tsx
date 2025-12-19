@@ -11,10 +11,9 @@ import Sidebar from "@/components/sidebar";
 import TopBar from "@/components/top-bar";
 import ApplicationSection from "@/components/application-section";
 import FileUploadModal from "@/components/file-upload-modal";
-import ConsentFormModal from "@/components/consent-form-modal";
 import DocumentDisplay from "@/components/document-display";
 import ProgressIndicator from "@/components/progress-indicator";
-import AgriculturalReturnForm from "@/components/agricultural-return-form";
+import AgriculturalReturnWizard from "@/components/agricultural-return-wizard";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -26,7 +25,6 @@ export default function GrantApplication() {
   const [, params] = useRoute("/application/:id");
   const [, navigate] = useLocation();
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  const [signatureModalOpen, setSignatureModalOpen] = useState(false);
   const [agriculturalFormOpen, setAgriculturalFormOpen] = useState(false);
   const [documentModalOpen, setDocumentModalOpen] = useState(false);
   const [uploadType, setUploadType] = useState<"land_declaration" | "supporting_doc">("land_declaration");
@@ -253,15 +251,6 @@ export default function GrantApplication() {
     return "not_started";
   };
 
-  const getConsentFormStatus = (): "not_started" | "in_progress" | "completed" => {
-    if (!application) return "not_started";
-
-    if (application.consentFormCompleted) return "completed";
-    // Check if there's partial signature data
-    if (application.digitalSignature && !application.consentFormCompleted) return "in_progress";
-    return "not_started";
-  };
-
   const getSupportingDocsStatus = (): "not_started" | "in_progress" | "completed" => {
     if (!application) return "not_started";
 
@@ -271,15 +260,9 @@ export default function GrantApplication() {
     return "not_started";
   };
 
-  const handleSign = () => {
-    if (isReadOnly && !application?.consentFormCompleted) return;
-    setSignatureModalOpen(true);
-  };
-
   const isApplicationComplete = application && 
     application.agriculturalReturnCompleted && 
     application.landDeclarationCompleted && 
-    application.consentFormCompleted && 
     application.supportingDocsCompleted;
 
   if (isLoading || applicationLoading) {
@@ -399,20 +382,6 @@ export default function GrantApplication() {
             />
 
             <ApplicationSection
-              title="Declaration and Consent Form"
-              description="Digital signature required for terms and conditions agreement"
-              status={getConsentFormStatus()}
-              iconType="signature"
-              requiresSignature
-              disabled={isReadOnly && !application?.consentFormCompleted}
-              primaryAction={{
-                label: application?.consentFormCompleted ? "View" : "Sign",
-                onClick: handleSign,
-                variant: "secondary",
-              }}
-            />
-
-            <ApplicationSection
               title="Supporting Documentation"
               description="Upload additional documents like land certificates, bank statements"
               status={getSupportingDocsStatus()}
@@ -500,32 +469,19 @@ export default function GrantApplication() {
         applicationId={applicationId!}
         documentType={uploadType}
       />
-      <ConsentFormModal
-        open={signatureModalOpen}
-        onOpenChange={setSignatureModalOpen}
-        applicationId={applicationId!}
-      />
       <DocumentDisplay
         open={documentModalOpen}
         onOpenChange={setDocumentModalOpen}
         applicationId={applicationId!}
       />
       <Dialog open={agriculturalFormOpen} onOpenChange={setAgriculturalFormOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Agricultural Return Form</DialogTitle>
-            <DialogDescription>
-              Complete your annual agricultural return with crop details and land usage information.
-            </DialogDescription>
-          </DialogHeader>
-          <AgriculturalReturnForm
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <AgriculturalReturnWizard
             applicationId={applicationId!}
+            readOnly={isReadOnly}
             onComplete={() => {
               setAgriculturalFormOpen(false);
-              toast({
-                title: "Agricultural Return Completed",
-                description: "Your agricultural return form has been saved successfully.",
-              });
+              queryClient.invalidateQueries({ queryKey: ["/api/grant-applications"] });
             }}
           />
         </DialogContent>

@@ -1561,26 +1561,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Agricultural Return routes
   app.post("/api/agricultural-returns", isAuthenticated, async (req: any, res) => {
     try {
-      const returnData = insertAgriculturalReturnSchema.parse(req.body);
+      const createData = req.body;
+      
+      // Validate required field
+      if (!createData.applicationId || typeof createData.applicationId !== 'number') {
+        return res.status(400).json({ message: "Valid applicationId is required" });
+      }
       
       // Verify user owns the application
-      const application = await storage.getGrantApplication(returnData.applicationId);
+      const application = await storage.getGrantApplication(createData.applicationId);
       if (!application || application.userId !== req.user.id) {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
+      const returnData = {
+        applicationId: createData.applicationId,
+        financialData: createData.financialData || null,
+        facilitiesData: createData.facilitiesData || null,
+        livestockData: createData.livestockData || null,
+        managementPlans: createData.managementPlans || null,
+        tier3Data: createData.tier3Data || null,
+        declarationName: createData.declarationName || null,
+        declarationDate: createData.declarationDate ? new Date(createData.declarationDate) : null,
+        declarationSignature: createData.declarationSignature || null,
+        isComplete: !!createData.isComplete,
+        completedSections: createData.completedSections || null,
+      };
+      
       const agriculturalReturn = await storage.createAgriculturalReturn(returnData);
       
-      // Update application progress
-      const progressPercentage = await calculateProgress({
-        ...application,
-        agriculturalReturnCompleted: true,
-      });
-      
-      await storage.updateGrantApplication(returnData.applicationId, {
-        agriculturalReturnCompleted: true,
-        progressPercentage,
-      });
+      // Update application progress if the return is marked complete
+      if (createData.isComplete) {
+        const progressPercentage = await calculateProgress({
+          ...application,
+          agriculturalReturnCompleted: true,
+        });
+        
+        await storage.updateGrantApplication(createData.applicationId, {
+          agriculturalReturnCompleted: true,
+          progressPercentage,
+        });
+      }
       
       res.json(agriculturalReturn);
     } catch (error) {
@@ -1606,6 +1627,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching agricultural return:", error);
       res.status(500).json({ message: "Failed to fetch agricultural return" });
+    }
+  });
+
+  app.put("/api/agricultural-returns/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const returnId = parseInt(req.params.id);
+      const updateData = req.body;
+      
+      // Validate required field
+      if (!updateData.applicationId || typeof updateData.applicationId !== 'number') {
+        return res.status(400).json({ message: "Valid applicationId is required" });
+      }
+      
+      // Get the existing agricultural return to verify ownership
+      const existingReturn = await storage.getAgriculturalReturnByApplicationId(updateData.applicationId);
+      if (!existingReturn || existingReturn.id !== returnId) {
+        return res.status(404).json({ message: "Agricultural return not found" });
+      }
+      
+      // Verify user owns the application
+      const application = await storage.getGrantApplication(updateData.applicationId);
+      if (!application || application.userId !== req.user.id) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      const updatedReturn = await storage.updateAgriculturalReturn(returnId, {
+        financialData: updateData.financialData || null,
+        facilitiesData: updateData.facilitiesData || null,
+        livestockData: updateData.livestockData || null,
+        managementPlans: updateData.managementPlans || null,
+        tier3Data: updateData.tier3Data || null,
+        declarationName: updateData.declarationName || null,
+        declarationDate: updateData.declarationDate ? new Date(updateData.declarationDate) : null,
+        declarationSignature: updateData.declarationSignature || null,
+        isComplete: !!updateData.isComplete,
+        completedSections: updateData.completedSections || null,
+      });
+      
+      // Update application progress if the return is marked complete
+      if (updateData.isComplete) {
+        const progressPercentage = await calculateProgress({
+          ...application,
+          agriculturalReturnCompleted: true,
+        });
+        
+        await storage.updateGrantApplication(updateData.applicationId, {
+          agriculturalReturnCompleted: true,
+          progressPercentage,
+        });
+      }
+      
+      res.json(updatedReturn);
+    } catch (error) {
+      console.error("Error updating agricultural return:", error);
+      res.status(500).json({ message: "Failed to update agricultural return" });
     }
   });
 

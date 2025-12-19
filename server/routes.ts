@@ -1048,6 +1048,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete user (admin only)
+  app.delete("/api/admin/users/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Prevent admin from deleting themselves
+      if (id === req.user.id) {
+        return res.status(400).json({ message: "You cannot delete yourself" });
+      }
+      
+      // First, delete from Supabase Auth
+      const { supabaseAdmin } = await import('./supabase');
+      const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(id);
+      
+      if (authError) {
+        console.error("Error deleting user from Supabase Auth:", authError);
+        // Continue anyway to clean up local database
+      }
+      
+      // Then delete from our database
+      await storage.deleteUser(id);
+      
+      res.json({ message: "User deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
   // Accept invitation (public route - redirects to signup with token)
   app.get("/api/accept-invitation", async (req: any, res) => {
     try {

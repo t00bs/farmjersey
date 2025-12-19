@@ -33,6 +33,7 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
   updateUserRole(id: string, role: 'admin' | 'user'): Promise<User | undefined>;
+  deleteUser(id: string): Promise<boolean>;
   
   // Grant Application operations
   createGrantApplication(application: InsertGrantApplication): Promise<GrantApplication>;
@@ -159,6 +160,11 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return user;
+  }
+
+  async deleteUser(id: string): Promise<boolean> {
+    const result = await db.delete(users).where(eq(users.id, id));
+    return true;
   }
 
   // Grant Application operations

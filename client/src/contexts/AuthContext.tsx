@@ -197,15 +197,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error: any) {
         console.error('Error initializing auth:', error);
+        // Only clear user state for fatal auth errors
         if (isFatalAuthError(error)) {
           setIsLoading(false);
           await handleFatalAuthError();
           return;
         }
-        if (mounted) {
-          setUser(null);
-          setSupabaseUser(null);
-        }
+        // For non-fatal errors (timeouts, network issues), keep existing state
+        // Don't clear user if we already have a cached profile - just log and continue
+        console.warn('Auth initialization had non-fatal error, keeping existing session state');
       } finally {
         // Always ensure loading is set to false
         if (mounted) {

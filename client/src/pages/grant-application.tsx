@@ -18,7 +18,7 @@ import AgriculturalReturnForm from "@/components/agricultural-return-form";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { InfoIcon, Save, Send, Trash2 } from "lucide-react";
+import { InfoIcon, Save, Send, Trash2, ExternalLink } from "lucide-react";
 
 export default function GrantApplication() {
   const { toast } = useToast();
@@ -353,6 +353,17 @@ export default function GrantApplication() {
                 className="text-right"
               />
             </div>
+            
+            <a 
+              href="/api/download-template/rss-guidance" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex items-center text-sm text-primary-custom hover:underline"
+              data-testid="link-download-guidance"
+            >
+              <ExternalLink className="w-4 h-4 mr-1" />
+              Download Rural Support Scheme Guidance
+            </a>
           </div>
 
           {/* Application Sections Grid */}

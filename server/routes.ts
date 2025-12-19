@@ -1781,6 +1781,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
         });
+      } else if (templateType === "rss-guidance") {
+        // Serve the Rural Support Scheme Guidance PDF
+        const templatePath = path.join("templates", "rural-support-scheme-guidance.pdf");
+        
+        if (!fs.existsSync(templatePath)) {
+          console.error("RSS guidance document not found:", templatePath);
+          return res.status(404).json({ message: "Guidance document not found" });
+        }
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'inline; filename="Rural_Support_Scheme_Guidance_2026.pdf"');
+        res.sendFile(path.resolve(templatePath), (error) => {
+          if (error) {
+            console.error("Error serving guidance document:", error);
+            if (!res.headersSent) {
+              res.status(500).json({ message: "Failed to serve guidance document" });
+            }
+          }
+        });
       } else if (templateType === "rss-application") {
         // Serve the PDF template for RSS application
         const templatePath = path.join("templates", "rss-application-template.pdf");

@@ -1576,6 +1576,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const returnData = {
         applicationId: createData.applicationId,
+        farmDetailsData: createData.farmDetailsData || null,
         financialData: createData.financialData || null,
         facilitiesData: createData.facilitiesData || null,
         livestockData: createData.livestockData || null,
@@ -1653,6 +1654,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const updatedReturn = await storage.updateAgriculturalReturn(returnId, {
+        farmDetailsData: updateData.farmDetailsData || null,
         financialData: updateData.financialData || null,
         facilitiesData: updateData.facilitiesData || null,
         livestockData: updateData.livestockData || null,

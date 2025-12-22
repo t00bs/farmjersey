@@ -70,6 +70,9 @@ export const agriculturalReturns = pgTable("agricultural_returns", {
   landUsage: jsonb("land_usage"), // JSON data for land usage
   totalAcres: integer("total_acres"),
   
+  // Section A - Farm Details
+  farmDetailsData: jsonb("farm_details_data"), // { farmName, addressLine1, addressLine2, parish, postcode, telephone, email }
+  
   // Section B - Financial Return
   financialData: jsonb("financial_data"), // { produceSalesExport, produceSalesLocal, servicesRental, grantsSupport, otherIncome, totalIncome, wagesSalaries, itis, socialSecurity, propertyRental, allOtherExpenses, tradingProfit }
   

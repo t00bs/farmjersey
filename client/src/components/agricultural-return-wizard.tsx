@@ -22,6 +22,16 @@ interface AgriculturalReturnWizardProps {
   readOnly?: boolean;
 }
 
+const farmDetailsSchema = z.object({
+  farmName: z.string().optional(),
+  addressLine1: z.string().optional(),
+  addressLine2: z.string().optional(),
+  parish: z.string().optional(),
+  postcode: z.string().optional(),
+  telephone: z.string().optional(),
+  email: z.string().optional(),
+});
+
 const financialSchema = z.object({
   produceSalesExport: z.string().optional(),
   produceSalesLocal: z.string().optional(),
@@ -88,6 +98,7 @@ const declarationSchema = z.object({
 });
 
 const combinedSchema = z.object({
+  farmDetails: farmDetailsSchema,
   financial: financialSchema,
   facilities: facilitiesSchema,
   livestock: livestockSchema,
@@ -99,6 +110,7 @@ const combinedSchema = z.object({
 type CombinedFormData = z.infer<typeof combinedSchema>;
 
 const STEPS = [
+  { id: "farmDetails", title: "Section A - Farm Details", description: "Update your farm name and contact information" },
   { id: "financial", title: "Section B - Financial Return", description: "Income and expenditure details for 2025" },
   { id: "facilities", title: "Section C - Land and Facilities", description: "Pesticide stores and slurry storage information" },
   { id: "livestock", title: "Section D - Farm Livestock", description: "Number of livestock you own or keep" },
@@ -117,6 +129,7 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
   const form = useForm<CombinedFormData>({
     resolver: zodResolver(combinedSchema),
     defaultValues: {
+      farmDetails: {},
       financial: {},
       facilities: {},
       livestock: {},
@@ -163,6 +176,7 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
   useEffect(() => {
     if (existingReturn) {
       const formData: Partial<CombinedFormData> = {
+        farmDetails: existingReturn.farmDetailsData || {},
         financial: existingReturn.financialData || {},
         facilities: existingReturn.facilitiesData || {},
         livestock: existingReturn.livestockData || {},
@@ -200,6 +214,7 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
     mutationFn: async (data: CombinedFormData & { signature: string | null; isComplete: boolean }) => {
       const payload = {
         applicationId,
+        farmDetailsData: data.farmDetails,
         financialData: data.financial,
         facilitiesData: data.facilities,
         livestockData: data.livestock,
@@ -210,6 +225,7 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
         declarationSignature: data.signature,
         isComplete: data.isComplete,
         completedSections: {
+          farmDetails: true,
           financial: true,
           facilities: true,
           livestock: true,
@@ -379,6 +395,111 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
       </Card>
     );
   }
+
+  const renderFarmDetailsSection = () => (
+    <div className="space-y-6">
+      <p className="text-sm text-muted-foreground">
+        Please verify and update your farm details if any information has changed.
+      </p>
+      
+      <div className="space-y-4">
+        <FormField
+          control={form.control}
+          name="farmDetails.farmName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Farm Name</FormLabel>
+              <FormControl>
+                <Input type="text" placeholder="Enter your farm name" {...field} disabled={readOnly} data-testid="input-farm-name" />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="farmDetails.addressLine1"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Address Line 1</FormLabel>
+              <FormControl>
+                <Input type="text" placeholder="Street address" {...field} disabled={readOnly} data-testid="input-address-line1" />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="farmDetails.addressLine2"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Address Line 2</FormLabel>
+              <FormControl>
+                <Input type="text" placeholder="Additional address (optional)" {...field} disabled={readOnly} data-testid="input-address-line2" />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="farmDetails.parish"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Parish</FormLabel>
+                <FormControl>
+                  <Input type="text" placeholder="Parish" {...field} disabled={readOnly} data-testid="input-parish" />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="farmDetails.postcode"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Postcode</FormLabel>
+                <FormControl>
+                  <Input type="text" placeholder="JE1 1AA" {...field} disabled={readOnly} data-testid="input-postcode" />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="farmDetails.telephone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Telephone</FormLabel>
+                <FormControl>
+                  <Input type="tel" placeholder="01234 567890" {...field} disabled={readOnly} data-testid="input-telephone" />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="farmDetails.email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input type="email" placeholder="email@example.com" {...field} disabled={readOnly} data-testid="input-email" />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </div>
+      </div>
+    </div>
+  );
 
   const renderFinancialSection = () => (
     <div className="space-y-6">
@@ -985,16 +1106,18 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
   const renderCurrentStep = () => {
     switch (currentStep) {
       case 0:
-        return renderFinancialSection();
+        return renderFarmDetailsSection();
       case 1:
-        return renderFacilitiesSection();
+        return renderFinancialSection();
       case 2:
-        return renderLivestockSection();
+        return renderFacilitiesSection();
       case 3:
-        return renderManagementSection();
+        return renderLivestockSection();
       case 4:
-        return renderTier3Section();
+        return renderManagementSection();
       case 5:
+        return renderTier3Section();
+      case 6:
         return renderDeclarationSection();
       default:
         return null;

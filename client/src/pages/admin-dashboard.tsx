@@ -16,7 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
-import { Eye, FileText, Calendar, User, Users, AlertTriangle, CheckCircle, FormInput, Download, CalendarDays, Mail, Trash2, Loader2, Shield, ShieldOff } from "lucide-react";
+import { Eye, FileText, Calendar, User, Users, AlertTriangle, CheckCircle, Download, CalendarDays, Mail, Trash2, Loader2, Shield, ShieldOff } from "lucide-react";
 import { format } from "date-fns";
 import { DateRange } from "react-day-picker";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -194,12 +194,6 @@ function AdminDashboardContent() {
                 <p className="text-gray-600 dark:text-gray-300 mt-2">
                   Review and manage grant applications
                 </p>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => window.location.href = '/admin/form-builder'}>
-                  <FormInput className="h-4 w-4 mr-2" />
-                  Form Builder
-                </Button>
               </div>
             </div>
 

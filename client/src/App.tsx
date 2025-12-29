@@ -8,7 +8,6 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import GrantApplication from "@/pages/grant-application";
 import AdminDashboard from "@/pages/admin-dashboard";
-import AgriculturalFormBuilder from "@/pages/agricultural-form-builder";
 import AuthPage from "@/pages/auth";
 import Settings from "@/pages/settings";
 import ResetPasswordPage from "@/pages/reset-password";
@@ -37,7 +36,6 @@ function Router() {
         <>
           <Route path="/auth" component={Dashboard} />
           <Route path="/settings" component={Settings} />
-          <Route path="/admin/form-builder" component={AgriculturalFormBuilder} />
           <Route path="/admin-dashboard" component={AdminDashboard} />
           <Route path="/admin" component={AdminDashboard} />
           <Route path="/application/:id" component={GrantApplication} />

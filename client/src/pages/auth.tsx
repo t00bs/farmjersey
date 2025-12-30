@@ -16,7 +16,6 @@ export default function AuthPage() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [loading, setLoading] = useState(false);
-  const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [invitationToken, setInvitationToken] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
@@ -174,36 +173,6 @@ export default function AuthPage() {
     }
   };
 
-  const handleMagicLink = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: window.location.origin,
-        },
-      });
-
-      if (error) throw error;
-
-      setMagicLinkSent(true);
-      toast({
-        title: 'Magic Link Sent',
-        description: 'Check your email for a sign-in link.',
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Failed',
-        description: error.message || 'Failed to send magic link',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -255,10 +224,9 @@ export default function AuthPage() {
         <Card className="bg-transparent border-0 shadow-none">
         <CardContent className="p-0">
           <Tabs defaultValue={invitationToken ? "signup" : "signin"} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin" data-testid="tab-signin">Sign In</TabsTrigger>
               <TabsTrigger value="signup" data-testid="tab-signup">Sign Up</TabsTrigger>
-              <TabsTrigger value="magic" data-testid="tab-magic">Magic Link</TabsTrigger>
             </TabsList>
 
             {/* Sign In Tab */}
@@ -504,47 +472,6 @@ export default function AuthPage() {
               )}
             </TabsContent>
 
-            {/* Magic Link Tab */}
-            <TabsContent value="magic" className="min-h-[280px]">
-              {magicLinkSent ? (
-                <Alert>
-                  <AlertDescription>
-                    Check your email! We've sent you a magic link to sign in.
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <form onSubmit={handleMagicLink} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="magic-email">Email</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="magic-email"
-                        type="email"
-                        placeholder="your.email@example.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10"
-                        required
-                        data-testid="input-magic-email"
-                      />
-                    </div>
-                  </div>
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={loading}
-                    data-testid="button-magic-link"
-                  >
-                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Send Magic Link
-                  </Button>
-                  <p className="text-sm text-gray-500 text-center">
-                    No password needed. We'll send you a link to sign in.
-                  </p>
-                </form>
-              )}
-            </TabsContent>
           </Tabs>
         </CardContent>
       </Card>

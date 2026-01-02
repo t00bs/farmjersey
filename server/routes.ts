@@ -756,6 +756,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoint to get agricultural return data for an application
+  app.get("/api/admin/applications/:applicationId/agricultural-return", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const applicationId = parseInt(req.params.applicationId);
+      
+      if (!Number.isInteger(applicationId) || applicationId <= 0) {
+        return res.status(400).json({ message: "Invalid application ID" });
+      }
+      
+      const agriculturalReturn = await storage.getAgriculturalReturnByApplicationId(applicationId);
+      res.json(agriculturalReturn || null);
+    } catch (error) {
+      console.error("Error fetching agricultural return for admin:", error);
+      res.status(500).json({ message: "Failed to fetch agricultural return" });
+    }
+  });
+
   // Admin-only document download route for CSV links
   app.get("/api/documents/download/:documentId", isAuthenticated, isAdmin, async (req: any, res) => {
     try {

@@ -23,7 +23,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import type { GrantApplication, AgriculturalReturn, Document, ApplicationWithUserData, AgriculturalFormResponse, Invitation, User as UserType } from "@shared/schema";
+import type { GrantApplication, AgriculturalReturn, Document, ApplicationWithUserData, Invitation, User as UserType } from "@shared/schema";
 import Sidebar from "@/components/sidebar";
 import TopBar from "@/components/top-bar";
 
@@ -912,8 +912,8 @@ function ApplicationReviewDialogContent({
     queryKey: [`/api/admin/applications/${application.id}/documents`],
   });
 
-  const { data: agriculturalReturn } = useQuery<AgriculturalFormResponse | null>({
-    queryKey: [`/api/admin/applications/${application.id}/agricultural-response`],
+  const { data: agriculturalReturn } = useQuery<AgriculturalReturn | null>({
+    queryKey: [`/api/admin/applications/${application.id}/agricultural-return`],
     retry: false,
   });
 
@@ -967,31 +967,100 @@ function ApplicationReviewDialogContent({
 
         <TabsContent value="agricultural" className="space-y-4">
           {agriculturalReturn ? (
-            <div className="space-y-4">
-              <h4 className="font-semibold">Agricultural Return Details</h4>
+            <div className="space-y-4 max-h-96 overflow-y-auto">
               <div className="grid grid-cols-2 gap-4 text-sm">
-                <div><strong>Application ID:</strong> {agriculturalReturn.applicationId}</div>
-                <div><strong>Template ID:</strong> {agriculturalReturn.templateId}</div>
                 <div><strong>Status:</strong> {agriculturalReturn.isComplete ? 'Complete' : 'Incomplete'}</div>
-                <div><strong>Submitted:</strong> {agriculturalReturn.submittedAt ? new Date(agriculturalReturn.submittedAt).toLocaleDateString() : 'Draft'}</div>
                 <div><strong>Created:</strong> {agriculturalReturn.createdAt ? new Date(agriculturalReturn.createdAt).toLocaleDateString() : 'Not available'}</div>
-                <div><strong>Updated:</strong> {agriculturalReturn.updatedAt ? new Date(agriculturalReturn.updatedAt).toLocaleDateString() : 'Not available'}</div>
               </div>
-              <div>
-                <h5 className="font-medium">Form Responses:</h5>
-                <div className="mt-2 space-y-2">
-                  {agriculturalReturn.responses && typeof agriculturalReturn.responses === 'object' ? (
-                    Object.entries(agriculturalReturn.responses).map(([key, value]) => (
-                      <div key={key} className="flex justify-between py-1 border-b border-gray-200 dark:border-gray-700">
-                        <span className="font-medium capitalize">{key.replace(/-/g, ' ')}:</span>
-                        <span className="text-gray-700 dark:text-gray-300">{value as string}</span>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-gray-500">No response data available</p>
+
+              {/* Farm Details */}
+              {agriculturalReturn.farmDetailsData && (
+                <div className="border rounded p-3">
+                  <h5 className="font-semibold mb-2 text-primary">Section A: Farm Details</h5>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    {Object.entries(agriculturalReturn.farmDetailsData as Record<string, any>).map(([key, value]) => (
+                      <div key={key}><strong className="capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}:</strong> {String(value || 'N/A')}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Financial Data */}
+              {agriculturalReturn.financialData && (
+                <div className="border rounded p-3">
+                  <h5 className="font-semibold mb-2 text-primary">Section B: Financial Return</h5>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    {Object.entries(agriculturalReturn.financialData as Record<string, any>).map(([key, value]) => (
+                      <div key={key}><strong className="capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}:</strong> {typeof value === 'number' ? `£${value.toLocaleString()}` : String(value || 'N/A')}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Facilities Data */}
+              {agriculturalReturn.facilitiesData && (
+                <div className="border rounded p-3">
+                  <h5 className="font-semibold mb-2 text-primary">Section C: Land and Facilities</h5>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    {Object.entries(agriculturalReturn.facilitiesData as Record<string, any>).map(([key, value]) => (
+                      <div key={key}><strong className="capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}:</strong> {String(value || 'N/A')}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Livestock Data */}
+              {agriculturalReturn.livestockData && (
+                <div className="border rounded p-3">
+                  <h5 className="font-semibold mb-2 text-primary">Section D: Farm Livestock</h5>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    {Object.entries(agriculturalReturn.livestockData as Record<string, any>).map(([key, value]) => (
+                      <div key={key}><strong className="capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}:</strong> {String(value || '0')}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Management Plans */}
+              {agriculturalReturn.managementPlans && (
+                <div className="border rounded p-3">
+                  <h5 className="font-semibold mb-2 text-primary">Section E: Farm Management Plans</h5>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    {Object.entries(agriculturalReturn.managementPlans as Record<string, any>).map(([key, value]) => (
+                      <div key={key}><strong className="capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}:</strong> {value ? 'Yes' : 'No'}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Tier 3 Data */}
+              {agriculturalReturn.tier3Data && (
+                <div className="border rounded p-3">
+                  <h5 className="font-semibold mb-2 text-primary">Section G: Tier 3</h5>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    {Object.entries(agriculturalReturn.tier3Data as Record<string, any>).map(([key, value]) => (
+                      <div key={key}><strong className="capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}:</strong> {String(value || 'N/A')}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Declaration */}
+              {(agriculturalReturn.declarationName || agriculturalReturn.declarationDate) && (
+                <div className="border rounded p-3">
+                  <h5 className="font-semibold mb-2 text-primary">Section H: Declaration</h5>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div><strong>Name:</strong> {agriculturalReturn.declarationName || 'N/A'}</div>
+                    <div><strong>Date:</strong> {agriculturalReturn.declarationDate ? new Date(agriculturalReturn.declarationDate).toLocaleDateString() : 'N/A'}</div>
+                  </div>
+                  {agriculturalReturn.declarationSignature && (
+                    <div className="mt-2">
+                      <strong>Signature:</strong>
+                      <img src={agriculturalReturn.declarationSignature} alt="Signature" className="mt-1 border rounded max-w-xs h-16 bg-white" />
+                    </div>
                   )}
                 </div>
-              </div>
+              )}
             </div>
           ) : (
             <p className="text-gray-500">No agricultural return data available</p>

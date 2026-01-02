@@ -345,29 +345,6 @@ function AdminDashboardContent() {
                         <Download className="mr-2 h-4 w-4" />
                         CSV
                       </Button>
-                      <Button 
-                        variant="outline"
-                        onClick={async () => {
-                          const url = `/api/admin/applications/export/xlsx?${new URLSearchParams({
-                            ...(statusFilter !== "all" && { status: statusFilter }),
-                            ...(dateRange?.from && { startDate: dateRange.from.toISOString() }),
-                            ...(dateRange?.to && { endDate: dateRange.to.toISOString() })
-                          }).toString()}`;
-                          try {
-                            await downloadWithAuth(url, `applications-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
-                          } catch (error: any) {
-                            toast({
-                              title: "Download Failed",
-                              description: error.message || "Failed to download XLSX",
-                              variant: "destructive",
-                            });
-                          }
-                        }}
-                        data-testid="button-download-xlsx"
-                      >
-                        <Download className="mr-2 h-4 w-4" />
-                        XLSX
-                      </Button>
                     </div>
                   </div>
                 </div>

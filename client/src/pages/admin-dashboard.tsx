@@ -253,7 +253,7 @@ function AdminDashboardContent() {
                 <CardDescription>Filter applications by status and date range</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4">
+                <div className="flex flex-col space-y-4 md:flex-row md:items-end md:space-y-0 md:space-x-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Status</label>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>

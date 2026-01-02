@@ -191,49 +191,58 @@ export default function Dashboard() {
                         <div className="flex justify-between text-sm mb-2">
                           <span className="text-gray-600">Progress</span>
                           <span className="font-medium text-primary-custom">
-                            {application.progressPercentage}%
+                            {(application.status === "submitted" || application.status === "approved" || application.status === "rejected") 
+                              ? "100" 
+                              : application.progressPercentage}%
                           </span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
                           <div 
                             className="bg-primary-custom h-2 rounded-full transition-all"
-                            style={{ width: `${application.progressPercentage}%` }}
+                            style={{ width: `${(application.status === "submitted" || application.status === "approved" || application.status === "rejected") ? 100 : application.progressPercentage}%` }}
                           ></div>
                         </div>
                       </div>
 
                       {/* Status Items */}
                       <div className="space-y-2">
-                        <div className="flex items-center space-x-2 text-sm">
-                          {application.agriculturalReturnCompleted ? (
-                            <CheckCircle className="w-4 h-4 text-success-custom" />
-                          ) : (
-                            <Clock className="w-4 h-4 text-gray-400" />
-                          )}
-                          <span className={application.agriculturalReturnCompleted ? "text-success-custom" : "text-gray-600"}>
-                            Agricultural Return
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-2 text-sm">
-                          {application.landDeclarationCompleted ? (
-                            <CheckCircle className="w-4 h-4 text-success-custom" />
-                          ) : (
-                            <Clock className="w-4 h-4 text-gray-400" />
-                          )}
-                          <span className={application.landDeclarationCompleted ? "text-success-custom" : "text-gray-600"}>
-                            Land Declaration
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-2 text-sm">
-                          {application.supportingDocsCompleted ? (
-                            <CheckCircle className="w-4 h-4 text-success-custom" />
-                          ) : (
-                            <Clock className="w-4 h-4 text-gray-400" />
-                          )}
-                          <span className={application.supportingDocsCompleted ? "text-success-custom" : "text-gray-600"}>
-                            Supporting Documents
-                          </span>
-                        </div>
+                        {(() => {
+                          const isFinalized = application.status === "submitted" || application.status === "approved" || application.status === "rejected";
+                          return (
+                            <>
+                              <div className="flex items-center space-x-2 text-sm">
+                                {(isFinalized || application.agriculturalReturnCompleted) ? (
+                                  <CheckCircle className="w-4 h-4 text-success-custom" />
+                                ) : (
+                                  <Clock className="w-4 h-4 text-gray-400" />
+                                )}
+                                <span className={(isFinalized || application.agriculturalReturnCompleted) ? "text-success-custom" : "text-gray-600"}>
+                                  Agricultural Return
+                                </span>
+                              </div>
+                              <div className="flex items-center space-x-2 text-sm">
+                                {(isFinalized || application.landDeclarationCompleted) ? (
+                                  <CheckCircle className="w-4 h-4 text-success-custom" />
+                                ) : (
+                                  <Clock className="w-4 h-4 text-gray-400" />
+                                )}
+                                <span className={(isFinalized || application.landDeclarationCompleted) ? "text-success-custom" : "text-gray-600"}>
+                                  Land Declaration
+                                </span>
+                              </div>
+                              <div className="flex items-center space-x-2 text-sm">
+                                {(isFinalized || application.supportingDocsCompleted) ? (
+                                  <CheckCircle className="w-4 h-4 text-success-custom" />
+                                ) : (
+                                  <Clock className="w-4 h-4 text-gray-400" />
+                                )}
+                                <span className={(isFinalized || application.supportingDocsCompleted) ? "text-success-custom" : "text-gray-600"}>
+                                  Supporting Documents
+                                </span>
+                              </div>
+                            </>
+                          );
+                        })()}
                       </div>
 
                       {/* Action Button */}

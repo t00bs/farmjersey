@@ -392,10 +392,16 @@ function AdminDashboardContent() {
                         <TableCell>{application.year}</TableCell>
                         <TableCell>{getStatusBadge(application.status)}</TableCell>
                         <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Progress value={application.progressPercentage} className="w-16" />
-                            <span className="text-sm">{application.progressPercentage}%</span>
-                          </div>
+                          {(() => {
+                            const isFinalized = application.status === "submitted" || application.status === "approved" || application.status === "rejected";
+                            const displayProgress = isFinalized ? 100 : application.progressPercentage;
+                            return (
+                              <div className="flex items-center space-x-2">
+                                <Progress value={displayProgress} className="w-16" />
+                                <span className="text-sm">{displayProgress}%</span>
+                              </div>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell>
                           {application.createdAt ? new Date(application.createdAt).toLocaleDateString() : 'N/A'}

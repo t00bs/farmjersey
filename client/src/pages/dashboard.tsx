@@ -225,16 +225,6 @@ export default function Dashboard() {
                           </span>
                         </div>
                         <div className="flex items-center space-x-2 text-sm">
-                          {application.consentFormCompleted ? (
-                            <CheckCircle className="w-4 h-4 text-success-custom" />
-                          ) : (
-                            <Clock className="w-4 h-4 text-gray-400" />
-                          )}
-                          <span className={application.consentFormCompleted ? "text-success-custom" : "text-gray-600"}>
-                            Digital Signature
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-2 text-sm">
                           {application.supportingDocsCompleted ? (
                             <CheckCircle className="w-4 h-4 text-success-custom" />
                           ) : (

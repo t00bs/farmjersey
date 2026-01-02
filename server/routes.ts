@@ -1795,8 +1795,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 // Helper functions
 async function calculateProgress(application: any): Promise<number> {
+  // If application is submitted/approved/rejected, return 100%
+  if (application.status === 'submitted' || application.status === 'approved' || application.status === 'rejected') {
+    return 100;
+  }
+  
   let completed = 0;
-  const total = 4; // Total sections
+  const total = 3; // Total sections: Agricultural Return, Land Declaration, Supporting Docs
+  // Note: Digital signature/consent is now part of Agricultural Return
   
   // Check if agricultural return is completed via form response
   // Get the active template first
@@ -1811,19 +1817,23 @@ async function calculateProgress(application: any): Promise<number> {
   }
   
   if (application.landDeclarationCompleted) completed++;
-  if (application.consentFormCompleted) completed++;
   if (application.supportingDocsCompleted) completed++;
   
   return Math.round((completed / total) * 100);
 }
 
 function calculateProgressSync(application: any): number {
+  // If application is submitted/approved/rejected, return 100%
+  if (application.status === 'submitted' || application.status === 'approved' || application.status === 'rejected') {
+    return 100;
+  }
+  
   let completed = 0;
-  const total = 4; // Total sections
+  const total = 3; // Total sections: Agricultural Return, Land Declaration, Supporting Docs
+  // Note: Digital signature/consent is now part of Agricultural Return
   
   if (application.agriculturalReturnCompleted) completed++;
   if (application.landDeclarationCompleted) completed++;
-  if (application.consentFormCompleted) completed++;
   if (application.supportingDocsCompleted) completed++;
   
   return Math.round((completed / total) * 100);

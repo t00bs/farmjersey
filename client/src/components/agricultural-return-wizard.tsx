@@ -126,35 +126,80 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
   const [isDrawing, setIsDrawing] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  const getDefaultFormValues = (): CombinedFormData => ({
+    farmDetails: {
+      farmName: "",
+      addressLine1: "",
+      addressLine2: "",
+      parish: "",
+      postcode: "",
+      telephone: "",
+      email: "",
+    },
+    financial: {
+      produceSalesExport: "",
+      produceSalesLocal: "",
+      servicesRental: "",
+      grantsSupport: "",
+      otherIncome: "",
+      totalIncome: "",
+      wagesSalaries: "",
+      itis: "",
+      socialSecurity: "",
+      propertyRental: "",
+      allOtherExpenses: "",
+      tradingProfit: "",
+    },
+    facilities: {
+      pesticideStoreCount: "",
+      pesticideStoreAddress: "",
+      slurryStoreCount: "",
+      slurryCapacityLitres: "",
+    },
+    livestock: {
+      pigs: "",
+      sheep: "",
+      goats: "",
+      chickens: "",
+      otherFowl: "",
+      horsesOwned: "",
+      horsesLivery: "",
+      donkeysMules: "",
+      other: "",
+      otherSpecify: "",
+    },
+    managementPlans: {
+      soilPlan: false,
+      waterPlan: false,
+      nutrientPlan: false,
+      wastePlan: false,
+      animalHealthPlan: false,
+      conservationPlan: false,
+      energyAudit: false,
+      carbonNetZeroPlan: false,
+      carbonDataCollection: false,
+      woodlandPlan: false,
+      dairyWelfareVet: false,
+      healthSafetyPlan: false,
+    },
+    tier3: {
+      eatSafeStars: "",
+      genuineJerseyMember: false,
+      greatTasteProducts: "",
+      farmOpenDays: "",
+      publicFootpathsMeters: "",
+      wildlifePonds: "",
+      wasteRecyclingTonnes: "",
+    },
+    declaration: {
+      declarationName: "",
+      declarationDate: new Date().toISOString().split('T')[0],
+    },
+  });
+
   const form = useForm<CombinedFormData>({
     resolver: zodResolver(combinedSchema),
-    defaultValues: {
-      farmDetails: {},
-      financial: {},
-      facilities: {},
-      livestock: {},
-      managementPlans: {
-        soilPlan: false,
-        waterPlan: false,
-        nutrientPlan: false,
-        wastePlan: false,
-        animalHealthPlan: false,
-        conservationPlan: false,
-        energyAudit: false,
-        carbonNetZeroPlan: false,
-        carbonDataCollection: false,
-        woodlandPlan: false,
-        dairyWelfareVet: false,
-        healthSafetyPlan: false,
-      },
-      tier3: {
-        genuineJerseyMember: false,
-      },
-      declaration: {
-        declarationName: "",
-        declarationDate: new Date().toISOString().split('T')[0],
-      },
-    },
+    defaultValues: getDefaultFormValues(),
   });
 
   const { data: existingReturn, isLoading: returnLoading } = useQuery({
@@ -175,34 +220,24 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
 
   useEffect(() => {
     if (existingReturn) {
-      const formData: Partial<CombinedFormData> = {
-        farmDetails: existingReturn.farmDetailsData || {},
-        financial: existingReturn.financialData || {},
-        facilities: existingReturn.facilitiesData || {},
-        livestock: existingReturn.livestockData || {},
-        managementPlans: existingReturn.managementPlans || {
-          soilPlan: false,
-          waterPlan: false,
-          nutrientPlan: false,
-          wastePlan: false,
-          animalHealthPlan: false,
-          conservationPlan: false,
-          energyAudit: false,
-          carbonNetZeroPlan: false,
-          carbonDataCollection: false,
-          woodlandPlan: false,
-          dairyWelfareVet: false,
-          healthSafetyPlan: false,
-        },
-        tier3: existingReturn.tier3Data || { genuineJerseyMember: false },
+      const defaults = getDefaultFormValues();
+      
+      // Merge existing data with defaults to ensure no undefined values
+      const formData: CombinedFormData = {
+        farmDetails: { ...defaults.farmDetails, ...(existingReturn.farmDetailsData || {}) },
+        financial: { ...defaults.financial, ...(existingReturn.financialData || {}) },
+        facilities: { ...defaults.facilities, ...(existingReturn.facilitiesData || {}) },
+        livestock: { ...defaults.livestock, ...(existingReturn.livestockData || {}) },
+        managementPlans: { ...defaults.managementPlans, ...(existingReturn.managementPlans || {}) },
+        tier3: { ...defaults.tier3, ...(existingReturn.tier3Data || {}) },
         declaration: {
-          declarationName: existingReturn.declarationName || "",
+          declarationName: existingReturn.declarationName ?? "",
           declarationDate: existingReturn.declarationDate 
             ? new Date(existingReturn.declarationDate).toISOString().split('T')[0]
             : new Date().toISOString().split('T')[0],
         },
       };
-      form.reset(formData as CombinedFormData);
+      form.reset(formData);
       
       if (existingReturn.declarationSignature) {
         setSignature(existingReturn.declarationSignature);

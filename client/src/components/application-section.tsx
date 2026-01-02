@@ -23,6 +23,10 @@ interface ApplicationSectionProps {
     label: string;
     onClick: () => void;
   };
+  templateDownload?: {
+    label: string;
+    onClick: () => void;
+  };
 }
 
 export default function ApplicationSection({
@@ -37,6 +41,7 @@ export default function ApplicationSection({
   disabled = false,
   primaryAction,
   secondaryAction,
+  templateDownload,
 }: ApplicationSectionProps) {
   const getIcon = () => {
     switch (iconType) {
@@ -110,6 +115,17 @@ export default function ApplicationSection({
             {getIcon()}
             <span>{getInfoText()}</span>
           </div>
+        )}
+        
+        {templateDownload && (
+          <button
+            onClick={templateDownload.onClick}
+            className="flex items-center space-x-2 text-sm text-primary-custom hover:underline cursor-pointer"
+            data-testid="button-download-template"
+          >
+            <Download className="w-4 h-4" />
+            <span>{templateDownload.label}</span>
+          </button>
         )}
         
         {secondaryAction ? (

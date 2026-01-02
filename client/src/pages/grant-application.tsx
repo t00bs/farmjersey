@@ -370,6 +370,10 @@ export default function GrantApplication() {
               status={getLandDeclarationStatus()}
               iconType="download"
               requiresTemplate
+              templateDownload={{
+                label: "Download Excel Template",
+                onClick: handleDownloadTemplate,
+              }}
               primaryAction={{
                 label: "View Documents",
                 onClick: () => setDocumentModalOpen(true),

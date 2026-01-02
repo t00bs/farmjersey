@@ -1042,6 +1042,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.deleteGrantApplication(app.id);
       }
       
+      // Delete invitations created by this user (foreign key constraint)
+      const allInvitations = await storage.getInvitations();
+      for (const invitation of allInvitations) {
+        if (invitation.createdBy === id) {
+          await storage.deleteInvitation(invitation.id);
+        }
+      }
+      
       // Delete user from our database
       const deleted = await storage.deleteUser(id);
       if (!deleted) {

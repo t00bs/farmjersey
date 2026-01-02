@@ -660,8 +660,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const sortedFields = Array.from(allFields).sort();
       
+      // Helper to format application reference number
+      const formatApplicationRef = (year: number, id: number): string => {
+        const paddedId = id.toString().padStart(4, '0');
+        return `RSS-${year}-${paddedId}`;
+      };
+      
       // Generate CSV headers
       const baseHeaders = [
+        'Reference',
         'ID',
         'User ID',
         'First Name',
@@ -724,6 +731,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .join('; ');
         
         return [
+          formatApplicationRef(app.year, app.id),
           app.id,
           sanitizeForExport(app.userId),
           sanitizeForExport(app.userFirstName || ''),

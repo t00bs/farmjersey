@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { formatApplicationRef } from "@/lib/utils";
 import Sidebar from "@/components/sidebar";
 import TopBar from "@/components/top-bar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -178,7 +179,7 @@ export default function Dashboard() {
                           RSS Grant Application
                         </CardTitle>
                         <p className="text-sm text-gray-600 mt-1">
-                          {application.year} • Application #{application.id}
+                          {formatApplicationRef(application.year, application.id)}
                         </p>
                       </div>
                       {getStatusBadge(application.status)}

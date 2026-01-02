@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { apiRequest, queryClient, downloadWithAuth } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { formatApplicationRef } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -372,7 +373,7 @@ function AdminDashboardContent() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>ID</TableHead>
+                      <TableHead>Reference</TableHead>
                       <TableHead>User Name</TableHead>
                       <TableHead>Year</TableHead>
                       <TableHead>Status</TableHead>
@@ -384,7 +385,7 @@ function AdminDashboardContent() {
                   <TableBody>
                     {applications.map((application: ApplicationWithUserData) => (
                       <TableRow key={application.id}>
-                        <TableCell>#{application.id}</TableCell>
+                        <TableCell className="font-mono text-sm">{formatApplicationRef(application.year, application.id)}</TableCell>
                         <TableCell>
                           {application.userFirstName && application.userLastName
                             ? `${application.userFirstName} ${application.userLastName}`
@@ -423,7 +424,7 @@ function AdminDashboardContent() {
                             <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                               <DialogHeader>
                                 <DialogTitle>
-                                  Application #{selectedApplication?.id} Review
+                                  {selectedApplication && formatApplicationRef(selectedApplication.year, selectedApplication.id)} Review
                                 </DialogTitle>
                                 <DialogDescription>
                                   Review application details and update status
@@ -941,7 +942,7 @@ function ApplicationReviewDialogContent({
             <div>
               <h4 className="font-semibold mb-2">Application Details</h4>
               <div className="space-y-2 text-sm">
-                <div><strong>ID:</strong> #{application.id}</div>
+                <div><strong>Reference:</strong> {formatApplicationRef(application.year, application.id)}</div>
                 <div><strong>User:</strong> {application.userFirstName && application.userLastName ? `${application.userFirstName} ${application.userLastName}` : application.userEmail || application.userId}</div>
                 <div><strong>Email:</strong> {application.userEmail || 'Not available'}</div>
                 <div><strong>User ID:</strong> {application.userId}</div>

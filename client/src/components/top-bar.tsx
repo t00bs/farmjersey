@@ -1,6 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
 import { signOut } from "@/lib/supabase";
-import { Bell, ChevronDown, User, Settings as SettingsIcon, LogOut } from "lucide-react";
+import { ChevronDown, User, Settings as SettingsIcon, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Breadcrumb,
@@ -93,12 +93,7 @@ export default function TopBar() {
         </Breadcrumb>
 
         {/* User Profile Section */}
-        <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5 text-gray-400" />
-            <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#237804]"></span>
-          </Button>
-          
+        <div className="flex items-center">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center space-x-3 hover:bg-gray-50">

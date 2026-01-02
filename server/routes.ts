@@ -1132,42 +1132,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
         parsedEndDate
       );
       
-      // Import XLSX library with error handling
-      let XLSX;
+      // Import ExcelJS library with error handling
+      let ExcelJS;
       try {
-        XLSX = require('xlsx');
+        ExcelJS = require('exceljs');
       } catch (error) {
-        console.error("XLSX library not found:", error);
+        console.error("ExcelJS library not found:", error);
         return res.status(500).json({ message: "Export functionality not available - missing dependencies" });
       }
       
-      // Prepare data for Excel
-      const worksheetData = applications.map(app => ({
-        'ID': app.id,
-        'User ID': sanitizeForExport(app.userId),
-        'First Name': sanitizeForExport(app.userFirstName || ''),
-        'Last Name': sanitizeForExport(app.userLastName || ''),
-        'Email': sanitizeForExport(app.userEmail || ''),
-        'Status': app.status,
-        'Year': app.year,
-        'Progress (%)': app.progressPercentage || 0,
-        'Agricultural Return': app.agriculturalReturnCompleted ? 'Yes' : 'No',
-        'Land Declaration': app.landDeclarationCompleted ? 'Yes' : 'No',
-        'Consent Form': app.consentFormCompleted ? 'Yes' : 'No',
-        'Supporting Docs': app.supportingDocsCompleted ? 'Yes' : 'No',
-        'Created At': app.createdAt ? new Date(app.createdAt).toISOString() : '',
-        'Submitted At': app.submittedAt ? new Date(app.submittedAt).toISOString() : ''
-      }));
-      
       // Create workbook and worksheet
-      const workbook = XLSX.utils.book_new();
-      const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Applications');
       
-      // Add worksheet to workbook
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Applications');
+      // Define columns
+      worksheet.columns = [
+        { header: 'ID', key: 'id', width: 10 },
+        { header: 'User ID', key: 'userId', width: 15 },
+        { header: 'First Name', key: 'firstName', width: 15 },
+        { header: 'Last Name', key: 'lastName', width: 15 },
+        { header: 'Email', key: 'email', width: 25 },
+        { header: 'Status', key: 'status', width: 15 },
+        { header: 'Year', key: 'year', width: 10 },
+        { header: 'Progress (%)', key: 'progress', width: 12 },
+        { header: 'Agricultural Return', key: 'agriculturalReturn', width: 18 },
+        { header: 'Land Declaration', key: 'landDeclaration', width: 16 },
+        { header: 'Consent Form', key: 'consentForm', width: 14 },
+        { header: 'Supporting Docs', key: 'supportingDocs', width: 16 },
+        { header: 'Created At', key: 'createdAt', width: 22 },
+        { header: 'Submitted At', key: 'submittedAt', width: 22 }
+      ];
+      
+      // Add rows
+      applications.forEach(app => {
+        worksheet.addRow({
+          id: app.id,
+          userId: sanitizeForExport(app.userId),
+          firstName: sanitizeForExport(app.userFirstName || ''),
+          lastName: sanitizeForExport(app.userLastName || ''),
+          email: sanitizeForExport(app.userEmail || ''),
+          status: app.status,
+          year: app.year,
+          progress: app.progressPercentage || 0,
+          agriculturalReturn: app.agriculturalReturnCompleted ? 'Yes' : 'No',
+          landDeclaration: app.landDeclarationCompleted ? 'Yes' : 'No',
+          consentForm: app.consentFormCompleted ? 'Yes' : 'No',
+          supportingDocs: app.supportingDocsCompleted ? 'Yes' : 'No',
+          createdAt: app.createdAt ? new Date(app.createdAt).toISOString() : '',
+          submittedAt: app.submittedAt ? new Date(app.submittedAt).toISOString() : ''
+        });
+      });
       
       // Generate Excel buffer
-      const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+      const buffer = await workbook.xlsx.writeBuffer();
       
       // Set response headers
       const timestamp = new Date().toISOString().split('T')[0];

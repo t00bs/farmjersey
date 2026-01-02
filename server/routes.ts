@@ -1534,8 +1534,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const templateType = req.params.type;
       
       if (templateType === "land-declaration") {
-        // Serve the Excel template for land declaration
-        const templatePath = path.join("templates", "land-declaration-template.xlsx");
+        // Serve the Excel template for land declaration (2026 version)
+        const templatePath = path.join("templates", "land-declaration-template-2026.xlsx");
         
         if (!fs.existsSync(templatePath)) {
           console.error("Land declaration template not found:", templatePath);

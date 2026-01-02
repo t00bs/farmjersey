@@ -125,30 +125,52 @@ export default function FileUploadModal({
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
       const file = files[0];
-      const allowedTypes = [
-        'application/pdf',
-        'image/jpeg',
-        'image/png',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      ];
-      
-      const allowedExtensions = ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx', '.xls', '.xlsx'];
       const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
       
-      const isValidByType = file.type && allowedTypes.includes(file.type);
-      const isValidByExtension = allowedExtensions.includes(fileExtension);
-      
-      if (isValidByType || isValidByExtension) {
-        setSelectedFile(file);
+      // Different validation for land declarations vs supporting docs
+      if (documentType === "land_declaration") {
+        const allowedTypes = [
+          'application/vnd.ms-excel',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        ];
+        const allowedExtensions = ['.xls', '.xlsx'];
+        
+        const isValidByType = file.type && allowedTypes.includes(file.type);
+        const isValidByExtension = allowedExtensions.includes(fileExtension);
+        
+        if (isValidByType || isValidByExtension) {
+          setSelectedFile(file);
+        } else {
+          toast({
+            title: "Invalid file type",
+            description: "Land declarations must be Excel files (.xls or .xlsx).",
+            variant: "destructive",
+          });
+        }
       } else {
-        toast({
-          title: "Invalid file type",
-          description: "Please upload a PDF, JPG, PNG, DOC, DOCX, XLS, or XLSX file.",
-          variant: "destructive",
-        });
+        const allowedTypes = [
+          'application/pdf',
+          'image/jpeg',
+          'image/png',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'application/vnd.ms-excel',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        ];
+        const allowedExtensions = ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx', '.xls', '.xlsx'];
+        
+        const isValidByType = file.type && allowedTypes.includes(file.type);
+        const isValidByExtension = allowedExtensions.includes(fileExtension);
+        
+        if (isValidByType || isValidByExtension) {
+          setSelectedFile(file);
+        } else {
+          toast({
+            title: "Invalid file type",
+            description: "Please upload a PDF, JPG, PNG, DOC, DOCX, XLS, or XLSX file.",
+            variant: "destructive",
+          });
+        }
       }
     }
   };
@@ -163,17 +185,7 @@ export default function FileUploadModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            {getTitle()}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onOpenChange(false)}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </DialogTitle>
+          <DialogTitle>{getTitle()}</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">
@@ -195,7 +207,9 @@ export default function FileUploadModal({
               {selectedFile ? selectedFile.name : isDragging ? "Drop file here" : "Drag and drop files here or click to select"}
             </p>
             <p className="text-xs text-gray-500">
-              PDF, JPG, PNG, DOC, DOCX, XLS, XLSX (Max 10MB)
+              {documentType === "land_declaration" 
+                ? "XLS, XLSX only (Max 10MB)" 
+                : "PDF, JPG, PNG, DOC, DOCX, XLS, XLSX (Max 10MB)"}
             </p>
           </div>
           
@@ -204,7 +218,7 @@ export default function FileUploadModal({
             type="file"
             className="hidden"
             multiple={false}
-            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+            accept={documentType === "land_declaration" ? ".xls,.xlsx" : ".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"}
             onChange={handleFileSelect}
           />
           

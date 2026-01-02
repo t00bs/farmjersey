@@ -1027,16 +1027,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
       
-      // First, delete from Supabase Auth
-      const { supabaseAdmin } = await import('./supabase');
-      const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(id);
-      
-      if (authError && !authError.message?.includes('not found')) {
-        console.error("Error deleting user from Supabase Auth:", authError);
-        return res.status(500).json({ message: "Failed to delete user from authentication system" });
-      }
-      
-      // Delete user's grant applications (this will cascade to related data via foreign keys)
+      // Delete user's grant applications first (this will cascade to related data via foreign keys)
       const userApplications = await storage.getUserGrantApplications(id);
       for (const app of userApplications) {
         await storage.deleteGrantApplication(app.id);
@@ -1050,10 +1041,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Delete user from our database
+      // Delete user from our database BEFORE Supabase Auth (our table references auth.users)
       const deleted = await storage.deleteUser(id);
       if (!deleted) {
         return res.status(500).json({ message: "Failed to delete user from database" });
+      }
+      
+      // Finally, delete from Supabase Auth
+      const { supabaseAdmin } = await import('./supabase');
+      const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(id);
+      
+      if (authError && !authError.message?.includes('not found')) {
+        console.error("Error deleting user from Supabase Auth:", authError);
+        // User is already deleted from our DB, so just log the error
       }
       
       res.json({ message: "User deleted successfully" });

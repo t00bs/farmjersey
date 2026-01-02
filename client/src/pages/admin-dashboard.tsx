@@ -70,9 +70,17 @@ function AdminDashboardContent() {
   const { toast } = useToast();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [pendingDateRange, setPendingDateRange] = useState<DateRange | undefined>();
   const [selectedApplication, setSelectedApplication] = useState<ApplicationWithUserData | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
+
+  const handleDateRangeSelect = (range: DateRange | undefined) => {
+    setPendingDateRange(range);
+    if (range?.from && range?.to) {
+      setDateRange(range);
+    }
+  };
 
   const { data: paginatedData, isLoading } = useQuery<PaginatedResponse>({
     queryKey: ["/api/admin/applications", { status: statusFilter, from: dateRange?.from?.toISOString(), to: dateRange?.to?.toISOString(), page: currentPage }],
@@ -282,14 +290,14 @@ function AdminDashboardContent() {
                           data-testid="button-date-filter"
                         >
                           <CalendarDays className="mr-2 h-4 w-4" />
-                          {dateRange?.from ? (
-                            dateRange.to ? (
+                          {pendingDateRange?.from ? (
+                            pendingDateRange.to ? (
                               <>
-                                {format(dateRange.from, "LLL dd, y")} -{" "}
-                                {format(dateRange.to, "LLL dd, y")}
+                                {format(pendingDateRange.from, "LLL dd, y")} -{" "}
+                                {format(pendingDateRange.to, "LLL dd, y")}
                               </>
                             ) : (
-                              format(dateRange.from, "LLL dd, y")
+                              <>{format(pendingDateRange.from, "LLL dd, y")} - Select end date</>
                             )
                           ) : (
                             <span>Pick a date range</span>
@@ -300,9 +308,9 @@ function AdminDashboardContent() {
                         <CalendarComponent
                           initialFocus
                           mode="range"
-                          defaultMonth={dateRange?.from}
-                          selected={dateRange}
-                          onSelect={setDateRange}
+                          defaultMonth={pendingDateRange?.from}
+                          selected={pendingDateRange}
+                          onSelect={handleDateRangeSelect}
                           numberOfMonths={2}
                         />
                       </PopoverContent>
@@ -317,6 +325,7 @@ function AdminDashboardContent() {
                         onClick={() => {
                           setStatusFilter("all");
                           setDateRange(undefined);
+                          setPendingDateRange(undefined);
                         }}
                         data-testid="button-clear-filters"
                       >

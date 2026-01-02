@@ -1203,7 +1203,9 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
         
         <Form {...form}>
           <form className="space-y-6">
-            {renderCurrentStep()}
+            <div key={STEPS[currentStep].id}>
+              {renderCurrentStep()}
+            </div>
             
             <Separator />
             

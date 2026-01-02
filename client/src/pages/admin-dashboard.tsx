@@ -1,7 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, downloadWithAuth } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -324,13 +324,21 @@ function AdminDashboardContent() {
                       </Button>
                       <Button 
                         variant="outline"
-                        onClick={() => {
+                        onClick={async () => {
                           const url = `/api/admin/applications/export/csv?${new URLSearchParams({
                             ...(statusFilter !== "all" && { status: statusFilter }),
                             ...(dateRange?.from && { startDate: dateRange.from.toISOString() }),
                             ...(dateRange?.to && { endDate: dateRange.to.toISOString() })
                           }).toString()}`;
-                          window.open(url, '_blank');
+                          try {
+                            await downloadWithAuth(url, `applications-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+                          } catch (error: any) {
+                            toast({
+                              title: "Download Failed",
+                              description: error.message || "Failed to download CSV",
+                              variant: "destructive",
+                            });
+                          }
                         }}
                         data-testid="button-download-csv"
                       >
@@ -339,13 +347,21 @@ function AdminDashboardContent() {
                       </Button>
                       <Button 
                         variant="outline"
-                        onClick={() => {
+                        onClick={async () => {
                           const url = `/api/admin/applications/export/xlsx?${new URLSearchParams({
                             ...(statusFilter !== "all" && { status: statusFilter }),
                             ...(dateRange?.from && { startDate: dateRange.from.toISOString() }),
                             ...(dateRange?.to && { endDate: dateRange.to.toISOString() })
                           }).toString()}`;
-                          window.open(url, '_blank');
+                          try {
+                            await downloadWithAuth(url, `applications-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+                          } catch (error: any) {
+                            toast({
+                              title: "Download Failed",
+                              description: error.message || "Failed to download XLSX",
+                              variant: "destructive",
+                            });
+                          }
                         }}
                         data-testid="button-download-xlsx"
                       >

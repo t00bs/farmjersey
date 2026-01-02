@@ -83,6 +83,7 @@ export interface IStorage {
   
   // Bulk operations for CSV export
   getAgriculturalFormResponsesForApplications(applicationIds: number[]): Promise<AgriculturalFormResponse[]>;
+  getAgriculturalReturnsForApplications(applicationIds: number[]): Promise<AgriculturalReturn[]>;
   getDocumentsForApplications(applicationIds: number[]): Promise<Document[]>;
   
   // Invitation operations
@@ -592,6 +593,16 @@ export class DatabaseStorage implements IStorage {
       .from(agriculturalFormResponses)
       .where(inArray(agriculturalFormResponses.applicationId, applicationIds))
       .orderBy(desc(agriculturalFormResponses.createdAt));
+  }
+
+  async getAgriculturalReturnsForApplications(applicationIds: number[]): Promise<AgriculturalReturn[]> {
+    if (applicationIds.length === 0) return [];
+    
+    return await db
+      .select()
+      .from(agriculturalReturns)
+      .where(inArray(agriculturalReturns.applicationId, applicationIds))
+      .orderBy(desc(agriculturalReturns.createdAt));
   }
 
   async getDocumentsForApplications(applicationIds: number[]): Promise<Document[]> {

@@ -575,12 +575,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const parsedStartDate = startDate ? new Date(startDate as string) : undefined;
       const parsedEndDate = endDate ? (() => {
         const date = new Date(endDate as string);
-        // Set to end of day to include the full selected day
         date.setHours(23, 59, 59, 999);
         return date;
       })() : undefined;
       
-      // Validate date parameters
       if (parsedStartDate && isNaN(parsedStartDate.getTime())) {
         return res.status(400).json({ message: "Invalid startDate format" });
       }
@@ -589,26 +587,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid endDate format" });
       }
       
-      // Fetch filtered applications
       const applications = await storage.getGrantApplicationsWithUserDataFiltered(
         status && status !== 'all' ? status as string : undefined,
         parsedStartDate,
         parsedEndDate
       );
       
-      // Get application IDs for bulk fetching
       const applicationIds = applications.map(app => app.id);
       
-      // Fetch agricultural form responses and documents in bulk
-      const [formResponses, documents] = await Promise.all([
-        storage.getAgriculturalFormResponsesForApplications(applicationIds),
+      // Fetch agricultural returns (new table) and documents in bulk
+      const [agriculturalReturns, documents] = await Promise.all([
+        storage.getAgriculturalReturnsForApplications(applicationIds),
         storage.getDocumentsForApplications(applicationIds)
       ]);
       
-      // Create lookup maps for efficient access
-      const responseMap = new Map();
-      formResponses.forEach(response => {
-        responseMap.set(response.applicationId, response);
+      // Create lookup maps
+      const returnMap = new Map();
+      agriculturalReturns.forEach(ar => {
+        returnMap.set(ar.applicationId, ar);
       });
       
       const documentsMap = new Map();
@@ -619,23 +615,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
         documentsMap.get(doc.applicationId).push(doc);
       });
       
-      // Helper function to generate document URLs
       const getDocumentUrl = (doc: any) => {
         const baseUrl = req.protocol + '://' + req.get('host');
         return `${baseUrl}/api/documents/download/${doc.id}`;
       };
       
-      // Extract all unique form fields from responses to create dynamic headers
-      const allFormFields = new Set();
-      formResponses.forEach(response => {
-        if (response.responses && typeof response.responses === 'object') {
-          Object.keys(response.responses).forEach(fieldId => {
-            allFormFields.add(fieldId);
-          });
+      // Helper to flatten JSONB fields for CSV
+      const flattenObject = (obj: any, prefix: string = ''): Record<string, string> => {
+        const result: Record<string, string> = {};
+        if (!obj || typeof obj !== 'object') return result;
+        
+        for (const [key, value] of Object.entries(obj)) {
+          const fieldName = prefix ? `${prefix}_${key}` : key;
+          if (value === null || value === undefined) {
+            result[fieldName] = '';
+          } else if (typeof value === 'object' && !Array.isArray(value)) {
+            Object.assign(result, flattenObject(value, fieldName));
+          } else if (Array.isArray(value)) {
+            result[fieldName] = value.join('; ');
+          } else {
+            result[fieldName] = String(value);
+          }
         }
+        return result;
+      };
+      
+      // Collect all unique field names from agricultural returns
+      const allFields = new Set<string>();
+      agriculturalReturns.forEach(ar => {
+        const farmDetails = flattenObject(ar.farmDetailsData, 'FarmDetails');
+        const financial = flattenObject(ar.financialData, 'Financial');
+        const facilities = flattenObject(ar.facilitiesData, 'Facilities');
+        const livestock = flattenObject(ar.livestockData, 'Livestock');
+        const management = flattenObject(ar.managementPlans, 'Management');
+        const tier3 = flattenObject(ar.tier3Data, 'Tier3');
+        
+        Object.keys(farmDetails).forEach(k => allFields.add(k));
+        Object.keys(financial).forEach(k => allFields.add(k));
+        Object.keys(facilities).forEach(k => allFields.add(k));
+        Object.keys(livestock).forEach(k => allFields.add(k));
+        Object.keys(management).forEach(k => allFields.add(k));
+        Object.keys(tier3).forEach(k => allFields.add(k));
       });
       
-      // Generate CSV headers with dynamic form fields
+      const sortedFields = Array.from(allFields).sort();
+      
+      // Generate CSV headers
       const baseHeaders = [
         'ID',
         'User ID',
@@ -650,39 +675,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'Consent Form Completed',
         'Supporting Docs Completed',
         'Created At',
-        'Submitted At'
+        'Submitted At',
+        'Declaration Name',
+        'Declaration Date',
+        'Declaration Has Signature'
       ];
       
-      // Add agricultural form fields as separate columns
-      const formFieldHeaders: string[] = Array.from(allFormFields).map(field => String(field)).sort();
       const documentHeaders = [
         'Land Declaration Documents',
         'Supporting Documents',
         'All Document URLs'
       ];
       
-      const headers = [...baseHeaders, ...formFieldHeaders.map(field => `Form Field: ${field}`), ...documentHeaders];
+      const headers = [...baseHeaders, ...sortedFields, ...documentHeaders];
       
       // Convert applications to CSV format
       const csvData = applications.map(app => {
-        const response = responseMap.get(app.id);
+        const ar = returnMap.get(app.id);
         const appDocuments = documentsMap.get(app.id) || [];
         
-        // Extract form field values
-        const formFieldValues = formFieldHeaders.map((fieldId: string) => {
-          if (response && response.responses && typeof response.responses === 'object') {
-            const responses = response.responses as Record<string, any>;
-            const value = responses[fieldId];
-            if (value === null || value === undefined) return '';
-            if (typeof value === 'object') {
-              return sanitizeForExport(JSON.stringify(value));
-            }
-            return sanitizeForExport(String(value));
-          }
-          return '';
-        });
+        // Flatten all agricultural return sections
+        let flatData: Record<string, string> = {};
+        if (ar) {
+          flatData = {
+            ...flattenObject(ar.farmDetailsData, 'FarmDetails'),
+            ...flattenObject(ar.financialData, 'Financial'),
+            ...flattenObject(ar.facilitiesData, 'Facilities'),
+            ...flattenObject(ar.livestockData, 'Livestock'),
+            ...flattenObject(ar.managementPlans, 'Management'),
+            ...flattenObject(ar.tier3Data, 'Tier3'),
+          };
+        }
         
-        // Separate documents by type
+        const fieldValues = sortedFields.map(field => sanitizeForExport(flatData[field] || ''));
+        
         const landDeclarationDocs = appDocuments
           .filter((doc: any) => doc.documentType === 'land_declaration')
           .map((doc: any) => `${doc.fileName} (${getDocumentUrl(doc)})`)
@@ -693,7 +719,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .map((doc: any) => `${doc.fileName} (${getDocumentUrl(doc)})`)
           .join('; ');
           
-        const allDocuments = appDocuments
+        const allDocs = appDocuments
           .map((doc: any) => `${doc.fileName} (${getDocumentUrl(doc)})`)
           .join('; ');
         
@@ -712,19 +738,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           app.supportingDocsCompleted ? 'Yes' : 'No',
           app.createdAt ? new Date(app.createdAt).toISOString() : '',
           app.submittedAt ? new Date(app.submittedAt).toISOString() : '',
-          ...formFieldValues,
+          sanitizeForExport(ar?.declarationName || ''),
+          ar?.declarationDate ? new Date(ar.declarationDate).toISOString() : '',
+          ar?.declarationSignature ? 'Yes' : 'No',
+          ...fieldValues,
           sanitizeForExport(landDeclarationDocs),
           sanitizeForExport(supportingDocs),
-          sanitizeForExport(allDocuments)
+          sanitizeForExport(allDocs)
         ];
       });
       
-      // Create CSV content
       const csvContent = [headers, ...csvData]
         .map(row => row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(','))
         .join('\n');
       
-      // Set response headers
       const timestamp = new Date().toISOString().split('T')[0];
       const filename = `applications-detailed-${timestamp}.csv`;
       

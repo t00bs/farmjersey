@@ -31,6 +31,18 @@ export default function AuthPage() {
     if (token) {
       setInvitationToken(token);
       setActiveTab('signup');
+      
+      // Fetch invitation email to pre-populate the field
+      fetch(`/api/validate-invitation?token=${token}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.valid && data.email) {
+            setEmail(data.email);
+          }
+        })
+        .catch(() => {
+          // Silently fail - validation will happen on submit
+        });
     }
     
     // Check if redirected due to session expiry
@@ -436,12 +448,16 @@ export default function AuthPage() {
                         type="email"
                         placeholder="your.email@example.com"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10"
+                        onChange={(e) => !invitationToken && setEmail(e.target.value)}
+                        className={`pl-10 ${invitationToken ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                        readOnly={!!invitationToken}
                         required
                         data-testid="input-signup-email"
                       />
                     </div>
+                    {invitationToken && (
+                      <p className="text-xs text-gray-500">This email is linked to your invitation</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-password">Password</Label>

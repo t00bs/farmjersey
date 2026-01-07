@@ -366,12 +366,12 @@ export default function AuthPage() {
                   <div className="space-y-2">
                     <h3 className="text-xl font-semibold text-gray-900">Account Created Successfully!</h3>
                     <p className="text-gray-600">
-                      Welcome to the Rural Support Scheme Portal. Please check your email to confirm your account before signing in.
+                      Welcome to the Rural Support Scheme Portal.
                     </p>
                   </div>
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <p className="text-sm text-blue-800">
-                      <strong>Next step:</strong> Click the confirmation link in your email, then return here to sign in.
+                      <strong>Important:</strong> Before attempting to login, please confirm your account details by clicking the link in the email sent to you.
                     </p>
                   </div>
                   <Button

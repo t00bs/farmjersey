@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Mail, Lock, User, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
-import logoPath from "@assets/FJ Brand Logo_1759502325451.png";
+import logoPath from "@assets/FJ_Dark_1767792013780.png";
 
 export default function AuthPage() {
   const [email, setEmail] = useState('');

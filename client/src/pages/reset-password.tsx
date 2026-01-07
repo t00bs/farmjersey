@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Lock, CheckCircle, AlertCircle } from 'lucide-react';
-import logoPath from "@assets/FJ Brand Logo_1759502325451.png";
+import logoPath from "@assets/FJ_Dark_1767792013780.png";
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');

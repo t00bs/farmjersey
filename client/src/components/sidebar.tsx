@@ -2,7 +2,7 @@ import { Home, FileText, HelpCircle, Settings, Shield } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
-import logoPath from "@assets/FJ Brand Logo_1759502325451.png";
+import logoPath from "@assets/FJ_Dark_1767792013780.png";
 
 const navigation = [
   { name: "Home", href: "/", icon: Home },

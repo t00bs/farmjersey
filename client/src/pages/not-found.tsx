@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Home, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
-import logoPath from "@assets/FJ Brand Logo_1759502325451.png";
+import logoPath from "@assets/FJ_Dark_1767792013780.png";
 
 export default function NotFound() {
   return (

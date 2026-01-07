@@ -67,6 +67,17 @@ const livestockSchema = z.object({
   otherSpecify: z.string().optional(),
 });
 
+const accreditationSchema = z.object({
+  leafOption: z.string().optional(),
+  organicOption: z.string().optional(),
+  brcGlobal: z.boolean().default(false),
+  globalGap: z.boolean().default(false),
+  redTractor: z.boolean().default(false),
+  salsa: z.boolean().default(false),
+  kiwa: z.boolean().default(false),
+  britishHorseSociety: z.boolean().default(false),
+});
+
 const managementPlansSchema = z.object({
   soilPlan: z.boolean().default(false),
   waterPlan: z.boolean().default(false),
@@ -99,11 +110,12 @@ const declarationSchema = z.object({
 
 const combinedSchema = z.object({
   farmDetails: farmDetailsSchema,
-  financial: financialSchema,
+  accreditation: accreditationSchema,
+  managementPlans: managementPlansSchema,
   facilities: facilitiesSchema,
   livestock: livestockSchema,
-  managementPlans: managementPlansSchema,
   tier3: tier3Schema,
+  financial: financialSchema,
   declaration: declarationSchema,
 });
 
@@ -111,12 +123,13 @@ type CombinedFormData = z.infer<typeof combinedSchema>;
 
 const STEPS = [
   { id: "farmDetails", title: "Section A - Farm Details", description: "Update your farm name and contact information" },
-  { id: "financial", title: "Section B - Financial Return", description: "Income and expenditure details for 2025" },
-  { id: "facilities", title: "Section C - Land and Facilities", description: "Pesticide stores and slurry storage information" },
-  { id: "livestock", title: "Section D - Farm Livestock", description: "Number of livestock you own or keep" },
-  { id: "management", title: "Section E - Integrated Farm Management", description: "Management plans and schemes" },
-  { id: "tier3", title: "Section G - Tier 3", description: "Awards, accreditations and environmental contributions" },
-  { id: "declaration", title: "Section H - Declaration", description: "Sign and complete your agricultural return" },
+  { id: "accreditation", title: "Section B - Accreditation", description: "LEAF, organic and other certifications" },
+  { id: "management", title: "Section C - Integrated Farm Management", description: "Management plans and schemes" },
+  { id: "facilities", title: "Section D - Land and Facilities", description: "Field list and storage facilities" },
+  { id: "livestock", title: "Section E - Farm Livestock", description: "Number of livestock you own or keep" },
+  { id: "tier3", title: "Section F - Tier 3", description: "Awards, accreditations and environmental contributions" },
+  { id: "financial", title: "Section G - Financial Declaration", description: "Income and expenditure details for 2025" },
+  { id: "declaration", title: "Section H - Declaration", description: "RSS Terms, Conditions and Declaration" },
 ];
 
 export default function AgriculturalReturnWizard({ applicationId, onComplete, readOnly = false }: AgriculturalReturnWizardProps) {
@@ -136,19 +149,29 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
       telephone: "",
       email: "",
     },
-    financial: {
-      produceSalesExport: "",
-      produceSalesLocal: "",
-      servicesRental: "",
-      grantsSupport: "",
-      otherIncome: "",
-      totalIncome: "",
-      wagesSalaries: "",
-      itis: "",
-      socialSecurity: "",
-      propertyRental: "",
-      allOtherExpenses: "",
-      tradingProfit: "",
+    accreditation: {
+      leafOption: "",
+      organicOption: "",
+      brcGlobal: false,
+      globalGap: false,
+      redTractor: false,
+      salsa: false,
+      kiwa: false,
+      britishHorseSociety: false,
+    },
+    managementPlans: {
+      soilPlan: false,
+      waterPlan: false,
+      nutrientPlan: false,
+      wastePlan: false,
+      animalHealthPlan: false,
+      conservationPlan: false,
+      energyAudit: false,
+      carbonNetZeroPlan: false,
+      carbonDataCollection: false,
+      woodlandPlan: false,
+      dairyWelfareVet: false,
+      healthSafetyPlan: false,
     },
     facilities: {
       pesticideStoreCount: "",
@@ -168,20 +191,6 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
       other: "",
       otherSpecify: "",
     },
-    managementPlans: {
-      soilPlan: false,
-      waterPlan: false,
-      nutrientPlan: false,
-      wastePlan: false,
-      animalHealthPlan: false,
-      conservationPlan: false,
-      energyAudit: false,
-      carbonNetZeroPlan: false,
-      carbonDataCollection: false,
-      woodlandPlan: false,
-      dairyWelfareVet: false,
-      healthSafetyPlan: false,
-    },
     tier3: {
       eatSafeStars: "",
       genuineJerseyMember: false,
@@ -190,6 +199,20 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
       publicFootpathsMeters: "",
       wildlifePonds: "",
       wasteRecyclingTonnes: "",
+    },
+    financial: {
+      produceSalesExport: "",
+      produceSalesLocal: "",
+      servicesRental: "",
+      grantsSupport: "",
+      otherIncome: "",
+      totalIncome: "",
+      wagesSalaries: "",
+      itis: "",
+      socialSecurity: "",
+      propertyRental: "",
+      allOtherExpenses: "",
+      tradingProfit: "",
     },
     declaration: {
       declarationName: "",
@@ -225,11 +248,12 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
       // Merge existing data with defaults to ensure no undefined values
       const formData: CombinedFormData = {
         farmDetails: { ...defaults.farmDetails, ...(existingReturn.farmDetailsData || {}) },
-        financial: { ...defaults.financial, ...(existingReturn.financialData || {}) },
+        accreditation: { ...defaults.accreditation, ...(existingReturn.accreditationData || {}) },
+        managementPlans: { ...defaults.managementPlans, ...(existingReturn.managementPlans || {}) },
         facilities: { ...defaults.facilities, ...(existingReturn.facilitiesData || {}) },
         livestock: { ...defaults.livestock, ...(existingReturn.livestockData || {}) },
-        managementPlans: { ...defaults.managementPlans, ...(existingReturn.managementPlans || {}) },
         tier3: { ...defaults.tier3, ...(existingReturn.tier3Data || {}) },
+        financial: { ...defaults.financial, ...(existingReturn.financialData || {}) },
         declaration: {
           declarationName: existingReturn.declarationName ?? "",
           declarationDate: existingReturn.declarationDate 
@@ -250,22 +274,24 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
       const payload = {
         applicationId,
         farmDetailsData: data.farmDetails,
-        financialData: data.financial,
+        accreditationData: data.accreditation,
+        managementPlans: data.managementPlans,
         facilitiesData: data.facilities,
         livestockData: data.livestock,
-        managementPlans: data.managementPlans,
         tier3Data: data.tier3,
+        financialData: data.financial,
         declarationName: data.declaration.declarationName,
         declarationDate: data.declaration.declarationDate,
         declarationSignature: data.signature,
         isComplete: data.isComplete,
         completedSections: {
           farmDetails: true,
-          financial: true,
+          accreditation: true,
+          management: true,
           facilities: true,
           livestock: true,
-          management: true,
           tier3: true,
+          financial: true,
           declaration: data.isComplete,
         },
       };
@@ -536,6 +562,117 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
     </div>
   );
 
+  const renderAccreditationSection = () => (
+    <div className="space-y-6">
+      <p className="text-sm text-muted-foreground">
+        Please indicate your farm's accreditation status. Select one option from LEAF membership (if applicable), 
+        one option from organic certification (if applicable), and check any other certifications that apply.
+      </p>
+      
+      <div className="space-y-6">
+        <div className="space-y-4">
+          <h4 className="font-medium">LEAF Accreditation (choose one if applicable)</h4>
+          <FormField
+            control={form.control}
+            name="accreditation.leafOption"
+            render={({ field }) => (
+              <FormItem className="space-y-3">
+                <FormControl>
+                  <div className="space-y-2">
+                    {[
+                      { value: "member", label: "LEAF Member" },
+                      { value: "sustainable_farming_review", label: "LEAF Sustainable Farming Review" },
+                      { value: "marque_certified", label: "LEAF Marque Certified" },
+                      { value: "marque_demonstration_farm", label: "LEAF Marque Demonstration Farm" },
+                    ].map((option) => (
+                      <div key={option.value} className="flex items-center space-x-3">
+                        <Checkbox
+                          checked={field.value === option.value}
+                          onCheckedChange={(checked) => field.onChange(checked ? option.value : "")}
+                          disabled={readOnly}
+                          data-testid={`checkbox-leaf-${option.value}`}
+                        />
+                        <label className="text-sm font-normal cursor-pointer">{option.label}</label>
+                      </div>
+                    ))}
+                  </div>
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </div>
+        
+        <Separator />
+        
+        <div className="space-y-4">
+          <h4 className="font-medium">Organic Certification (choose one if applicable)</h4>
+          <FormField
+            control={form.control}
+            name="accreditation.organicOption"
+            render={({ field }) => (
+              <FormItem className="space-y-3">
+                <FormControl>
+                  <div className="space-y-2">
+                    {[
+                      { value: "member_organic_association", label: "Member of an Organic Association" },
+                      { value: "in_conversion", label: "Organic 'In Conversion'" },
+                      { value: "organic_certified", label: "Organic Certified" },
+                    ].map((option) => (
+                      <div key={option.value} className="flex items-center space-x-3">
+                        <Checkbox
+                          checked={field.value === option.value}
+                          onCheckedChange={(checked) => field.onChange(checked ? option.value : "")}
+                          disabled={readOnly}
+                          data-testid={`checkbox-organic-${option.value}`}
+                        />
+                        <label className="text-sm font-normal cursor-pointer">{option.label}</label>
+                      </div>
+                    ))}
+                  </div>
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </div>
+        
+        <Separator />
+        
+        <div className="space-y-4">
+          <h4 className="font-medium">Other Certifications (select all that apply)</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[
+              { name: "accreditation.brcGlobal" as const, label: "BRC Global Standard" },
+              { name: "accreditation.globalGap" as const, label: "Global GAP" },
+              { name: "accreditation.redTractor" as const, label: "Red Tractor" },
+              { name: "accreditation.salsa" as const, label: "SALSA" },
+              { name: "accreditation.kiwa" as const, label: "KIWA" },
+              { name: "accreditation.britishHorseSociety" as const, label: "British Horse Society" },
+            ].map((item) => (
+              <FormField
+                key={item.name}
+                control={form.control}
+                name={item.name}
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={readOnly}
+                        data-testid={`checkbox-${item.name.replace('accreditation.', '')}`}
+                      />
+                    </FormControl>
+                    <FormLabel className="font-normal cursor-pointer">{item.label}</FormLabel>
+                  </FormItem>
+                )}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderFinancialSection = () => (
     <div className="space-y-6">
       <p className="text-sm text-muted-foreground">
@@ -702,7 +839,7 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
   const renderFacilitiesSection = () => (
     <div className="space-y-6">
       <p className="text-sm text-muted-foreground">
-        All land occupiers must supply a list of fields farmed and crops on the Agricultural Return spreadsheet.
+        All land occupiers must supply a list of fields farmed with crops and details on people employed on the Agricultural Return spreadsheet.
       </p>
       
       <div className="space-y-4">
@@ -1143,16 +1280,18 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
       case 0:
         return renderFarmDetailsSection();
       case 1:
-        return renderFinancialSection();
+        return renderAccreditationSection();
       case 2:
-        return renderFacilitiesSection();
-      case 3:
-        return renderLivestockSection();
-      case 4:
         return renderManagementSection();
+      case 3:
+        return renderFacilitiesSection();
+      case 4:
+        return renderLivestockSection();
       case 5:
         return renderTier3Section();
       case 6:
+        return renderFinancialSection();
+      case 7:
         return renderDeclarationSection();
       default:
         return null;

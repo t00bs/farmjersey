@@ -474,3 +474,22 @@ CREATE INDEX IF NOT EXISTS idx_documents_application_id ON public.documents(appl
 CREATE INDEX IF NOT EXISTS idx_agricultural_returns_application_id ON public.agricultural_returns(application_id);
 CREATE INDEX IF NOT EXISTS idx_invitations_token ON public.invitations(token);
 CREATE INDEX IF NOT EXISTS idx_invitations_email ON public.invitations(email);
+
+-- ============================================
+-- 11. AGRICULTURAL RETURNS COLUMN ADDITIONS
+-- (Run these if upgrading from initial schema)
+-- ============================================
+-- Add new columns to agricultural_returns table for form sections
+ALTER TABLE public.agricultural_returns
+  ADD COLUMN IF NOT EXISTS farm_details_data JSONB,
+  ADD COLUMN IF NOT EXISTS accreditation_data JSONB,
+  ADD COLUMN IF NOT EXISTS financial_data JSONB,
+  ADD COLUMN IF NOT EXISTS facilities_data JSONB,
+  ADD COLUMN IF NOT EXISTS livestock_data JSONB,
+  ADD COLUMN IF NOT EXISTS management_plans JSONB,
+  ADD COLUMN IF NOT EXISTS tier3_data JSONB,
+  ADD COLUMN IF NOT EXISTS declaration_name VARCHAR(255),
+  ADD COLUMN IF NOT EXISTS declaration_date TIMESTAMP WITH TIME ZONE,
+  ADD COLUMN IF NOT EXISTS declaration_signature TEXT,
+  ADD COLUMN IF NOT EXISTS is_complete BOOLEAN DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS completed_sections JSONB;

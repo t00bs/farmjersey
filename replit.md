@@ -147,6 +147,13 @@ Preferred communication style: Simple, everyday language.
 ## Changelog
 
 Changelog:
+- January 7, 2026. **AGRICULTURAL RETURN FORM RESTRUCTURING**:
+  - Added new Section B (Accreditation) with LEAF membership options, Organic certification options, and other certifications (BRC, GlobalGAP, Red Tractor, SALSA, KIWA, British Horse Society)
+  - Reorganized sections: A (Farm Details), B (Accreditation - NEW), C (Integrated Farm Management), D (Land and Facilities), E (Farm Livestock), F (Tier 3), G (Financial Declaration), H (Declaration)
+  - Updated Land and Facilities intro text to mention field list and employee details requirement
+  - Added accreditation_data JSONB column to agricultural_returns table
+  - Updated CSV/Excel export to include new accreditation fields
+  - Database migration script updated with new column additions
 - December 4, 2025. **PDF PREVIEW FIX**:
   - Replaced browser-native `<object>` tag with react-pdf library for universal PDF rendering
   - PDFs now render as canvas images that work in all browsers including mobile

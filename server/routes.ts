@@ -644,6 +644,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allFields = new Set<string>();
       agriculturalReturns.forEach(ar => {
         const farmDetails = flattenObject(ar.farmDetailsData, 'FarmDetails');
+        const accreditation = flattenObject((ar as any).accreditationData, 'Accreditation');
         const financial = flattenObject(ar.financialData, 'Financial');
         const facilities = flattenObject(ar.facilitiesData, 'Facilities');
         const livestock = flattenObject(ar.livestockData, 'Livestock');
@@ -651,6 +652,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const tier3 = flattenObject(ar.tier3Data, 'Tier3');
         
         Object.keys(farmDetails).forEach(k => allFields.add(k));
+        Object.keys(accreditation).forEach(k => allFields.add(k));
         Object.keys(financial).forEach(k => allFields.add(k));
         Object.keys(facilities).forEach(k => allFields.add(k));
         Object.keys(livestock).forEach(k => allFields.add(k));
@@ -706,6 +708,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (ar) {
           flatData = {
             ...flattenObject(ar.farmDetailsData, 'FarmDetails'),
+            ...flattenObject((ar as any).accreditationData, 'Accreditation'),
             ...flattenObject(ar.financialData, 'Financial'),
             ...flattenObject(ar.facilitiesData, 'Facilities'),
             ...flattenObject(ar.livestockData, 'Livestock'),
@@ -1345,6 +1348,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const returnData = {
         applicationId: createData.applicationId,
         farmDetailsData: createData.farmDetailsData || null,
+        accreditationData: createData.accreditationData || null,
         financialData: createData.financialData || null,
         facilitiesData: createData.facilitiesData || null,
         livestockData: createData.livestockData || null,
@@ -1423,6 +1427,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const updatedReturn = await storage.updateAgriculturalReturn(returnId, {
         farmDetailsData: updateData.farmDetailsData || null,
+        accreditationData: updateData.accreditationData || null,
         financialData: updateData.financialData || null,
         facilitiesData: updateData.facilitiesData || null,
         livestockData: updateData.livestockData || null,

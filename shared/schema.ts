@@ -73,19 +73,22 @@ export const agriculturalReturns = pgTable("agricultural_returns", {
   // Section A - Farm Details
   farmDetailsData: jsonb("farm_details_data"), // { farmName, addressLine1, addressLine2, parish, postcode, telephone, email }
   
-  // Section B - Financial Return
+  // Section G - Financial Declaration (moved from B)
   financialData: jsonb("financial_data"), // { produceSalesExport, produceSalesLocal, servicesRental, grantsSupport, otherIncome, totalIncome, wagesSalaries, itis, socialSecurity, propertyRental, allOtherExpenses, tradingProfit }
   
-  // Section C - Land and Facilities
+  // Section D - Land and Facilities (moved from C)
   facilitiesData: jsonb("facilities_data"), // { pesticideStoreCount, pesticideStoreAddress, slurryStoreCount, slurryCapacityLitres }
   
-  // Section D - Farm Livestock
+  // Section E - Farm Livestock (moved from D)
   livestockData: jsonb("livestock_data"), // { pigs, sheep, goats, chickens, otherFowl, horsesOwned, horsesLivery, donkeysMules, other, otherSpecify }
   
-  // Section E - Integrated Farm Management Plans (checkboxes)
+  // Section B - Accreditation
+  accreditationData: jsonb("accreditation_data"), // { leafOption, organicOption, otherCertifications: { brcGlobal, globalGap, redTractor, salsa, kiwa, britishHorseSociety } }
+  
+  // Section C - Integrated Farm Management Plans (checkboxes) - moved from E
   managementPlans: jsonb("management_plans"), // { soilPlan, waterPlan, nutrientPlan, wastePlan, animalHealthPlan, conservationPlan, energyAudit, carbonNetZeroPlan, carbonDataCollection, woodlandPlan, dairyWelfareVet, healthSafetyPlan }
   
-  // Section G - Tier 3
+  // Section F - Tier 3 - moved from G
   tier3Data: jsonb("tier3_data"), // { eatSafeStars, genuineJerseyMember, greatTasteProducts, farmOpenDays, publicFootpathsMeters, wildlifePonds, wasteRecyclingTonnes }
   
   // Section H - Declaration & Signature

@@ -27,7 +27,7 @@ export default function Sidebar() {
       <div className="p-6 border-b border-gray-200">
         <Link href="/">
           <div className="flex items-center space-x-3 cursor-pointer">
-            <img src={logoPath} alt="Farm Jersey" className="h-8" data-testid="logo-sidebar" />
+            <img src={logoPath} alt="Farm Jersey" className="h-12" data-testid="logo-sidebar" />
           </div>
         </Link>
       </div>

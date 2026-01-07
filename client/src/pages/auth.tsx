@@ -17,6 +17,7 @@ export default function AuthPage() {
   const [lastName, setLastName] = useState('');
   const [loading, setLoading] = useState(false);
   const [invitationToken, setInvitationToken] = useState('');
+  const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [signupComplete, setSignupComplete] = useState(false);
@@ -29,6 +30,7 @@ export default function AuthPage() {
     const token = params.get('token');
     if (token) {
       setInvitationToken(token);
+      setActiveTab('signup');
     }
     
     // Check if redirected due to session expiry
@@ -223,7 +225,7 @@ export default function AuthPage() {
         
         <Card className="bg-transparent border-0 shadow-none">
         <CardContent className="p-0">
-          <Tabs defaultValue={invitationToken ? "signup" : "signin"} className="w-full">
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'signin' | 'signup')} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin" data-testid="tab-signin">Sign In</TabsTrigger>
               <TabsTrigger value="signup" data-testid="tab-signup">Sign Up</TabsTrigger>

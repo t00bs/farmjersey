@@ -395,6 +395,7 @@ export default function AuthPage() {
                       setPassword('');
                       setFirstName('');
                       setLastName('');
+                      setActiveTab('signin');
                     }}
                     data-testid="button-back-to-signin-from-signup"
                   >

@@ -387,7 +387,7 @@ export default function GrantApplication() {
 
             <ApplicationSection
               title="Supporting Documentation"
-              description="Upload additional documents like land certificates, bank statements"
+              description="Upload additional documents like accreditation certificates, accounts, qualification certification or any other evidence which supports your RSS application"
               status={getSupportingDocsStatus()}
               iconType="upload"
               acceptedFormats="PDF, JPG, PNG accepted"

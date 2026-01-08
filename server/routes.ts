@@ -1251,10 +1251,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/grant-applications/:id", isAuthenticated, async (req: any, res) => {
+  app.get("/api/grant-applications/:publicId", isAuthenticated, async (req: any, res) => {
     try {
-      const applicationId = parseInt(req.params.id);
-      const application = await storage.getGrantApplication(applicationId);
+      const publicId = req.params.publicId;
+      const application = await storage.getGrantApplicationByPublicId(publicId);
       
       if (!application) {
         return res.status(404).json({ message: "Application not found" });
@@ -1265,8 +1265,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
-      // Add cache control for browser caching
-      res.set('Cache-Control', 'private, max-age=30');
+      // No caching to ensure fresh data
+      res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.json(application);
     } catch (error) {
       console.error("Error fetching grant application:", error);
@@ -1274,10 +1274,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/grant-applications/:id", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/grant-applications/:publicId", isAuthenticated, async (req: any, res) => {
     try {
-      const applicationId = parseInt(req.params.id);
-      const application = await storage.getGrantApplication(applicationId);
+      const publicId = req.params.publicId;
+      const application = await storage.getGrantApplicationByPublicId(publicId);
       
       if (!application) {
         return res.status(404).json({ message: "Application not found" });
@@ -1295,7 +1295,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updates.submittedAt = new Date();
       }
       
-      const updatedApplication = await storage.updateGrantApplication(applicationId, updates);
+      const updatedApplication = await storage.updateGrantApplication(application.id, updates);
       res.json(updatedApplication);
     } catch (error) {
       console.error("Error updating grant application:", error);
@@ -1303,10 +1303,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/grant-applications/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/grant-applications/:publicId", isAuthenticated, async (req: any, res) => {
     try {
-      const applicationId = parseInt(req.params.id);
-      const application = await storage.getGrantApplication(applicationId);
+      const publicId = req.params.publicId;
+      const application = await storage.getGrantApplicationByPublicId(publicId);
       
       if (!application) {
         return res.status(404).json({ message: "Application not found" });
@@ -1317,7 +1317,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
-      const deleted = await storage.deleteGrantApplication(applicationId);
+      const deleted = await storage.deleteGrantApplication(application.id);
       if (deleted) {
         res.json({ message: "Application deleted successfully" });
       } else {

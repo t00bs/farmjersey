@@ -6,6 +6,7 @@ import {
   agriculturalFormTemplates,
   agriculturalFormResponses,
   invitations,
+  generatePublicId,
   type User,
   type UpsertUser,
   type GrantApplication,
@@ -38,6 +39,7 @@ export interface IStorage {
   // Grant Application operations
   createGrantApplication(application: InsertGrantApplication): Promise<GrantApplication>;
   getGrantApplication(id: number): Promise<GrantApplication | undefined>;
+  getGrantApplicationByPublicId(publicId: string): Promise<GrantApplication | undefined>;
   getUserGrantApplications(userId: string): Promise<GrantApplication[]>;
   getUserGrantApplicationForYear(userId: string, year: number): Promise<GrantApplication | undefined>;
   getAllGrantApplications(): Promise<GrantApplication[]>;
@@ -172,7 +174,10 @@ export class DatabaseStorage implements IStorage {
   async createGrantApplication(application: InsertGrantApplication): Promise<GrantApplication> {
     const [newApplication] = await db
       .insert(grantApplications)
-      .values(application)
+      .values({
+        ...application,
+        publicId: generatePublicId(),
+      })
       .returning();
     return newApplication;
   }
@@ -182,6 +187,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(grantApplications)
       .where(eq(grantApplications.id, id));
+    return application;
+  }
+
+  async getGrantApplicationByPublicId(publicId: string): Promise<GrantApplication | undefined> {
+    const [application] = await db
+      .select()
+      .from(grantApplications)
+      .where(eq(grantApplications.publicId, publicId));
     return application;
   }
 

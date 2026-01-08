@@ -534,6 +534,7 @@ export default function GrantApplication() {
             onComplete={() => {
               setAgriculturalFormOpen(false);
               queryClient.invalidateQueries({ queryKey: ["/api/grant-applications"] });
+              queryClient.invalidateQueries({ queryKey: ["/api/grant-applications", publicId] });
             }}
           />
         </DialogContent>

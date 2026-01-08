@@ -42,6 +42,7 @@ export const users = pgTable("users", {
 // Grant Applications
 export const grantApplications = pgTable("grant_applications", {
   id: serial("id").primaryKey(),
+  publicId: varchar("public_id", { length: 12 }).unique().notNull(),
   userId: uuid("user_id").notNull().references(() => users.id),
   status: varchar("status").notNull().default("draft"), // draft, in_progress, submitted, approved, rejected
   year: integer("year").notNull(),
@@ -150,9 +151,20 @@ export const documentRelations = relations(documents, ({ one }) => ({
 // Insert Schemas
 export const insertGrantApplicationSchema = createInsertSchema(grantApplications).omit({
   id: true,
+  publicId: true,
   createdAt: true,
   updatedAt: true,
 });
+
+// Utility function to generate random public IDs (8 characters, alphanumeric)
+export function generatePublicId(): string {
+  const chars = 'abcdefghjkmnpqrstuvwxyz23456789'; // Removed confusing chars like 0, O, 1, l, I
+  let result = '';
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
 
 export const insertAgriculturalReturnSchema = createInsertSchema(agriculturalReturns).omit({
   id: true,

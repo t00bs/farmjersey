@@ -8,6 +8,7 @@ import { eq, and, gt } from "drizzle-orm";
 import { db } from "./db";
 import { randomBytes, createHash } from "crypto";
 import rateLimit from "express-rate-limit";
+import { generateFilledPDF } from "./pdf-generator";
 
 // Hash tokens before storing for security (protects against DB leaks)
 function hashToken(token: string): string {
@@ -1607,6 +1608,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!res.headersSent) {
         res.status(500).json({ message: "Internal server error" });
       }
+    }
+  });
+
+  // Generate and download filled PDF for agricultural return
+  app.get("/api/agricultural-returns/:returnId/pdf", isAuthenticated, async (req: any, res) => {
+    try {
+      const returnId = parseInt(req.params.returnId);
+      
+      if (!Number.isInteger(returnId) || returnId <= 0) {
+        return res.status(400).json({ message: "Invalid return ID" });
+      }
+      
+      const agriculturalReturn = await storage.getAgriculturalReturn(returnId);
+      if (!agriculturalReturn) {
+        return res.status(404).json({ message: "Agricultural return not found" });
+      }
+      
+      const application = await storage.getGrantApplication(agriculturalReturn.applicationId);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+      
+      if (application.userId !== req.user.id && req.user.role !== 'admin') {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      const pdfBuffer = await generateFilledPDF(agriculturalReturn);
+      
+      const farmName = (agriculturalReturn.farmDetailsData as any)?.farmName || 'Farm';
+      const fileName = `RSS_Application_2026_${farmName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      res.send(pdfBuffer);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      res.status(500).json({ message: "Failed to generate PDF" });
     }
   });
 

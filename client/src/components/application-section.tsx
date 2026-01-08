@@ -22,6 +22,7 @@ interface ApplicationSectionProps {
   secondaryAction?: {
     label: string;
     onClick: () => void;
+    icon?: React.ReactNode;
   };
   templateDownload?: {
     label: string;
@@ -143,6 +144,7 @@ export default function ApplicationSection({
               className="flex-1 font-medium py-3 px-4"
               disabled={disabled}
             >
+              {secondaryAction.icon}
               {secondaryAction.label}
             </Button>
           </div>

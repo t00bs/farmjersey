@@ -17,7 +17,9 @@ import AgriculturalReturnWizard from "@/components/agricultural-return-wizard";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { InfoIcon, Save, Send, Trash2, ExternalLink } from "lucide-react";
+import { InfoIcon, Save, Send, Trash2, ExternalLink, Download } from "lucide-react";
+import type { AgriculturalReturn } from "@shared/schema";
+import { downloadWithAuth } from "@/lib/queryClient";
 
 export default function GrantApplication() {
   const { toast } = useToast();
@@ -57,6 +59,12 @@ export default function GrantApplication() {
   
   // Get numeric ID for internal operations (document uploads, etc.)
   const applicationId = application?.id || null;
+
+  // Fetch agricultural return to get its ID for PDF download
+  const { data: agriculturalReturn } = useQuery<AgriculturalReturn>({
+    queryKey: ["/api/agricultural-returns", applicationId],
+    enabled: !!applicationId && !!application?.agriculturalReturnCompleted,
+  });
   
 
 
@@ -175,6 +183,34 @@ export default function GrantApplication() {
       });
     },
   });
+
+  const handleDownloadPDF = async () => {
+    if (!agriculturalReturn?.id) {
+      toast({
+        title: "PDF not available",
+        description: "Please complete the agricultural return first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const farmName = (agriculturalReturn.farmDetailsData as any)?.farmName || 'Farm';
+      const fileName = `RSS_Application_2026_${farmName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+      await downloadWithAuth(`/api/agricultural-returns/${agriculturalReturn.id}/pdf`, fileName);
+      toast({
+        title: "PDF Downloaded",
+        description: "Your agricultural return PDF has been downloaded.",
+      });
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      toast({
+        title: "Download Failed",
+        description: "Failed to download the PDF. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleDownloadTemplate = async () => {
     try {
@@ -367,6 +403,11 @@ export default function GrantApplication() {
                 onClick: () => (!isReadOnly || application?.agriculturalReturnCompleted) && setAgriculturalFormOpen(true),
                 variant: "outline",
               }}
+              secondaryAction={application?.agriculturalReturnCompleted ? {
+                label: "Download PDF",
+                onClick: handleDownloadPDF,
+                icon: <Download className="w-4 h-4 mr-1" />,
+              } : undefined}
             />
 
             <ApplicationSection

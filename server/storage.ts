@@ -59,6 +59,7 @@ export interface IStorage {
   
   // Agricultural Return operations
   createAgriculturalReturn(agriculturalReturn: InsertAgriculturalReturn): Promise<AgriculturalReturn>;
+  getAgriculturalReturn(id: number): Promise<AgriculturalReturn | undefined>;
   getAgriculturalReturnByApplicationId(applicationId: number): Promise<AgriculturalReturn | undefined>;
   updateAgriculturalReturn(id: number, updates: Partial<InsertAgriculturalReturn>): Promise<AgriculturalReturn | undefined>;
   
@@ -450,6 +451,14 @@ export class DatabaseStorage implements IStorage {
       .values(agriculturalReturn)
       .returning();
     return newReturn;
+  }
+
+  async getAgriculturalReturn(id: number): Promise<AgriculturalReturn | undefined> {
+    const [agriculturalReturn] = await db
+      .select()
+      .from(agriculturalReturns)
+      .where(eq(agriculturalReturns.id, id));
+    return agriculturalReturn;
   }
 
   async getAgriculturalReturnByApplicationId(applicationId: number): Promise<AgriculturalReturn | undefined> {

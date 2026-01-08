@@ -978,9 +978,30 @@ function ApplicationReviewDialogContent({
         <TabsContent value="agricultural" className="space-y-4">
           {agriculturalReturn ? (
             <div className="space-y-4 max-h-96 overflow-y-auto">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div><strong>Status:</strong> {agriculturalReturn.isComplete ? 'Complete' : 'Incomplete'}</div>
-                <div><strong>Created:</strong> {agriculturalReturn.createdAt ? new Date(agriculturalReturn.createdAt).toLocaleDateString() : 'Not available'}</div>
+              <div className="flex items-center justify-between">
+                <div className="grid grid-cols-2 gap-4 text-sm flex-1">
+                  <div><strong>Status:</strong> {agriculturalReturn.isComplete ? 'Complete' : 'Incomplete'}</div>
+                  <div><strong>Created:</strong> {agriculturalReturn.createdAt ? new Date(agriculturalReturn.createdAt).toLocaleDateString() : 'Not available'}</div>
+                </div>
+                {agriculturalReturn.isComplete && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={async () => {
+                      try {
+                        const farmName = (agriculturalReturn.farmDetailsData as any)?.farmName || 'Farm';
+                        const fileName = `RSS_Application_2026_${farmName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+                        await downloadWithAuth(`/api/agricultural-returns/${agriculturalReturn.id}/pdf`, fileName);
+                      } catch (error) {
+                        console.error('Error downloading PDF:', error);
+                      }
+                    }}
+                    data-testid="button-download-agricultural-pdf"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Download PDF
+                  </Button>
+                )}
               </div>
 
               {/* Farm Details */}

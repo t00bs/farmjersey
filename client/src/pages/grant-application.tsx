@@ -465,49 +465,51 @@ export default function GrantApplication() {
                 </div>
               </div>
               
-              {isReadOnly ? (
-                <div className="text-center py-2 px-4 bg-primary-custom/10 text-primary-custom rounded-lg font-medium">
-                  Application {application?.status === "submitted" ? "Submitted" : application?.status === "approved" ? "Approved" : "Rejected"} - View Only
-                </div>
-              ) : (
-                <div className="flex space-x-3">
-                  <Button 
-                    variant="outline"
-                    onClick={() => saveProgressMutation.mutate()}
-                    disabled={saveProgressMutation.isPending}
-                    data-testid="button-save-progress"
-                  >
-                    <Save className="w-4 h-4 mr-2" />
-                    {saveProgressMutation.isPending ? "Saving..." : "Save Progress"}
-                  </Button>
-                  <Button 
-                    variant="destructive"
-                    onClick={() => {
-                      if (confirm("Are you sure you want to delete this application? This action cannot be undone.")) {
-                        deleteApplicationMutation.mutate();
-                      }
-                    }}
-                    disabled={deleteApplicationMutation.isPending}
-                    data-testid="button-delete-application"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    {deleteApplicationMutation.isPending ? "Deleting..." : "Delete (Testing)"}
-                  </Button>
-                  <Button 
-                    disabled={!isApplicationComplete || submitApplicationMutation.isPending}
-                    className={isApplicationComplete ? "bg-success-custom hover:bg-success-custom/90 text-white" : ""}
-                    onClick={() => {
-                      if (isApplicationComplete) {
-                        submitApplicationMutation.mutate();
-                      }
-                    }}
-                    data-testid="button-submit-application"
-                  >
-                    <Send className="w-4 h-4 mr-2" />
-                    {submitApplicationMutation.isPending ? "Submitting..." : "Submit Application"}
-                  </Button>
-                </div>
-              )}
+              <div className="flex space-x-3">
+                {isReadOnly ? (
+                  <div className="text-center py-2 px-4 bg-primary-custom/10 text-primary-custom rounded-lg font-medium">
+                    Application {application?.status === "submitted" ? "Submitted" : application?.status === "approved" ? "Approved" : "Rejected"} - View Only
+                  </div>
+                ) : (
+                  <>
+                    <Button 
+                      variant="outline"
+                      onClick={() => saveProgressMutation.mutate()}
+                      disabled={saveProgressMutation.isPending}
+                      data-testid="button-save-progress"
+                    >
+                      <Save className="w-4 h-4 mr-2" />
+                      {saveProgressMutation.isPending ? "Saving..." : "Save Progress"}
+                    </Button>
+                    <Button 
+                      disabled={!isApplicationComplete || submitApplicationMutation.isPending}
+                      className={isApplicationComplete ? "bg-success-custom hover:bg-success-custom/90 text-white" : ""}
+                      onClick={() => {
+                        if (isApplicationComplete) {
+                          submitApplicationMutation.mutate();
+                        }
+                      }}
+                      data-testid="button-submit-application"
+                    >
+                      <Send className="w-4 h-4 mr-2" />
+                      {submitApplicationMutation.isPending ? "Submitting..." : "Submit Application"}
+                    </Button>
+                  </>
+                )}
+                <Button 
+                  variant="destructive"
+                  onClick={() => {
+                    if (confirm("Are you sure you want to delete this application? This action cannot be undone.")) {
+                      deleteApplicationMutation.mutate();
+                    }
+                  }}
+                  disabled={deleteApplicationMutation.isPending}
+                  data-testid="button-delete-application"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  {deleteApplicationMutation.isPending ? "Deleting..." : "Delete (Testing)"}
+                </Button>
+              </div>
             </div>
           </Card>
         </main>

@@ -142,13 +142,15 @@ export default function GrantApplication() {
       
       return await apiRequest("DELETE", `/api/grant-applications/${applicationId}`);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: "Application Deleted",
         description: "Your application has been deleted successfully.",
       });
-      // Invalidate applications cache and use client-side navigation (no full page reload)
-      queryClient.invalidateQueries({ queryKey: ["/api/grant-applications"] });
+      // Remove cached data entirely to force fresh fetch on home page
+      queryClient.removeQueries({ queryKey: ["/api/grant-applications"] });
+      // Also clear any specific application cache
+      queryClient.removeQueries({ queryKey: ["/api/grant-applications", applicationId] });
       navigate("/");
     },
     onError: (error) => {

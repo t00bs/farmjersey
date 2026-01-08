@@ -304,9 +304,9 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
         return await apiRequest("POST", "/api/agricultural-returns", payload);
       }
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/agricultural-returns", applicationId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/grant-applications"] });
+    onSuccess: async (_, variables) => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/agricultural-returns", applicationId] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/grant-applications"] });
       
       if (variables.isComplete) {
         toast({

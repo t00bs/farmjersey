@@ -7,6 +7,7 @@ const TEMPLATE_PATH = path.join(process.cwd(), 'server/templates/RSS_Application
 
 interface FarmDetails {
   farmName?: string;
+  farmCode?: string;
   addressLine1?: string;
   addressLine2?: string;
   parish?: string;
@@ -87,7 +88,7 @@ interface FinancialData {
   tradingProfit?: number;
 }
 
-export async function generateFilledPDF(agriculturalReturn: AgriculturalReturn, farmCode?: string | null): Promise<Buffer> {
+export async function generateFilledPDF(agriculturalReturn: AgriculturalReturn): Promise<Buffer> {
   const templateBytes = fs.readFileSync(TEMPLATE_PATH);
   const pdfDoc = await PDFDocument.load(templateBytes);
   const form = pdfDoc.getForm();
@@ -133,11 +134,11 @@ export async function generateFilledPDF(agriculturalReturn: AgriculturalReturn, 
   };
 
   setTextField('Farm Name', farmDetails.farmName);
+  setTextField('Farm Code', farmDetails.farmCode);
   setTextField('Address Line 1', farmDetails.addressLine1);
   setTextField('Address Line 2', farmDetails.addressLine2);
   setTextField('Parish', farmDetails.parish);
   setTextField('Postcode', farmDetails.postcode);
-  setTextField('Farm Code', farmCode);
 
   switch (accreditation.leafOption) {
     case 'demoFarm':

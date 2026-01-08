@@ -1634,7 +1634,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
-      const pdfBuffer = await generateFilledPDF(agriculturalReturn, application.consentFarmCode);
+      const pdfBuffer = await generateFilledPDF(agriculturalReturn);
       
       const farmName = (agriculturalReturn.farmDetailsData as any)?.farmName || 'Farm';
       const fileName = `RSS_Application_2026_${farmName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;

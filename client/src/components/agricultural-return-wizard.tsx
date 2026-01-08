@@ -24,6 +24,7 @@ interface AgriculturalReturnWizardProps {
 
 const farmDetailsSchema = z.object({
   farmName: z.string().optional(),
+  farmCode: z.string().optional(),
   addressLine1: z.string().optional(),
   addressLine2: z.string().optional(),
   parish: z.string().optional(),
@@ -142,6 +143,7 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
   const getDefaultFormValues = (): CombinedFormData => ({
     farmDetails: {
       farmName: "",
+      farmCode: "",
       addressLine1: "",
       addressLine2: "",
       parish: "",
@@ -464,18 +466,33 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
       </p>
       
       <div className="space-y-4">
-        <FormField
-          control={form.control}
-          name="farmDetails.farmName"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Farm Name</FormLabel>
-              <FormControl>
-                <Input type="text" placeholder="Enter your farm name" {...field} disabled={readOnly} data-testid="input-farm-name" />
-              </FormControl>
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="farmDetails.farmName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Farm Name</FormLabel>
+                <FormControl>
+                  <Input type="text" placeholder="Enter your farm name" {...field} disabled={readOnly} data-testid="input-farm-name" />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="farmDetails.farmCode"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Farm Code</FormLabel>
+                <FormControl>
+                  <Input type="text" placeholder="Enter your farm code" {...field} disabled={readOnly} data-testid="input-farm-code" />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </div>
         
         <FormField
           control={form.control}

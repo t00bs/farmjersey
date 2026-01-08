@@ -121,6 +121,10 @@ CREATE POLICY "Users can update own applications"
   ON public.grant_applications FOR UPDATE
   USING (auth.uid() = user_id);
 
+CREATE POLICY "Users can delete own applications"
+  ON public.grant_applications FOR DELETE
+  USING (auth.uid() = user_id);
+
 -- Admins can view all applications
 CREATE POLICY "Admins can view all applications"
   ON public.grant_applications FOR SELECT
@@ -180,6 +184,16 @@ CREATE POLICY "Users can insert own agricultural returns"
 
 CREATE POLICY "Users can update own agricultural returns"
   ON public.agricultural_returns FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.grant_applications
+      WHERE id = agricultural_returns.application_id
+      AND user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Users can delete own agricultural returns"
+  ON public.agricultural_returns FOR DELETE
   USING (
     EXISTS (
       SELECT 1 FROM public.grant_applications

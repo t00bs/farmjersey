@@ -247,7 +247,7 @@ export default function Dashboard() {
                       </div>
 
                       {/* Action Button */}
-                      <Link href={`/application/${application.id}`}>
+                      <Link href={`/application/${application.publicId}`}>
                         <Button className="w-full mt-4 bg-white border-2 border-primary-custom text-primary-custom hover:bg-primary-custom hover:text-white">
                           <FileText className="w-4 h-4 mr-2" />
                           {application.status === "submitted" || application.status === "approved" || application.status === "rejected" 

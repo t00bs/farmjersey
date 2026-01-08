@@ -38,7 +38,7 @@ function Router() {
           <Route path="/settings" component={Settings} />
           <Route path="/admin-dashboard" component={AdminDashboard} />
           <Route path="/admin" component={AdminDashboard} />
-          <Route path="/application/:id" component={GrantApplication} />
+          <Route path="/application/:publicId" component={GrantApplication} />
           <Route path="/" component={Dashboard} />
         </>
       )}

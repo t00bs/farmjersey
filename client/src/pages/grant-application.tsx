@@ -22,14 +22,14 @@ import { InfoIcon, Save, Send, Trash2, ExternalLink } from "lucide-react";
 export default function GrantApplication() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
-  const [, params] = useRoute("/application/:id");
+  const [, params] = useRoute("/application/:publicId");
   const [, navigate] = useLocation();
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [agriculturalFormOpen, setAgriculturalFormOpen] = useState(false);
   const [documentModalOpen, setDocumentModalOpen] = useState(false);
   const [uploadType, setUploadType] = useState<"land_declaration" | "supporting_doc">("land_declaration");
 
-  const applicationId = params?.id ? parseInt(params.id) : null;
+  const publicId = params?.publicId || null;
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -47,30 +47,33 @@ export default function GrantApplication() {
   }, [isAuthenticated, isLoading, toast]);
 
   const { data: applicationData, isLoading: applicationLoading } = useQuery<GrantApplication[] | GrantApplication>({
-    queryKey: ["/api/grant-applications", applicationId],
-    enabled: !!applicationId,
+    queryKey: ["/api/grant-applications", publicId],
+    enabled: !!publicId,
     retry: false,
   });
   
   // Handle both array and single object responses
   const application = Array.isArray(applicationData) ? applicationData[0] : applicationData;
   
+  // Get numeric ID for internal operations (document uploads, etc.)
+  const applicationId = application?.id || null;
+  
 
 
   // Save progress mutation
   const saveProgressMutation = useMutation({
     mutationFn: async () => {
-      if (!applicationId) throw new Error("No application ID");
+      if (!publicId) throw new Error("No application ID");
       
       // Just trigger a save to update any cached progress
-      return await apiRequest("PATCH", `/api/grant-applications/${applicationId}`, {
+      return await apiRequest("PATCH", `/api/grant-applications/${publicId}`, {
         // Send current timestamp to trigger progress recalculation
         lastSaved: new Date().toISOString()
       });
     },
     onSuccess: () => {
       // Invalidate and refetch the application data
-      queryClient.invalidateQueries({ queryKey: ["/api/grant-applications", applicationId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/grant-applications", publicId] });
       toast({
         title: "Progress Saved",
         description: "Your application progress has been saved successfully.",
@@ -99,16 +102,16 @@ export default function GrantApplication() {
   // Submit application mutation
   const submitApplicationMutation = useMutation({
     mutationFn: async () => {
-      if (!applicationId) throw new Error("No application ID");
+      if (!publicId) throw new Error("No application ID");
       
-      return await apiRequest("PATCH", `/api/grant-applications/${applicationId}`, {
+      return await apiRequest("PATCH", `/api/grant-applications/${publicId}`, {
         status: "submitted"
       });
     },
     onSuccess: () => {
       // Invalidate all application queries including this specific one, then redirect to home
       queryClient.invalidateQueries({ queryKey: ["/api/grant-applications"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/grant-applications", applicationId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/grant-applications", publicId] });
       toast({
         title: "Application Submitted",
         description: "Your grant application has been submitted successfully.",
@@ -138,9 +141,9 @@ export default function GrantApplication() {
   // Delete application mutation (temporary for testing)
   const deleteApplicationMutation = useMutation({
     mutationFn: async () => {
-      if (!applicationId) throw new Error("No application ID");
+      if (!publicId) throw new Error("No application ID");
       
-      return await apiRequest("DELETE", `/api/grant-applications/${applicationId}`);
+      return await apiRequest("DELETE", `/api/grant-applications/${publicId}`);
     },
     onSuccess: async () => {
       toast({
@@ -150,7 +153,7 @@ export default function GrantApplication() {
       // Remove cached data entirely to force fresh fetch on home page
       queryClient.removeQueries({ queryKey: ["/api/grant-applications"] });
       // Also clear any specific application cache
-      queryClient.removeQueries({ queryKey: ["/api/grant-applications", applicationId] });
+      queryClient.removeQueries({ queryKey: ["/api/grant-applications", publicId] });
       navigate("/");
     },
     onError: (error) => {

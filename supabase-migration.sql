@@ -89,6 +89,7 @@ CREATE POLICY "Admins can delete invitations"
 -- ============================================
 CREATE TABLE IF NOT EXISTS public.grant_applications (
   id SERIAL PRIMARY KEY,
+  public_id VARCHAR(12) UNIQUE NOT NULL,
   user_id UUID NOT NULL REFERENCES public.users(id),
   status VARCHAR(50) NOT NULL DEFAULT 'draft',
   year INTEGER NOT NULL,

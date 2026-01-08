@@ -1194,20 +1194,95 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
   const renderDeclarationSection = () => (
     <div className="space-y-6">
       <Card className="p-4 bg-muted/50">
-        <h4 className="font-medium mb-3">Consent Information</h4>
-        <div className="text-sm space-y-2 text-muted-foreground">
-          <p>I confirm and agree:</p>
-          <ul className="list-disc pl-5 space-y-1">
-            <li>That this declaration is made with my authority. I am aware that it is an offence to submit false or misleading information on a declaration.</li>
-            <li>That the information supplied in this form will be used for collecting annual statistical returns in accordance with the Agricultural Returns Laws.</li>
-            <li>That the information collected may be shared with IE and Jersey Business / Farm Jersey.</li>
-            <li>My Agricultural Return information will be used to monitor the agriculture industry and provide annual agricultural statistic reports.</li>
-          </ul>
-          <p className="mt-3">
-            I understand that under Jersey's Data Protection Law I have the right to withdraw my consent. 
-            However, I understand that this may be in breach of other laws. 
-            (Contact: <a href="mailto:ruraleconomy@gov.je" className="text-primary underline">ruraleconomy@gov.je</a>)
-          </p>
+        <h4 className="font-semibold mb-3 text-lg">RSS Declaration and Consent</h4>
+        <p className="text-sm text-muted-foreground mb-4">
+          Before signing this form please read the declaration notes and consent information carefully. The notes set out your agreement and understanding of the conditions required under the RSS. The consent information explains how your information will be used and provides a brief description of your rights under the Data Protection (Jersey) Law 2018. For further information on how the Government of Jersey handles personal data please visit <a href="https://www.gov.je/privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline">www.gov.je/privacy</a>
+        </p>
+        
+        <div className="border-t pt-4 mt-4">
+          <h5 className="font-semibold mb-3">Important Information</h5>
+          <p className="text-sm font-medium mb-3">Declaration Notes re Agricultural Return for the Rural Support Scheme</p>
+          <p className="text-sm text-muted-foreground mb-3">This confirms on behalf of the business that I:</p>
+          
+          <div className="text-sm space-y-3 text-muted-foreground max-h-64 overflow-y-auto pr-2">
+            <p><strong>1.</strong> Agree to provide 2025 signed accounts if grants or subsidies received from the Government of Jersey exceed £75,000. Agree to provide a Financial Declaration Form if grants or subsidies received from the Government of Jersey are less than £74,999.</p>
+            
+            <p><strong>2.</strong> Understand that this information may be used in whole or part for the purpose of producing aggregated information that may be used or subsequently published by the Government of Jersey.</p>
+            
+            <p><strong>3.</strong> Agree to provide signed audited accounts or a Financial Declaration Form for the payment received in 2026 should I not claim RSS in 2027.</p>
+            
+            <p><strong>4.</strong> Agree to include the receipt of all government grants as income in the annual accounts of the business it was intended to support.</p>
+            
+            <p><strong>5.</strong> Understand and accept that the Comptroller and Auditor General (CAG) may audit any Government funded individual or organisation where the grant received is greater than £5,000.</p>
+            
+            <p><strong>6.</strong> Understand and accept that the Comptroller and Auditor General (CAG) may audit any Government funded individual or organisation where the grant is less than £5,000 but represents at least 50% of the total amount/income received during that year.</p>
+            
+            <p><strong>7.</strong> Agree to Officers from the relevant departments accessing information held about my business by assurance providers including but not limited to LEAF, Red Tractor, Acoura, NSF, SAI Global, SALSA, KIWA, BHS, BRC Global.</p>
+            
+            <p><strong>8.</strong> Understand I may also be required to demonstrate that I have robust corporate governance arrangements in place that ensure the future viability of my business.</p>
+            
+            <p><strong>9.</strong> Understand that failure to submit all documents in accordance with the deadlines given will result in my application not being processed.</p>
+            
+            <p><strong>10.</strong> Understand that, if in receipt of an agricultural loan in arrears, any payments due to me may be withheld to offset arrears.</p>
+            
+            <p><strong>11.</strong> Agree to provide for inspection by Officers from relevant departments (within 24 hour notice) my implemented Water Pollution Contingency Plan, Soil Protection Plan, Pesticide Application Records, Crop Nutrient Management Plan, Waste Management Plan and Disposal Record, Farm Manure and Organic Waste Management Plan:</p>
+            
+            <div className="pl-4 space-y-2">
+              <p><strong>a)</strong> Waste Management Plan and Disposal Record: a current Waste Disposal Record showing the date, amount and disposal route of all wastes emanating from the farm. An undertaking to dispose of all farm waste materials in an approved way within the current year, pay any relevant disposal charge and keep appropriate records.</p>
+              
+              <p><strong>b)</strong> Farm Manure and Organic Waste Management Plan: if I keep livestock, import organic manures, sewage sludge or compost, or allow others to apply these to the land on which I claim then I need to have a current plan in place.</p>
+              
+              <p><strong>c)</strong> Pesticide Application Records: keep records of the date and amount of any application of pesticides applied in fields claimed for. To have evidence of using suitably qualified advice prior to application of pesticides.</p>
+              
+              <p><strong>d)</strong> Water Pollution Contingency Plan: this is for the farm premises and will include: a map of watercourses on the farm and drainage systems, fuel and oil facilities, fertilizer usage and storage areas, pesticide usage and storage areas, and details of management procedures and equipment in place to minimize the risk of pollution.</p>
+            </div>
+            
+            <p><strong>12.</strong> Understand and will abide by the conditions set out in all sections of this RSS document.</p>
+            
+            <p><strong>13.</strong> Understand that the submission of false or misleading information will lead to penalties being imposed against me and may require full/or part repayment of any RSS payment, and that suspected fraudulent activity will be reported to the police.</p>
+            
+            <p><strong>14.</strong> To abide by all relevant current Jersey legislation.</p>
+            
+            <p><strong>15.</strong> That a Children and Vulnerable Adults Safeguarding Policy must be implemented (see notes below re safeguarding).</p>
+            
+            <p><strong>16.</strong> To comply with Codes of Good Agricultural and Environmental Practice (GAEP):</p>
+            <div className="pl-4 space-y-2">
+              <p><strong>a)</strong> GAEP for the Welfare of livestock (cattle, sheep, goats, pigs, poultry, and horses) are guidelines which set minimum standards for environment, public health, animal and plant health, and animal welfare. Contravention of GAEP or the Welfare Codes will result in your RSS being reduced.</p>
+              <p><strong>b)</strong> Please also refer to the DEFRA publication 'Protecting our Water, Soil and Air: A Code of Good Agricultural Practice for farmers, growers and land managers' (CoGAP), available at <a href="https://www.gov.uk" target="_blank" rel="noopener noreferrer" className="text-primary underline">www.gov.uk</a></p>
+            </div>
+            
+            <p><strong>17.</strong> To provide a list of fields occupied during the last calendar year with all crops grown for each field, together with a list of fields and crops intended for the current year, when I submit my RSS application as part of my Agricultural Return.</p>
+            
+            <p><strong>18.</strong> I declare that the Applicant Business is a going concern and is not in immediate danger of insolvency, winding up or ceasing to trade on a permanent basis.</p>
+            
+            <p><strong>19.</strong> I declare the Applicant Enterprise has filed all necessary tax and social security returns and paid all relevant taxes and social security contributions due to the Government up to date (allowing for deferrals where permitted by arrangement with Revenue Jersey).</p>
+          </div>
+        </div>
+        
+        <div className="border-t pt-4 mt-4">
+          <h5 className="font-semibold mb-3">Safeguarding</h5>
+          <div className="text-sm space-y-2 text-muted-foreground">
+            <p>I hereby acknowledge that vulnerable people have a right to be safe and that adults have a responsibility to protect them. I hereby acknowledge and confirm that where our business has children and or vulnerable adults working on, living on (whether or not directly employed) or visiting our business premises (land and buildings), I have a direct responsibility in respect to the safeguarding of those individuals and I will take appropriate actions to ensure those responsibilities are met.</p>
+            <p>I hereby acknowledge that where my organisation has any involvement with children and or vulnerable adults that I will implement appropriate safeguarding policies and procedures. I will ensure that my staff are appropriately vetted and trained in respect to safeguarding and that designated safeguarding lead(s) will be appointed.</p>
+            <p>Guidance on safeguarding (including procedures and the reporting of concerns) can be found by visiting <a href="https://www.safeguarding.je" target="_blank" rel="noopener noreferrer" className="text-primary underline">www.safeguarding.je</a> or by contacting the Safeguarding Partnership Board.</p>
+          </div>
+        </div>
+        
+        <div className="border-t pt-4 mt-4">
+          <h5 className="font-semibold mb-3">Consent Information</h5>
+          <div className="text-sm space-y-2 text-muted-foreground">
+            <p><strong>I confirm and agree:</strong></p>
+            <ul className="list-disc pl-5 space-y-2">
+              <li>That this declaration is made with my authority. I am aware that it's an offence to submit false or misleading information on a declaration.</li>
+              <li>That the information supplied in this form, together with any other accompanying information, is to be used for the purpose(s) of collecting my annual returns in accordance with the Agricultural Returns (Jersey) Law 1947, Agricultural Returns (Amendment) (Jersey) Law 1958, and the Agriculture (Guaranteed Prices and Financial Assistance) (Jersey) Law 1965 as administered by Department for the Economy ("Economy").</li>
+              <li>My Agricultural Return information will be used to calculate RSS payments, monitor the agriculture industry, facilitate ongoing administration of the Rural Economic Framework and grouped statistics will be used to provide annual agricultural statistic reports, which will be published on <a href="https://www.gov.je" target="_blank" rel="noopener noreferrer" className="text-primary underline">www.gov.je</a>. That the information collected by Economy may be shared with IE and Jersey Business / Farm Jersey.</li>
+              <li>That Economy Officers may contact LEAF to discuss the details of my LEAF accreditation process.</li>
+              <li>My personal information will not be processed further unless permitted under a condition of the Data Protection (Jersey) Law 2018, or to comply with a legal requirement.</li>
+            </ul>
+            <p className="mt-3">
+              I understand that under Jersey's Data Protection Law I have the right to withdraw my consent to the further processing of my information. However, I understand that this may affect my grant payment as well as be in breach of other laws. (Should you wish to exercise this right please contact us at <a href="mailto:ruraleconomy@gov.je" className="text-primary underline">ruraleconomy@gov.je</a>)
+            </p>
+          </div>
         </div>
       </Card>
       

@@ -147,6 +147,17 @@ Preferred communication style: Simple, everyday language.
 ## Changelog
 
 Changelog:
+- January 8, 2026. **SECTION H TERMS AND CONDITIONS UPDATE**:
+  - Replaced placeholder consent information with full RSS Declaration and Consent
+  - Added 19 Declaration Notes covering accounts, audits, inspections, and compliance requirements
+  - Added Safeguarding section with child/vulnerable adult protection acknowledgments
+  - Added comprehensive Consent Information referencing Agricultural Returns Laws
+  - Declaration section now includes scrollable content area for lengthy terms
+  - Added links to gov.je, safeguarding.je, and ruraleconomy@gov.je for further information
+- January 8, 2026. **SECURE APPLICATION URLS**:
+  - Application URLs now use random 8-character publicId instead of sequential numeric IDs
+  - Prevents enumeration attacks where someone could guess application IDs
+  - Added viewWithAuth function for authenticated document viewing in admin dashboard
 - January 7, 2026. **AGRICULTURAL RETURN FORM RESTRUCTURING**:
   - Added new Section B (Accreditation) with LEAF membership options, Organic certification options, and other certifications (BRC, GlobalGAP, Red Tractor, SALSA, KIWA, British Horse Society)
   - Reorganized sections: A (Farm Details), B (Accreditation - NEW), C (Integrated Farm Management), D (Land and Facilities), E (Farm Livestock), F (Tier 3), G (Financial Declaration), H (Declaration)

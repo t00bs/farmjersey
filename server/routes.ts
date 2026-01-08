@@ -1925,18 +1925,7 @@ async function calculateProgress(application: any): Promise<number> {
   const total = 3; // Total sections: Agricultural Return, Land Declaration, Supporting Docs
   // Note: Digital signature/consent is now part of Agricultural Return
   
-  // Check if agricultural return is completed via form response
-  // Get the active template first
-  const activeTemplates = await storage.getActiveAgriculturalFormTemplates();
-  if (activeTemplates.length > 0) {
-    const mostRecentTemplate = activeTemplates.sort((a, b) => b.year - a.year)[0];
-    const agriculturalResponse = await storage.getAgriculturalFormResponse(mostRecentTemplate.id, application.id);
-    if (agriculturalResponse && agriculturalResponse.isComplete) completed++;
-  } else {
-    // Fallback to old system if no templates available
-    if (application.agriculturalReturnCompleted) completed++;
-  }
-  
+  if (application.agriculturalReturnCompleted) completed++;
   if (application.landDeclarationCompleted) completed++;
   if (application.supportingDocsCompleted) completed++;
   

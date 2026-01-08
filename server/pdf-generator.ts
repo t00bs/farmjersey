@@ -18,14 +18,13 @@ interface FarmDetails {
 interface AccreditationData {
   leafOption?: string;
   organicOption?: string;
-  otherCertifications?: {
-    brcGlobal?: boolean;
-    globalGap?: boolean;
-    redTractor?: boolean;
-    salsa?: boolean;
-    kiwa?: boolean;
-    britishHorseSociety?: boolean;
-  };
+  // Certifications are stored at the top level, not nested
+  brcGlobal?: boolean;
+  globalGap?: boolean;
+  redTractor?: boolean;
+  salsa?: boolean;
+  kiwa?: boolean;
+  britishHorseSociety?: boolean;
 }
 
 interface ManagementPlans {
@@ -88,7 +87,7 @@ interface FinancialData {
   tradingProfit?: number;
 }
 
-export async function generateFilledPDF(agriculturalReturn: AgriculturalReturn): Promise<Buffer> {
+export async function generateFilledPDF(agriculturalReturn: AgriculturalReturn, farmCode?: string | null): Promise<Buffer> {
   const templateBytes = fs.readFileSync(TEMPLATE_PATH);
   const pdfDoc = await PDFDocument.load(templateBytes);
   const form = pdfDoc.getForm();
@@ -138,6 +137,7 @@ export async function generateFilledPDF(agriculturalReturn: AgriculturalReturn):
   setTextField('Address Line 2', farmDetails.addressLine2);
   setTextField('Parish', farmDetails.parish);
   setTextField('Postcode', farmDetails.postcode);
+  setTextField('Farm Code', farmCode);
 
   switch (accreditation.leafOption) {
     case 'demoFarm':
@@ -166,13 +166,13 @@ export async function generateFilledPDF(agriculturalReturn: AgriculturalReturn):
       break;
   }
 
-  const certs = accreditation.otherCertifications || {};
-  setCheckbox('Red Tractor', certs.redTractor);
-  setCheckbox('SALSA', certs.salsa);
-  setCheckbox('KIWA', certs.kiwa);
-  setCheckbox('Global GAP', certs.globalGap);
-  setCheckbox('British Horse Society', certs.britishHorseSociety);
-  setCheckbox('BRC Global Standard', certs.brcGlobal);
+  // Certifications are stored at top level of accreditation object
+  setCheckbox('Red Tractor', accreditation.redTractor);
+  setCheckbox('SALSA', accreditation.salsa);
+  setCheckbox('KIWA', accreditation.kiwa);
+  setCheckbox('Global GAP', accreditation.globalGap);
+  setCheckbox('British Horse Society', accreditation.britishHorseSociety);
+  setCheckbox('BRC Global Standard', accreditation.brcGlobal);
 
   setCheckbox('Soil Management Plan', management.soilPlan);
   setCheckbox('Water Management Plan', management.waterPlan);
@@ -241,7 +241,9 @@ export async function generateFilledPDF(agriculturalReturn: AgriculturalReturn):
       if (widgets.length > 0) {
         const widget = widgets[0];
         const rect = widget.getRectangle();
-        const page = pdfDoc.getPages()[widget.P()?.toString() ? 0 : 0];
+        // The Signed field is on page 4 (index 3)
+        const pages = pdfDoc.getPages();
+        const page = pages[3]; // Page 4 (0-indexed)
         
         const imageWidth = rect.width - 4;
         const imageHeight = rect.height - 4;

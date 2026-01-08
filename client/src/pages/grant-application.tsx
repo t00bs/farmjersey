@@ -62,7 +62,7 @@ export default function GrantApplication() {
 
   // Fetch agricultural return to get its ID for PDF download
   const { data: agriculturalReturn } = useQuery<AgriculturalReturn>({
-    queryKey: ["/api/agricultural-returns", applicationId],
+    queryKey: [`/api/agricultural-returns/${applicationId}`],
     enabled: !!applicationId && !!application?.agriculturalReturnCompleted,
   });
   

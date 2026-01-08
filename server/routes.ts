@@ -1208,8 +1208,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.id;
       const applications = await storage.getUserGrantApplications(userId);
-      // Add cache control for browser caching
-      res.set('Cache-Control', 'private, max-age=30');
+      // No caching for list endpoint to ensure fresh data after mutations
+      res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.json(applications);
     } catch (error) {
       console.error("Error fetching grant applications:", error);

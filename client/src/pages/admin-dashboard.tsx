@@ -1,7 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { apiRequest, queryClient, downloadWithAuth } from "@/lib/queryClient";
+import { apiRequest, queryClient, downloadWithAuth, viewWithAuth } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { formatApplicationRef } from "@/lib/utils";
@@ -1092,7 +1092,7 @@ function ApplicationReviewDialogContent({
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => window.open(`/api/documents/view/${doc.id}`, '_blank')}
+                    onClick={() => viewWithAuth(`/api/documents/view/${doc.id}`)}
                     data-testid={`button-view-document-${doc.id}`}
                   >
                     <Eye className="h-4 w-4 mr-2" />

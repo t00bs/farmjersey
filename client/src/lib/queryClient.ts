@@ -167,6 +167,24 @@ export async function downloadWithAuth(url: string, filename: string): Promise<v
   window.URL.revokeObjectURL(downloadUrl);
 }
 
+// Helper function to view files in new tab with authentication
+export async function viewWithAuth(url: string): Promise<void> {
+  const authHeaders = await getAuthHeaders();
+  
+  const response = await fetch(url, {
+    headers: authHeaders,
+  });
+  
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`View failed: ${response.status} - ${text}`);
+  }
+  
+  const blob = await response.blob();
+  const viewUrl = window.URL.createObjectURL(blob);
+  window.open(viewUrl, '_blank');
+}
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

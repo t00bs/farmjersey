@@ -109,7 +109,6 @@ export default function ApplicationSection({
         </div>
         {getStatusIcon()}
       </div>
-      
       <div className="space-y-3">
         {getInfoText() && (
           <div className="flex items-center space-x-2 text-sm text-gray-600">
@@ -133,7 +132,7 @@ export default function ApplicationSection({
           <div className="flex space-x-3">
             <Button
               onClick={primaryAction.onClick}
-              className={`flex-1 ${getPrimaryButtonClass()}`}
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 h-10 flex-1 bg-primary-custom font-medium py-3 px-4 rounded-md hover:bg-primary-custom/90 transition-colors text-[#000000]"
               disabled={disabled}
             >
               {primaryAction.label}

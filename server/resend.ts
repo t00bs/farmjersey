@@ -45,7 +45,7 @@ export async function sendInvitationEmail(toEmail: string, invitationUrl: string
   const { client } = await getUncachableResendClient();
   
   // Use verified domain for sending
-  const senderEmail = 'Farm Jersey <noreply@updates.electricsheep.design>';
+  const senderEmail = 'Farm Jersey <noreply@mail.farmjersey.je>';
   
   const { data, error } = await client.emails.send({
     from: senderEmail,
@@ -82,7 +82,7 @@ export async function sendInvitationEmail(toEmail: string, invitationUrl: string
 export async function sendPasswordResetEmail(toEmail: string, resetUrl: string) {
   const { client } = await getUncachableResendClient();
   
-  const senderEmail = 'Farm Jersey <noreply@updates.electricsheep.design>';
+  const senderEmail = 'Farm Jersey <noreply@mail.farmjersey.je>';
   
   const { data, error } = await client.emails.send({
     from: senderEmail,

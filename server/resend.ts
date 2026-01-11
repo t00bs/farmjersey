@@ -135,7 +135,7 @@ export async function sendPasswordResetEmail(toEmail: string, resetUrl: string) 
           <!-- Footer -->
           <div style="background-color: #f5f5f5; padding: 20px 30px; text-align: center; border-top: 1px solid #eeeeee;">
             <p style="color: #999999; font-size: 12px; margin: 0;">
-              Rural Support Scheme Portal | Government of Jersey
+              Rural Support Scheme Portal
             </p>
           </div>
         </div>

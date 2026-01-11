@@ -496,19 +496,6 @@ export default function GrantApplication() {
                     </Button>
                   </>
                 )}
-                <Button 
-                  variant="destructive"
-                  onClick={() => {
-                    if (confirm("Are you sure you want to delete this application? This action cannot be undone.")) {
-                      deleteApplicationMutation.mutate();
-                    }
-                  }}
-                  disabled={deleteApplicationMutation.isPending}
-                  data-testid="button-delete-application"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  {deleteApplicationMutation.isPending ? "Deleting..." : "Delete (Testing)"}
-                </Button>
               </div>
             </div>
           </Card>

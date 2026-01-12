@@ -17,6 +17,7 @@ import { Progress } from "@/components/ui/progress";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Eye, FileText, Calendar, User, Users, AlertTriangle, CheckCircle, Download, CalendarDays, Mail, Trash2, Loader2, Shield, ShieldOff } from "lucide-react";
 import { format } from "date-fns";
 import { DateRange } from "react-day-picker";
@@ -916,7 +917,43 @@ function ApplicationReviewDialogContent({
   application: ApplicationWithUserData; 
   onStatusUpdate: (status: string) => void;
 }) {
+  const { toast } = useToast();
   const [newStatus, setNewStatus] = useState(application.status);
+  const [resubmissionReason, setResubmissionReason] = useState("");
+  const [isSendingResubmission, setIsSendingResubmission] = useState(false);
+
+  const handleResubmission = async () => {
+    if (!resubmissionReason.trim()) {
+      toast({
+        title: "Reason required",
+        description: "Please provide a reason for requesting resubmission.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSendingResubmission(true);
+    try {
+      await apiRequest("POST", `/api/admin/applications/${application.id}/resubmission`, { reason: resubmissionReason.trim() });
+      
+      toast({
+        title: "Resubmission requested",
+        description: "The application has been sent back for resubmission and the user has been notified by email.",
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/applications"] });
+      setResubmissionReason("");
+      setNewStatus("in_progress");
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send resubmission request.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingResubmission(false);
+    }
+  };
 
   const { data: documents = [] } = useQuery<Document[]>({
     queryKey: [`/api/admin/applications/${application.id}/documents`],
@@ -1131,7 +1168,12 @@ function ApplicationReviewDialogContent({
           <div>
             <h4 className="font-semibold mb-4">Update Application Status</h4>
             <div className="space-y-4">
-              <Select value={newStatus} onValueChange={setNewStatus}>
+              <Select value={newStatus} onValueChange={(value) => {
+                setNewStatus(value);
+                if (value !== "resubmission") {
+                  setResubmissionReason("");
+                }
+              }}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select new status" />
                 </SelectTrigger>
@@ -1140,15 +1182,47 @@ function ApplicationReviewDialogContent({
                   <SelectItem value="submitted">Submitted</SelectItem>
                   <SelectItem value="approved">Approved</SelectItem>
                   <SelectItem value="rejected">Rejected</SelectItem>
+                  <SelectItem value="resubmission">Send for resubmission</SelectItem>
                 </SelectContent>
               </Select>
-              <Button 
-                onClick={() => onStatusUpdate(newStatus)}
-                disabled={newStatus === application.status}
-                className="w-full"
-              >
-                Update Status
-              </Button>
+              
+              {newStatus === "resubmission" && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Reason for resubmission</label>
+                  <Textarea
+                    placeholder="Explain what changes are required..."
+                    value={resubmissionReason}
+                    onChange={(e) => setResubmissionReason(e.target.value)}
+                    rows={4}
+                    className="resize-none"
+                  />
+                </div>
+              )}
+              
+              {newStatus === "resubmission" ? (
+                <Button 
+                  onClick={handleResubmission}
+                  disabled={!resubmissionReason.trim() || isSendingResubmission}
+                  className="w-full"
+                >
+                  {isSendingResubmission ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    "Send for resubmission"
+                  )}
+                </Button>
+              ) : (
+                <Button 
+                  onClick={() => onStatusUpdate(newStatus)}
+                  disabled={newStatus === application.status}
+                  className="w-full"
+                >
+                  Update Status
+                </Button>
+              )}
             </div>
           </div>
         </TabsContent>

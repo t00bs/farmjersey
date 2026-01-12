@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { isAuthenticated, isAdmin, validateInvitationToken, markInvitationUsed } from "./supabaseAuth";
 import { insertGrantApplicationSchema, insertAgriculturalReturnSchema, insertDocumentSchema, insertInvitationSchema, passwordResetTokens } from "@shared/schema";
-import { sendInvitationEmail, sendPasswordResetEmail } from "./resend";
+import { sendInvitationEmail, sendPasswordResetEmail, sendResubmissionEmail } from "./resend";
 import { eq, and, gt } from "drizzle-orm";
 import { db } from "./db";
 import { randomBytes, createHash } from "crypto";
@@ -564,6 +564,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating application status:", error);
       res.status(500).json({ message: "Failed to update application status" });
+    }
+  });
+
+  // Send application back for resubmission
+  app.post("/api/admin/applications/:id/resubmission", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { reason } = req.body;
+      
+      if (!reason || typeof reason !== 'string' || reason.trim().length === 0) {
+        return res.status(400).json({ message: "Reason is required" });
+      }
+      
+      // Get application with user data
+      const application = await storage.getGrantApplication(parseInt(id));
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+      
+      // Get user email
+      const user = await storage.getUser(application.userId);
+      if (!user || !user.email) {
+        return res.status(400).json({ message: "User email not found" });
+      }
+      
+      // Update application status to draft
+      const updatedApplication = await storage.updateGrantApplication(parseInt(id), { 
+        status: 'draft'
+      });
+      
+      if (!updatedApplication) {
+        return res.status(404).json({ message: "Failed to update application" });
+      }
+      
+      // Build application URL
+      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+        : process.env.REPLIT_DOMAINS?.split(',')[0] 
+          ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
+          : 'http://localhost:5000';
+      const applicationUrl = `${baseUrl}/application/${application.publicId}`;
+      
+      // Send email notification
+      try {
+        await sendResubmissionEmail(user.email, reason.trim(), applicationUrl);
+      } catch (emailError) {
+        console.error("Error sending resubmission email:", emailError);
+        // Still return success for the status update, but note email failure
+        return res.json({ 
+          ...updatedApplication, 
+          emailSent: false,
+          message: "Application updated but email failed to send"
+        });
+      }
+      
+      res.json({ ...updatedApplication, emailSent: true });
+    } catch (error) {
+      console.error("Error sending application for resubmission:", error);
+      res.status(500).json({ message: "Failed to send application for resubmission" });
     }
   });
 

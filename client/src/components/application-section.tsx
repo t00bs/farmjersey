@@ -82,7 +82,6 @@ export default function ApplicationSection({
   };
 
   const getInfoText = () => {
-    if (estimatedTime) return `Estimated time: ${estimatedTime}`;
     if (requiresTemplate) return "Excel template required";
     if (requiresSignature) return "Digital signature required";
     if (acceptedFormats) return acceptedFormats;

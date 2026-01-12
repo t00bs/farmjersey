@@ -506,6 +506,7 @@ export default function GrantApplication() {
         open={uploadModalOpen}
         onOpenChange={setUploadModalOpen}
         applicationId={applicationId!}
+        publicId={publicId}
         documentType={uploadType}
       />
       <DocumentDisplay

@@ -17,6 +17,7 @@ interface FileUploadModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   applicationId: number;
+  publicId?: string;
   documentType: "land_declaration" | "supporting_doc";
 }
 
@@ -24,6 +25,7 @@ export default function FileUploadModal({
   open,
   onOpenChange,
   applicationId,
+  publicId,
   documentType,
 }: FileUploadModalProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -58,7 +60,10 @@ export default function FileUploadModal({
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/grant-applications", applicationId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/grant-applications"] });
+      if (publicId) {
+        queryClient.invalidateQueries({ queryKey: ["/api/grant-applications", publicId] });
+      }
       queryClient.invalidateQueries({ queryKey: [`/api/documents/${applicationId}`] });
       toast({
         title: "Success",

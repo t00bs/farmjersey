@@ -17,7 +17,7 @@ import AgriculturalReturnWizard from "@/components/agricultural-return-wizard";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { InfoIcon, Save, Send, Trash2, ExternalLink, Download } from "lucide-react";
+import { InfoIcon, Save, Send, Trash2, ExternalLink, Download, AlertTriangle } from "lucide-react";
 import type { AgriculturalReturn } from "@shared/schema";
 import { downloadWithAuth } from "@/lib/queryClient";
 
@@ -388,6 +388,18 @@ export default function GrantApplication() {
               <ExternalLink className="w-4 h-4 mr-1" />
               Download Rural Support Scheme Guidance
             </a>
+            
+            {application?.resubmissionReason && (
+              <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg" data-testid="resubmission-warning">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="font-semibold text-orange-800 mb-1">Changes Required</h3>
+                    <p className="text-sm text-orange-700 whitespace-pre-wrap">{application.resubmissionReason}</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Application Sections Grid */}

@@ -162,57 +162,21 @@ export async function sendResubmissionEmail(toEmail: string, reason: string, app
     to: [toEmail],
     subject: 'Action Required: Your Application Needs Changes - Farm Jersey',
     html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      </head>
-      <body style="font-family: Arial, sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px;">
-        <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-          <!-- Header -->
-          <div style="background-color: #231f20; padding: 30px; text-align: center;">
-            <h1 style="color: #c69a71; margin: 0; font-size: 24px;">Farm Jersey</h1>
-          </div>
-          
-          <!-- Content -->
-          <div style="padding: 40px 30px;">
-            <h2 style="color: #231f20; margin: 0 0 20px 0; font-size: 22px;">Your Application Requires Changes</h2>
-            
-            <p style="color: #555555; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
-              Your grant application has been reviewed and requires some changes before it can be processed. Please review the feedback below and update your application accordingly.
-            </p>
-            
-            <!-- Reason Box -->
-            <div style="background-color: #fff8f0; border-left: 4px solid #c69a71; padding: 20px; margin: 25px 0; border-radius: 0 6px 6px 0;">
-              <p style="color: #231f20; font-size: 14px; font-weight: bold; margin: 0 0 10px 0;">Reason for resubmission:</p>
-              <p style="color: #555555; font-size: 15px; line-height: 1.6; margin: 0; white-space: pre-wrap;">${reason}</p>
-            </div>
-            
-            <!-- CTA Button -->
-            <div style="text-align: center; margin: 35px 0;">
-              <a href="${applicationUrl}" style="background-color: #c69a71; color: #231f20; padding: 14px 32px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold; font-size: 16px;">
-                Edit Your Application
-              </a>
-            </div>
-            
-            <p style="color: #555555; font-size: 14px; line-height: 1.6; margin: 0 0 10px 0;">
-              Or copy and paste this link into your browser:
-            </p>
-            <p style="color: #c69a71; font-size: 14px; word-break: break-all; margin: 0 0 30px 0;">
-              ${applicationUrl}
-            </p>
-          </div>
-          
-          <!-- Footer -->
-          <div style="background-color: #f5f5f5; padding: 20px 30px; text-align: center; border-top: 1px solid #eeeeee;">
-            <p style="color: #999999; font-size: 12px; margin: 0;">
-              Rural Support Scheme Portal
-            </p>
-          </div>
-        </div>
-      </body>
-      </html>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Your Application Requires Changes</h2>
+        <p>Your grant application has been reviewed and requires some changes before it can be processed.</p>
+        <p><strong>Reason for resubmission:</strong></p>
+        <p style="background-color: #f5f5f5; padding: 15px; border-radius: 4px; white-space: pre-wrap;">${reason}</p>
+        <p>Please review the feedback above and update your application accordingly.</p>
+        <p style="margin: 30px 0;">
+          <a href="${applicationUrl}" style="background-color: #c69a71; color: #231f20; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
+            Edit Your Application
+          </a>
+        </p>
+        <p style="color: #666; font-size: 14px;">
+          If you have any questions, please contact the administration team.
+        </p>
+      </div>
     `,
   });
 

@@ -56,6 +56,7 @@ export const grantApplications = pgTable("grant_applications", {
   consentAddress: text("consent_address"),
   consentFarmCode: varchar("consent_farm_code"),
   consentEmail: varchar("consent_email"),
+  resubmissionReason: text("resubmission_reason"),
   submittedAt: timestamp("submitted_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

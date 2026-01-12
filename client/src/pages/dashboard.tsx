@@ -10,7 +10,7 @@ import TopBar from "@/components/top-bar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, FileText, Clock, CheckCircle } from "lucide-react";
+import { Plus, FileText, Clock, CheckCircle, AlertTriangle } from "lucide-react";
 import { Link } from "wouter";
 
 export default function Dashboard() {
@@ -171,7 +171,7 @@ export default function Dashboard() {
           {applications && applications.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
               {applications.map((application: any) => (
-                <Card key={application.id} className="hover:shadow-md transition-shadow">
+                <Card key={application.id} className={`hover:shadow-md transition-shadow ${application.resubmissionReason ? 'border-orange-300 bg-orange-50/30' : ''}`}>
                   <CardHeader className="pb-3">
                     <div className="flex justify-between items-start">
                       <div>
@@ -182,7 +182,15 @@ export default function Dashboard() {
                           {formatApplicationRef(application.year, application.id)}
                         </p>
                       </div>
-                      {getStatusBadge(application.status)}
+                      <div className="flex items-center gap-2">
+                        {application.resubmissionReason && (
+                          <Badge variant="outline" className="bg-orange-100 text-orange-700 border-orange-300">
+                            <AlertTriangle className="w-3 h-3 mr-1" />
+                            Changes Required
+                          </Badge>
+                        )}
+                        {getStatusBadge(application.status)}
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent>

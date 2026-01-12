@@ -589,9 +589,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "User email not found" });
       }
       
-      // Update application status to draft
+      // Update application status to draft and store resubmission reason
       const updatedApplication = await storage.updateGrantApplication(parseInt(id), { 
-        status: 'draft'
+        status: 'draft',
+        resubmissionReason: reason.trim()
       });
       
       if (!updatedApplication) {
@@ -1350,9 +1351,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const updates = req.body;
       
-      // Handle submission timestamp properly
+      // Handle submission timestamp and clear resubmission reason
       if (updates.status === "submitted") {
         updates.submittedAt = new Date();
+        updates.resubmissionReason = null;
       }
       
       const updatedApplication = await storage.updateGrantApplication(application.id, updates);

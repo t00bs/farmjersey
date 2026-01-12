@@ -1,24 +1,28 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Download, FileText, Image, FileSpreadsheet, X } from "lucide-react";
+import { Download, FileText, Image, FileSpreadsheet, X, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Document } from "@shared/schema";
 import { isUnauthorizedError } from "@/lib/authUtils";
 
 interface DocumentDisplayProps {
   applicationId: number;
+  publicId?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  readOnly?: boolean;
 }
 
-export default function DocumentDisplay({ applicationId, open, onOpenChange }: DocumentDisplayProps) {
+export default function DocumentDisplay({ applicationId, publicId, open, onOpenChange, readOnly = false }: DocumentDisplayProps) {
   const { toast } = useToast();
   const [downloadingDoc, setDownloadingDoc] = useState<number | null>(null);
+  const [deletingDoc, setDeletingDoc] = useState<number | null>(null);
 
   const { data: documents, isLoading, error } = useQuery<Document[]>({
     queryKey: [`/api/documents/${applicationId}`],
@@ -137,6 +141,49 @@ export default function DocumentDisplay({ applicationId, open, onOpenChange }: D
     }
   };
 
+  const handleDelete = async (document: Document) => {
+    if (!confirm(`Are you sure you want to delete "${document.fileName}"? This action cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      setDeletingDoc(document.id);
+      await apiRequest("DELETE", `/api/documents/${document.id}`);
+      
+      queryClient.invalidateQueries({ queryKey: [`/api/documents/${applicationId}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/grant-applications"] });
+      if (publicId) {
+        queryClient.invalidateQueries({ queryKey: ["/api/grant-applications", publicId] });
+      }
+      
+      toast({
+        title: "Document Deleted",
+        description: `${document.fileName} has been deleted.`,
+      });
+    } catch (error) {
+      if (isUnauthorizedError(error as Error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      
+      console.error("Delete error:", error);
+      toast({
+        title: "Delete Failed",
+        description: "Failed to delete the document. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingDoc(null);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
@@ -206,7 +253,7 @@ export default function DocumentDisplay({ applicationId, open, onOpenChange }: D
                           </div>
                         </div>
                       </div>
-                      <div className="flex-shrink-0">
+                      <div className="flex-shrink-0 flex space-x-2">
                         <Button
                           variant="outline"
                           size="sm"
@@ -217,6 +264,18 @@ export default function DocumentDisplay({ applicationId, open, onOpenChange }: D
                           <Download className="w-4 h-4 mr-2" />
                           {downloadingDoc === document.id ? "Downloading..." : "Download"}
                         </Button>
+                        {!readOnly && (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDelete(document)}
+                            disabled={deletingDoc === document.id}
+                            data-testid={`button-delete-${document.id}`}
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            {deletingDoc === document.id ? "Deleting..." : "Delete"}
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </CardContent>

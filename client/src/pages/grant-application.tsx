@@ -506,13 +506,15 @@ export default function GrantApplication() {
         open={uploadModalOpen}
         onOpenChange={setUploadModalOpen}
         applicationId={applicationId!}
-        publicId={publicId}
+        publicId={publicId || undefined}
         documentType={uploadType}
       />
       <DocumentDisplay
         open={documentModalOpen}
         onOpenChange={setDocumentModalOpen}
         applicationId={applicationId!}
+        publicId={publicId || undefined}
+        readOnly={isReadOnly}
       />
       <Dialog open={agriculturalFormOpen} onOpenChange={setAgriculturalFormOpen}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">

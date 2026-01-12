@@ -1611,6 +1611,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete document route
+  app.delete("/api/documents/:documentId", isAuthenticated, async (req: any, res) => {
+    try {
+      const documentId = parseInt(req.params.documentId);
+      
+      if (!Number.isInteger(documentId) || documentId <= 0) {
+        return res.status(400).json({ message: "Invalid document ID" });
+      }
+      
+      // Get document
+      const document = await storage.getDocumentById(documentId);
+      if (!document) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+      
+      // Verify user owns the application this document belongs to
+      const application = await storage.getGrantApplication(document.applicationId);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+      
+      // Only allow deletion if user owns the application and it's not submitted
+      if (application.userId !== req.user.id) {
+        return res.status(403).json({ message: "Unauthorized access to document" });
+      }
+      
+      if (application.status === 'submitted' || application.status === 'approved' || application.status === 'rejected') {
+        return res.status(400).json({ message: "Cannot delete documents from a submitted application" });
+      }
+      
+      const documentType = document.documentType;
+      
+      // Delete file from storage
+      if (document.filePath) {
+        if (isSupabasePath(document.filePath)) {
+          const { error: deleteError } = await deleteFile(document.filePath);
+          if (deleteError) {
+            console.error("Failed to delete file from Supabase:", deleteError);
+          }
+        } else if (fs.existsSync(document.filePath)) {
+          try {
+            fs.unlinkSync(document.filePath);
+          } catch (err) {
+            console.error("Failed to delete local file:", err);
+          }
+        }
+      }
+      
+      // Delete document record
+      await storage.deleteDocument(documentId);
+      
+      // Check if there are remaining documents of this type
+      const remainingDocs = await storage.getDocumentsByApplicationId(application.id);
+      const hasLandDeclaration = remainingDocs.some(d => d.documentType === 'land_declaration');
+      const hasSupportingDoc = remainingDocs.some(d => d.documentType === 'supporting_doc');
+      
+      // Update application progress based on remaining documents
+      const updates: any = {};
+      
+      if (documentType === 'land_declaration' && !hasLandDeclaration) {
+        updates.landDeclarationCompleted = false;
+      }
+      if (documentType === 'supporting_doc' && !hasSupportingDoc) {
+        updates.supportingDocsCompleted = false;
+      }
+      
+      if (Object.keys(updates).length > 0) {
+        updates.progressPercentage = calculateProgressSync({
+          ...application,
+          ...updates,
+        });
+        await storage.updateGrantApplication(application.id, updates);
+      }
+      
+      res.json({ message: "Document deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting document:", error);
+      res.status(500).json({ message: "Failed to delete document" });
+    }
+  });
+
   // Generate and download filled PDF for agricultural return
   app.get("/api/agricultural-returns/:returnId/pdf", isAuthenticated, async (req: any, res) => {
     try {

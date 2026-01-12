@@ -74,7 +74,7 @@ export default function ApplicationSection({
       case "not_started":
       default:
         return (
-          <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+          <div className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center">
             <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
           </div>
         );

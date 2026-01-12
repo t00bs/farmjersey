@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Clock, Download, Signature, Upload, AlertCircle } from "lucide-react";
+import { CheckCircle, Clock, Download, Signature, Upload, AlertCircle, AlertTriangle } from "lucide-react";
 
 type SectionStatus = "not_started" | "in_progress" | "completed";
 
@@ -112,7 +112,7 @@ export default function ApplicationSection({
       <div className="space-y-3">
         {getInfoText() && (
           <div className="flex items-center space-x-2 text-sm text-gray-600">
-            {getIcon()}
+            {requiresTemplate ? <AlertTriangle className="w-4 h-4 text-gray-400" /> : getIcon()}
             <span>{getInfoText()}</span>
           </div>
         )}

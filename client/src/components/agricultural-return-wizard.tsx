@@ -345,6 +345,7 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
 
   const handleSaveProgress = () => {
     const data = form.getValues();
+    console.log("Saving progress with existingReturn:", existingReturn?.id, "data:", data);
     saveMutation.mutate({ ...data, signature, isComplete: false });
   };
 

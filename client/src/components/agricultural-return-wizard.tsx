@@ -231,7 +231,9 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
     queryKey: ["/api/agricultural-returns", applicationId],
     queryFn: async () => {
       try {
-        const response = await fetch(`/api/agricultural-returns/${applicationId}`);
+        const response = await fetch(`/api/agricultural-returns/${applicationId}`, {
+          credentials: 'include',
+        });
         if (response.status === 404) return null;
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();

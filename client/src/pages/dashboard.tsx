@@ -184,7 +184,7 @@ export default function Dashboard() {
                       </div>
                       <div className="flex items-center gap-2">
                         {application.resubmissionReason && (
-                          <Badge variant="outline" className="bg-orange-100 text-orange-700 border-orange-300">
+                          <Badge variant="outline" className="bg-orange-100 text-orange-700 border-orange-300 whitespace-nowrap">
                             <AlertTriangle className="w-3 h-3 mr-1" />
                             Changes Required
                           </Badge>

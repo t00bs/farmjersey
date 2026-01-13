@@ -246,10 +246,8 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
   });
 
   useEffect(() => {
-    console.log("useEffect triggered, existingReturn:", existingReturn);
     if (existingReturn) {
       const defaults = getDefaultFormValues();
-      console.log("Loading existing data, farmDetailsData:", existingReturn.farmDetailsData);
       
       // Merge existing data with defaults to ensure no undefined values
       const formData: CombinedFormData = {
@@ -347,7 +345,6 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
 
   const handleSaveProgress = () => {
     const data = form.getValues();
-    console.log("Saving progress with existingReturn:", existingReturn?.id, "data:", data);
     saveMutation.mutate({ ...data, signature, isComplete: false });
   };
 

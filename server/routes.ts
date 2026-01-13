@@ -1456,8 +1456,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const agriculturalReturn = await storage.getAgriculturalReturnByApplicationId(applicationId);
-      // Add cache control for browser caching
-      res.set('Cache-Control', 'private, max-age=30');
+      // No caching to ensure fresh data after saves
+      res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.json(agriculturalReturn);
     } catch (error) {
       console.error("Error fetching agricultural return:", error);

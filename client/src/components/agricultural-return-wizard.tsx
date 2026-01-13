@@ -6,6 +6,7 @@ import { z } from "zod";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import type { AgriculturalReturn } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -227,22 +228,8 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
     defaultValues: getDefaultFormValues(),
   });
 
-  const { data: existingReturn, isLoading: returnLoading } = useQuery({
-    queryKey: ["/api/agricultural-returns", applicationId],
-    queryFn: async () => {
-      try {
-        const response = await fetch(`/api/agricultural-returns/${applicationId}`, {
-          credentials: 'include',
-        });
-        if (response.status === 404) return null;
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return response.json();
-      } catch (error) {
-        console.log("No existing agricultural return found:", error);
-        return null;
-      }
-    },
-    retry: false,
+  const { data: existingReturn, isLoading: returnLoading } = useQuery<AgriculturalReturn | null>({
+    queryKey: [`/api/agricultural-returns/${applicationId}`],
     staleTime: 0,
     refetchOnMount: 'always',
   });

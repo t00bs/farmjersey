@@ -246,8 +246,10 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
   });
 
   useEffect(() => {
+    console.log("useEffect triggered, existingReturn:", existingReturn);
     if (existingReturn) {
       const defaults = getDefaultFormValues();
+      console.log("Loading existing data, farmDetailsData:", existingReturn.farmDetailsData);
       
       // Merge existing data with defaults to ensure no undefined values
       const formData: CombinedFormData = {

@@ -241,6 +241,8 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
       }
     },
     retry: false,
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   useEffect(() => {

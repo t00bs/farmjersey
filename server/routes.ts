@@ -553,7 +553,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const updatedApplication = await storage.updateGrantApplication(parseInt(id), { 
         status,
-        ...(status === 'submitted' ? { submittedAt: new Date() } : {})
+        ...(status === 'submitted' ? { submittedAt: new Date() } : {}),
+        // Clear resubmission reason when approving or rejecting
+        ...(status === 'approved' || status === 'rejected' ? { resubmissionReason: null } : {})
       });
       
       if (!updatedApplication) {

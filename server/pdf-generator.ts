@@ -139,6 +139,9 @@ export async function generateFilledPDF(agriculturalReturn: AgriculturalReturn):
   setTextField('Address Line 2', farmDetails.addressLine2);
   setTextField('Parish', farmDetails.parish);
   setTextField('Postcode', farmDetails.postcode);
+  
+  // Set farm name in the declaration consent section
+  setTextField('Signed on behalf of', farmDetails.farmName);
 
   switch (accreditation.leafOption) {
     case 'demoFarm':

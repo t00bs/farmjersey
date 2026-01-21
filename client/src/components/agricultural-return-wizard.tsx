@@ -683,10 +683,7 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
 
   const renderFinancialSection = () => (
     <div className="space-y-6">
-      <p className="text-sm text-muted-foreground">
-        A Financial Return for 2025 to be completed by a qualified accountant must be returned by 11th September 2026. 
-        If not available, use management accounts and provide estimates.
-      </p>
+      <p className="text-sm text-muted-foreground">Please complete the Financial Declaration for 2025 using estimates from your management accounts. In addition to this information, you will be required to provide a financial return (or full accounts) for 2025, completed by a qualified accountant, by 11th September 2026.</p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">

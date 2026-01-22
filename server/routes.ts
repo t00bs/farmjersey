@@ -979,8 +979,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 7);
 
+      const normalizedEmail = email.toLowerCase();
+      
       const invitationData = insertInvitationSchema.parse({
-        email,
+        email: normalizedEmail,
         token,
         used: false,
         expiresAt,
@@ -995,7 +997,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send invitation email
       try {
-        await sendInvitationEmail(email, invitationUrl);
+        await sendInvitationEmail(normalizedEmail, invitationUrl);
       } catch (emailError) {
         console.error("Error sending invitation email:", emailError);
         // Delete the invitation if email fails

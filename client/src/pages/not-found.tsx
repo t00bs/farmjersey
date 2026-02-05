@@ -49,11 +49,11 @@ export default function NotFound() {
         <p className="mt-8 text-sm text-gray-500">
           Need help? Contact us at{" "}
           <a 
-            href="mailto:help@farmjersey.je" 
+            href="mailto:Matt.lemaistre@jerseybusiness.je" 
             className="text-primary-custom hover:underline"
             data-testid="link-support-email"
           >
-            help@farmjersey.je
+            Matt.lemaistre@jerseybusiness.je
           </a>
         </p>
       </div>

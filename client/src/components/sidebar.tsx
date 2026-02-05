@@ -11,7 +11,7 @@ const navigation = [
 ];
 
 const bottomNavigation = [
-  { name: "Support", href: "mailto:help@farmjersey.je", icon: HelpCircle, isExternal: true },
+  { name: "Support", href: "mailto:Matt.lemaistre@jerseybusiness.je", icon: HelpCircle, isExternal: true },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 

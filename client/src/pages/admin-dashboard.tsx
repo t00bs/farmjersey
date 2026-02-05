@@ -497,7 +497,7 @@ function AdminDashboardContent() {
                   If you need assistance with application reviews or have questions about the system, please contact our support team.
                 </p>
                 <div className="flex gap-4">
-                  <Button variant="outline" onClick={() => window.open('mailto:support@farmjersey.je')}>
+                  <Button variant="outline" onClick={() => window.open('mailto:Matt.lemaistre@jerseybusiness.je')}>
                     Email Support
                   </Button>
                   <Button variant="outline">

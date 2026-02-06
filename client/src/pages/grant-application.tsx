@@ -63,7 +63,7 @@ export default function GrantApplication() {
   // Fetch agricultural return to get its ID for PDF download
   const { data: agriculturalReturn } = useQuery<AgriculturalReturn>({
     queryKey: [`/api/agricultural-returns/${applicationId}`],
-    enabled: !!applicationId && !!application?.agriculturalReturnCompleted,
+    enabled: !!applicationId && (!!application?.agriculturalReturnCompleted || application?.status === 'submitted'),
   });
   
 
@@ -415,7 +415,7 @@ export default function GrantApplication() {
                 onClick: () => (!isReadOnly || application?.agriculturalReturnCompleted) && setAgriculturalFormOpen(true),
                 variant: "outline",
               }}
-              secondaryAction={application?.agriculturalReturnCompleted ? {
+              secondaryAction={(application?.agriculturalReturnCompleted || application?.status === 'submitted') ? {
                 label: "Download PDF",
                 onClick: handleDownloadPDF,
                 icon: <Download className="w-4 h-4 mr-1" />,

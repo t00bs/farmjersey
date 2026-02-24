@@ -109,7 +109,7 @@ export default function Dashboard() {
       case "draft":
         return <Badge variant="secondary">Draft</Badge>;
       case "in_progress":
-        return <Badge className="bg-accent-custom text-white">In Progress</Badge>;
+        return <Badge className="bg-accent-custom text-[#0d0d0d]">In Progress</Badge>;
       case "submitted":
         return <Badge className="bg-secondary-custom text-white">Submitted</Badge>;
       case "approved":

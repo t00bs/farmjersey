@@ -378,16 +378,28 @@ export default function GrantApplication() {
               />
             </div>
             
-            <a 
-              href="/api/download-template/rss-guidance" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="inline-flex items-center text-sm text-primary-custom hover:underline"
-              data-testid="link-download-guidance"
-            >
-              <ExternalLink className="w-4 h-4 mr-1" />
-              Download Rural Support Scheme Guidance
-            </a>
+            <div className="flex flex-col gap-1">
+              <a 
+                href="/api/download-template/rss-guidance" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center text-sm text-primary-custom hover:underline"
+                data-testid="link-download-guidance"
+              >
+                <ExternalLink className="w-4 h-4 mr-1" />
+                Download Rural Support Scheme Guidance
+              </a>
+              <a 
+                href="https://www.farmjersey.je/faqs" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center text-sm text-primary-custom hover:underline"
+                data-testid="link-faqs"
+              >
+                <ExternalLink className="w-4 h-4 mr-1" />
+                Frequently Asked Questions
+              </a>
+            </div>
             
             {application?.resubmissionReason && (
               <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg" data-testid="resubmission-warning">

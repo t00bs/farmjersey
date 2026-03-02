@@ -153,7 +153,7 @@ export default function DocumentDisplay({ applicationId, publicId, open, onOpenC
       queryClient.invalidateQueries({ queryKey: [`/api/documents/${applicationId}`] });
       queryClient.invalidateQueries({ queryKey: ["/api/grant-applications"] });
       if (publicId) {
-        queryClient.invalidateQueries({ queryKey: ["/api/grant-applications", publicId] });
+        queryClient.invalidateQueries({ queryKey: [`/api/grant-applications/${publicId}`] });
       }
       
       toast({

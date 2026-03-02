@@ -48,14 +48,11 @@ export default function GrantApplication() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: applicationData, isLoading: applicationLoading } = useQuery<GrantApplication[] | GrantApplication>({
-    queryKey: ["/api/grant-applications", publicId],
+  const { data: application, isLoading: applicationLoading } = useQuery<GrantApplication>({
+    queryKey: [`/api/grant-applications/${publicId}`],
     enabled: !!publicId,
     retry: false,
   });
-  
-  // Handle both array and single object responses
-  const application = Array.isArray(applicationData) ? applicationData[0] : applicationData;
   
   // Get numeric ID for internal operations (document uploads, etc.)
   const applicationId = application?.id || null;
@@ -81,7 +78,7 @@ export default function GrantApplication() {
     },
     onSuccess: () => {
       // Invalidate and refetch the application data
-      queryClient.invalidateQueries({ queryKey: ["/api/grant-applications", publicId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/grant-applications/${publicId}`] });
       toast({
         title: "Progress Saved",
         description: "Your application progress has been saved successfully.",
@@ -119,7 +116,7 @@ export default function GrantApplication() {
     onSuccess: () => {
       // Invalidate all application queries including this specific one, then redirect to home
       queryClient.invalidateQueries({ queryKey: ["/api/grant-applications"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/grant-applications", publicId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/grant-applications/${publicId}`] });
       toast({
         title: "Application Submitted",
         description: "Your grant application has been submitted successfully.",
@@ -161,7 +158,7 @@ export default function GrantApplication() {
       // Remove cached data entirely to force fresh fetch on home page
       queryClient.removeQueries({ queryKey: ["/api/grant-applications"] });
       // Also clear any specific application cache
-      queryClient.removeQueries({ queryKey: ["/api/grant-applications", publicId] });
+      queryClient.removeQueries({ queryKey: [`/api/grant-applications/${publicId}`] });
       navigate("/");
     },
     onError: (error) => {
@@ -548,7 +545,7 @@ export default function GrantApplication() {
             onComplete={() => {
               setAgriculturalFormOpen(false);
               queryClient.invalidateQueries({ queryKey: ["/api/grant-applications"] });
-              queryClient.invalidateQueries({ queryKey: ["/api/grant-applications", publicId] });
+              queryClient.invalidateQueries({ queryKey: [`/api/grant-applications/${publicId}`] });
             }}
           />
         </DialogContent>

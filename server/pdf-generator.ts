@@ -143,6 +143,8 @@ export async function generateFilledPDF(agriculturalReturn: AgriculturalReturn):
   // Set farm name in the declaration consent section
   setTextField('Signed on behalf of', farmDetails.farmName);
 
+  console.log('[PDF Debug] accreditationData:', JSON.stringify(accreditation));
+
   switch (accreditation.leafOption) {
     case 'marque_demonstration_farm':
     case 'demoFarm':

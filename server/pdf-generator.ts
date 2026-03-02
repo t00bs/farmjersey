@@ -144,12 +144,15 @@ export async function generateFilledPDF(agriculturalReturn: AgriculturalReturn):
   setTextField('Signed on behalf of', farmDetails.farmName);
 
   switch (accreditation.leafOption) {
+    case 'marque_demonstration_farm':
     case 'demoFarm':
       setTextField('LEAF Marque Demonstration Farm', 'X');
       break;
+    case 'marque_certified':
     case 'certified':
       setTextField('LEAF Marque Ceritified', 'X');
       break;
+    case 'sustainable_farming_review':
     case 'sfr':
       setTextField('LEAF Sustainable Farming Review', 'X');
       break;
@@ -159,12 +162,15 @@ export async function generateFilledPDF(agriculturalReturn: AgriculturalReturn):
   }
 
   switch (accreditation.organicOption) {
+    case 'organic_certified':
     case 'certified':
       setTextField('Organic Certified', 'X');
       break;
+    case 'in_conversion':
     case 'inConversion':
       setTextField("Organic 'In Conversion'", 'X');
       break;
+    case 'member_organic_association':
     case 'member':
       setTextField('Member of an Organic Association', 'X');
       break;

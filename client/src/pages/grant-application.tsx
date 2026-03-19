@@ -396,6 +396,16 @@ export default function GrantApplication() {
                 <ExternalLink className="w-4 h-4 mr-1" />
                 Frequently Asked Questions
               </a>
+              <a 
+                href="https://farmjersey.je/rss-application-templates" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center text-sm text-primary-custom hover:underline"
+                data-testid="link-rss-templates"
+              >
+                <ExternalLink className="w-4 h-4 mr-1" />
+                RSS Application Templates
+              </a>
             </div>
             
             {application?.resubmissionReason && (

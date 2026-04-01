@@ -1,4 +1,4 @@
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, StandardFonts } from 'pdf-lib';
 import fs from 'fs';
 import path from 'path';
 import type { AgriculturalReturn } from '@shared/schema';
@@ -14,6 +14,7 @@ interface FarmDetails {
   postcode?: string;
   telephone?: string;
   email?: string;
+  companyTin?: string;
 }
 
 interface AccreditationData {
@@ -285,6 +286,19 @@ export async function generateFilledPDF(agriculturalReturn: AgriculturalReturn):
   }
 
   form.flatten();
+
+  // Draw Company TIN below the address area on page 1 (no template field exists for this)
+  if (farmDetails.companyTin) {
+    const pages = pdfDoc.getPages();
+    const firstPage = pages[0];
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    firstPage.drawText(`Company TIN: ${farmDetails.companyTin}`, {
+      x: 73,
+      y: 583,
+      size: 10,
+      font,
+    });
+  }
 
   const pdfBytes = await pdfDoc.save();
   return Buffer.from(pdfBytes);

@@ -32,6 +32,7 @@ const farmDetailsSchema = z.object({
   postcode: z.string().optional(),
   telephone: z.string().optional(),
   email: z.string().optional(),
+  companyTin: z.string().optional(),
 });
 
 const financialSchema = z.object({
@@ -151,6 +152,7 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
       postcode: "",
       telephone: "",
       email: "",
+      companyTin: "",
     },
     accreditation: {
       leafOption: "",
@@ -338,6 +340,18 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
   };
 
   const handleComplete = () => {
+    const data = form.getValues();
+
+    if (!readOnly && !data.farmDetails.companyTin?.trim()) {
+      toast({
+        title: "Company TIN Required",
+        description: "Please enter your Company TIN in Section A before completing the form.",
+        variant: "destructive",
+      });
+      setCurrentStep(0);
+      return;
+    }
+
     if (!signature) {
       toast({
         title: "Signature Required",
@@ -347,7 +361,6 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
       return;
     }
 
-    const data = form.getValues();
     if (!data.declaration.declarationName) {
       toast({
         title: "Name Required",
@@ -566,6 +579,22 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
             )}
           />
         </div>
+
+        <FormField
+          control={form.control}
+          name="farmDetails.companyTin"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>
+                Company TIN <span className="text-destructive">*</span>
+              </FormLabel>
+              <FormControl>
+                <Input type="text" placeholder="Enter your Company TIN" {...field} disabled={readOnly} data-testid="input-company-tin" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
       </div>
     </div>
   );
@@ -1444,7 +1473,20 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
                 {currentStep < STEPS.length - 1 && (
                   <Button
                     type="button"
-                    onClick={() => setCurrentStep(currentStep + 1)}
+                    onClick={() => {
+                      if (currentStep === 0 && !readOnly) {
+                        const data = form.getValues();
+                        if (!data.farmDetails.companyTin?.trim()) {
+                          toast({
+                            title: "Company TIN Required",
+                            description: "Please enter your Company TIN before proceeding.",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+                      }
+                      setCurrentStep(currentStep + 1);
+                    }}
                     data-testid="button-next"
                   >
                     Next

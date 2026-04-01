@@ -1434,20 +1434,7 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
                 type="button"
                 variant={index === currentStep ? "default" : index < currentStep ? "secondary" : "outline"}
                 size="sm"
-                onClick={() => {
-                  if (currentStep === 0 && index > 0 && !readOnly) {
-                    const data = form.getValues();
-                    if (!data.farmDetails.companyTin?.trim()) {
-                      toast({
-                        title: "Company TIN Required",
-                        description: "Please enter your Company TIN before proceeding.",
-                        variant: "destructive",
-                      });
-                      return;
-                    }
-                  }
-                  setCurrentStep(index);
-                }}
+                onClick={() => setCurrentStep(index)}
                 className="flex-shrink-0"
                 data-testid={`step-button-${step.id}`}
               >
@@ -1486,20 +1473,7 @@ export default function AgriculturalReturnWizard({ applicationId, onComplete, re
                 {currentStep < STEPS.length - 1 && (
                   <Button
                     type="button"
-                    onClick={() => {
-                      if (currentStep === 0 && !readOnly) {
-                        const data = form.getValues();
-                        if (!data.farmDetails.companyTin?.trim()) {
-                          toast({
-                            title: "Company TIN Required",
-                            description: "Please enter your Company TIN before proceeding.",
-                            variant: "destructive",
-                          });
-                          return;
-                        }
-                      }
-                      setCurrentStep(currentStep + 1);
-                    }}
+                    onClick={() => setCurrentStep(currentStep + 1)}
                     data-testid="button-next"
                   >
                     Next

@@ -4,17 +4,22 @@ let connectionSettings: any;
 
 async function getCredentials() {
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+  const hasReplIdentity = !!process.env.REPL_IDENTITY;
+  const hasWebReplRenewal = !!process.env.WEB_REPL_RENEWAL;
   const xReplitToken = process.env.REPL_IDENTITY 
     ? 'repl ' + process.env.REPL_IDENTITY 
     : process.env.WEB_REPL_RENEWAL 
     ? 'depl ' + process.env.WEB_REPL_RENEWAL 
     : null;
 
+  console.log('[Resend] hostname:', hostname ? 'set' : 'MISSING');
+  console.log('[Resend] token path:', hasReplIdentity ? 'REPL_IDENTITY' : hasWebReplRenewal ? 'WEB_REPL_RENEWAL' : 'NONE');
+
   if (!xReplitToken) {
     throw new Error('X-Replit-Token not found for repl/depl');
   }
 
-  connectionSettings = await fetch(
+  const rawResponse = await fetch(
     'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=resend',
     {
       headers: {
@@ -22,7 +27,10 @@ async function getCredentials() {
         'X-Replit-Token': xReplitToken
       }
     }
-  ).then(res => res.json()).then(data => data.items?.[0]);
+  ).then(res => res.json());
+
+  console.log('[Resend] connector API items count:', rawResponse?.items?.length ?? 'no items field');
+  connectionSettings = rawResponse?.items?.[0];
 
   if (!connectionSettings || (!connectionSettings.settings.api_key)) {
     throw new Error('Resend not connected');

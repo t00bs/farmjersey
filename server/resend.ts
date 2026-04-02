@@ -29,6 +29,8 @@ async function getCredentials() {
     }
   ).then(res => res.json());
 
+  console.log('[Resend] raw API response keys:', Object.keys(rawResponse || {}));
+  console.log('[Resend] raw API response:', JSON.stringify(rawResponse).substring(0, 500));
   console.log('[Resend] connector API items count:', rawResponse?.items?.length ?? 'no items field');
   connectionSettings = rawResponse?.items?.[0];
 

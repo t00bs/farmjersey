@@ -1,22 +1,22 @@
 import { Resend } from 'resend';
 
-let connectionSettings: any;
+async function getCredentials(): Promise<{ apiKey: string; fromEmail: string | undefined }> {
+  if (process.env.RESEND_API_KEY) {
+    console.log('[Resend] using RESEND_API_KEY secret');
+    return { apiKey: process.env.RESEND_API_KEY, fromEmail: undefined };
+  }
 
-async function getCredentials() {
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-  const hasReplIdentity = !!process.env.REPL_IDENTITY;
-  const hasWebReplRenewal = !!process.env.WEB_REPL_RENEWAL;
-  const xReplitToken = process.env.REPL_IDENTITY 
-    ? 'repl ' + process.env.REPL_IDENTITY 
-    : process.env.WEB_REPL_RENEWAL 
-    ? 'depl ' + process.env.WEB_REPL_RENEWAL 
+  const xReplitToken = process.env.REPL_IDENTITY
+    ? 'repl ' + process.env.REPL_IDENTITY
+    : process.env.WEB_REPL_RENEWAL
+    ? 'depl ' + process.env.WEB_REPL_RENEWAL
     : null;
 
-  console.log('[Resend] hostname:', hostname ? 'set' : 'MISSING');
-  console.log('[Resend] token path:', hasReplIdentity ? 'REPL_IDENTITY' : hasWebReplRenewal ? 'WEB_REPL_RENEWAL' : 'NONE');
+  console.log('[Resend] falling back to connector, hostname:', hostname ? 'set' : 'MISSING');
 
-  if (!xReplitToken) {
-    throw new Error('X-Replit-Token not found for repl/depl');
+  if (!xReplitToken || !hostname) {
+    throw new Error('RESEND_API_KEY not set and Replit connector credentials missing');
   }
 
   const rawResponse = await fetch(
@@ -24,39 +24,36 @@ async function getCredentials() {
     {
       headers: {
         'Accept': 'application/json',
-        'X-Replit-Token': xReplitToken
-      }
+        'X-Replit-Token': xReplitToken,
+      },
     }
   ).then(res => res.json());
 
-  console.log('[Resend] raw API response keys:', Object.keys(rawResponse || {}));
-  console.log('[Resend] raw API response:', JSON.stringify(rawResponse).substring(0, 500));
-  console.log('[Resend] connector API items count:', rawResponse?.items?.length ?? 'no items field');
-  connectionSettings = rawResponse?.items?.[0];
+  const connectionSettings = rawResponse?.items?.[0];
 
-  if (!connectionSettings || (!connectionSettings.settings.api_key)) {
+  if (!connectionSettings?.settings?.api_key) {
+    console.error('[Resend] connector response:', JSON.stringify(rawResponse).substring(0, 300));
     throw new Error('Resend not connected');
   }
-  return {apiKey: connectionSettings.settings.api_key, fromEmail: connectionSettings.settings.from_email};
+
+  return { apiKey: connectionSettings.settings.api_key, fromEmail: connectionSettings.settings.from_email };
 }
 
 // WARNING: Never cache this client.
 // Access tokens expire, so a new client must be created each time.
-// Always call this function again to get a fresh client.
 export async function getUncachableResendClient() {
   const credentials = await getCredentials();
   return {
     client: new Resend(credentials.apiKey),
-    fromEmail: connectionSettings.settings.from_email
+    fromEmail: credentials.fromEmail,
   };
 }
 
 export async function sendInvitationEmail(toEmail: string, invitationUrl: string) {
   const { client } = await getUncachableResendClient();
-  
-  // Use verified domain for sending
+
   const senderEmail = 'Farm Jersey <noreply@mail.farmjersey.je>';
-  
+
   const { data, error } = await client.emails.send({
     from: senderEmail,
     to: [toEmail],
@@ -91,9 +88,9 @@ export async function sendInvitationEmail(toEmail: string, invitationUrl: string
 
 export async function sendPasswordResetEmail(toEmail: string, resetUrl: string) {
   const { client } = await getUncachableResendClient();
-  
+
   const senderEmail = 'Farm Jersey <noreply@mail.farmjersey.je>';
-  
+
   const { data, error } = await client.emails.send({
     from: senderEmail,
     to: [toEmail],
@@ -111,29 +108,29 @@ export async function sendPasswordResetEmail(toEmail: string, resetUrl: string) 
           <div style="background-color: #231f20; padding: 30px; text-align: center;">
             <h1 style="color: #c69a71; margin: 0; font-size: 24px;">Farm Jersey</h1>
           </div>
-          
+
           <!-- Content -->
           <div style="padding: 40px 30px;">
             <h2 style="color: #231f20; margin: 0 0 20px 0; font-size: 22px;">Password Reset Request</h2>
-            
+
             <p style="color: #555555; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
               We received a request to reset your password for your Farm Jersey account. Click the button below to create a new password:
             </p>
-            
+
             <!-- CTA Button -->
             <div style="text-align: center; margin: 35px 0;">
               <a href="${resetUrl}" style="background-color: #c69a71; color: #231f20; padding: 14px 32px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold; font-size: 16px;">
                 Reset Password
               </a>
             </div>
-            
+
             <p style="color: #555555; font-size: 14px; line-height: 1.6; margin: 0 0 10px 0;">
               Or copy and paste this link into your browser:
             </p>
             <p style="color: #c69a71; font-size: 14px; word-break: break-all; margin: 0 0 30px 0;">
               ${resetUrl}
             </p>
-            
+
             <!-- Security Notice -->
             <div style="background-color: #f9f9f9; border-radius: 6px; padding: 20px; margin-top: 30px;">
               <p style="color: #666666; font-size: 13px; line-height: 1.5; margin: 0;">
@@ -141,7 +138,7 @@ export async function sendPasswordResetEmail(toEmail: string, resetUrl: string) 
               </p>
             </div>
           </div>
-          
+
           <!-- Footer -->
           <div style="background-color: #f5f5f5; padding: 20px 30px; text-align: center; border-top: 1px solid #eeeeee;">
             <p style="color: #999999; font-size: 12px; margin: 0;">
@@ -164,9 +161,9 @@ export async function sendPasswordResetEmail(toEmail: string, resetUrl: string) 
 
 export async function sendResubmissionEmail(toEmail: string, reason: string, applicationUrl: string) {
   const { client } = await getUncachableResendClient();
-  
+
   const senderEmail = 'Farm Jersey <noreply@mail.farmjersey.je>';
-  
+
   const { data, error } = await client.emails.send({
     from: senderEmail,
     to: [toEmail],
